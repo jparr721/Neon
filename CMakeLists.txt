@@ -10,9 +10,6 @@ option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"           ON)
 option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use ImGui"          ON)
 include(libigl)
 
-#find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-
 add_executable(Neon main.cpp)
 
 target_link_libraries(Neon PRIVATE Eigen3::Eigen igl::core igl::opengl_glfw)
-        #igl::opengl igl::opengl_glfw igl::opengl_glfw_imgui)
