@@ -3,10 +3,10 @@
 #include <igl/readOBJ.h>
 #include <igl/opengl/glfw/Viewer.h>
 
-Eigen::MatrixXd V;
-Eigen::MatrixXi F;
-
 int main() {
+    Eigen::MatrixXd V;
+    Eigen::MatrixXi F;
+
     igl::readOBJ("../armadillo.obj", V, F);
     igl::opengl::glfw::Viewer viewer;
 
