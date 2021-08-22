@@ -3,7 +3,7 @@ project(meshing)
 add_library(${PROJECT_NAME} SHARED
         src/MarchingCubes.cpp
         include/meshing/MarchingCubes.h
-        src/ImplicitSurfaceGenerator.cpp include/meshing/ImplicitSurfaceGenerator.h)
+        src/ImplicitSurfaceGenerator.cpp include/meshing/ImplicitSurfaceGenerator.h src/Mesh.cpp include/meshing/Mesh.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -17,7 +17,7 @@ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Config
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen igl::core utilities)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen igl::core igl::tetgen utilities)
 
 install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
 install(EXPORT ${PROJECT_NAME}Config DESTINATION share/${PROJECT_NAME}/cmake)
