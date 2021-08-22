@@ -12,7 +12,7 @@
 #ifndef NEON_MATERIAL_H
 #define NEON_MATERIAL_H
 
-namespace neon::solvers {
+namespace solvers::materials {
     struct Material {
         // The number this material represents in the scalar field
         unsigned int number = 1;

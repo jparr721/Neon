@@ -12,6 +12,7 @@
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <utilities/runtime/NeonAssert.h>
+#include <vector>
 
 #ifndef NEON_LINEARALGEBRA_H
 #define NEON_LINEARALGEBRA_H
@@ -67,7 +68,7 @@ using Matrix4 = Eigen::Matrix<T, 4, 4>;
 template<typename T>
 using TensorReduction0 = Eigen::Tensor<T, 0>;
 
-namespace utilities::linear_algebra {
+namespace utilities::math {
     template<typename T>
     class Tensor3 {
     public:
@@ -83,7 +84,7 @@ namespace utilities::linear_algebra {
 
         Tensor3() = default;
 
-        Tensor3(const Eigen::Tensor<T, 3> &instance) : instance_(instance) {}
+        explicit Tensor3(const Eigen::Tensor<T, 3> &instance) : instance_(instance) {}
 
         explicit Tensor3(const Vector3<int> &dims) { Resize(dims.x(), dims.y(), dims.z()); }
 
@@ -193,7 +194,7 @@ namespace utilities::linear_algebra {
         auto WhereIdx(T value) const -> VectorX<int> {
             Tensor3<T> output = Where(value);
             VectorX<T> r = output.Vector();
-            return linear_algebra::Find(r, value);
+            return math::Find(r, value);
         }
 
         auto Append(const std::vector<VectorX<T>> &seqs, int index, OpOrientation orientation) -> Tensor3<T> {
@@ -227,7 +228,7 @@ namespace utilities::linear_algebra {
                         layer.col(index) = new_col;
                     }
 
-                    collapsed_indices.emplace_back(linear_algebra::MatrixToVector(layer));
+                    collapsed_indices.emplace_back(math::MatrixToVector(layer));
                 }
             }
 
@@ -250,7 +251,7 @@ namespace utilities::linear_algebra {
                         layer.row(index) = new_row;
                     }
 
-                    collapsed_indices.emplace_back(linear_algebra::MatrixToVector(layer));
+                    collapsed_indices.emplace_back(math::MatrixToVector(layer));
                 }
             }
 
@@ -347,6 +348,199 @@ namespace utilities::linear_algebra {
 
     using Tensor3r = Tensor3<Real>;
     using Tensor3i = Tensor3<int>;
-}// namespace utilities::linear_algebra
+
+    auto LinSpace(Real start, Real stop, unsigned int num) -> VectorXr;
+
+    template<typename Derived>
+    inline auto Shape(const Eigen::PlainObjectBase<Derived> &in) -> Vector2<int> {
+        return Vector2<int>(in.rows(), in.cols());
+    }
+
+    template<typename T>
+    inline auto MatrixToVector(const MatrixX<T> &in) -> VectorX<T> {
+        const T *data = in.data();
+        const auto shape = in.rows() * in.cols();
+        return VectorX<T>(Eigen::Map<const VectorX<T>>(data, shape));
+    }
+
+    template<typename T>
+    inline auto VectorToMatrix(const VectorX<T> &in, int rows, int cols) -> MatrixX<T> {
+        const T *data = in.data();
+        return MatrixX<T>(Eigen::Map<const MatrixX<T>>(data, rows, cols));
+    }
+
+    template<typename T>
+    inline auto IndexVectorByMatrix(const VectorX<T> &in, const MatrixX<T> &indices) -> MatrixX<T> {
+        MatrixX<T> output(indices.rows(), indices.cols());
+
+        for (int row = 0; row < indices.rows(); ++row) {
+            for (int col = 0; col < indices.cols(); ++col) { output(row, col) = in(indices(row, col)); }
+        }
+
+        return output;
+    }
+
+    template<typename T>
+    inline auto ReArrange(const MatrixX<T> &in, const VectorX<int> &indices) -> MatrixX<T> {
+        NEON_ASSERT_ERROR(indices.maxCoeff() < in.rows(), "Index out of bounds");
+
+        MatrixX<T> output(indices.rows(), in.cols());
+        for (int r = 0; r < indices.rows(); ++r) {
+            const T row = indices(r);
+            output.row(r) = in.row(row);
+        }
+
+        return output;
+    }
+
+    template<typename T>
+    inline auto IndexMatrixByMatrix(const MatrixX<T> &in, const MatrixX<int> &indices) -> MatrixX<T> {
+        std::vector<MatrixX<T>> h_stack;
+
+        for (int row = 0; row < indices.rows(); ++row) {
+            const VectorX<int> index_row = indices.row(row);
+            const MatrixX<T> m = ReArrange(in, index_row);
+            h_stack.emplace_back(m);
+        }
+
+        return HStack(h_stack);
+    }
+
+    template<typename T>
+    inline auto IndexMatrixByMatrix(const MatrixX<T> &in, const MatrixX<int> &indices, const int col) -> MatrixX<T> {
+        const MatrixX<T> stack = IndexMatrixByMatrix(in, indices);
+
+        // Get the column we're slicing from
+        const VectorX<T> column = stack.col(col);
+
+        // Then, extract by segment into an STL container
+        std::vector<MatrixX<T>> h_stack;
+        const unsigned int stride = indices.cols();
+        for (int i = 0; i < column.rows(); i += stride) {
+            const MatrixX<T> v = column.segment(i, stride).transpose();
+            h_stack.emplace_back(v);
+        }
+
+        // Return everything stacked out as a matrix
+        return HStack(h_stack);
+    }
+
+    template<typename T>
+    inline auto ToTriplets(const VectorX<int> &i, const VectorX<int> &j, const VectorX<T> &data)
+            -> std::vector<Eigen::Triplet<T>> {
+        NEON_ASSERT_ERROR(Shape(i) == Shape(j) && Shape(i) == Shape(data), "Shapes must match");
+
+        std::vector<Eigen::Triplet<T>> triplets;
+        for (int row = 0; row < i.rows(); ++row) {
+            triplets.emplace_back(Eigen::Triplet<T>(i(row), j(row), data(row)));
+        }
+
+        return triplets;
+    }
+
+    template<typename T>
+    inline auto HStack(const std::vector<MatrixX<T>> &matrices) -> MatrixX<T> {
+        const unsigned int cols = matrices.at(0).cols();
+        const unsigned int total_rows = matrices.size() * matrices.at(0).rows();
+
+        MatrixX<T> stacked(total_rows, cols);
+        unsigned int current_row = 0;
+        for (auto i = 0u; i < matrices.size(); ++i) {
+            const MatrixX<T> mat = matrices.at(i);
+            stacked.middleRows(current_row, mat.rows()) = mat;
+
+            current_row += mat.rows();
+        }
+
+        return stacked;
+    }
+
+    template<typename T>
+    inline auto HStack(const std::vector<VectorX<T>> &vectors) -> MatrixX<T> {
+        const unsigned int rows = vectors.size();
+        const unsigned int cols = vectors.at(0).cols();
+
+        std::vector<MatrixX<T>> stacked;
+        for (const VectorX<T> &vector : vectors) {
+            const MatrixX<T> v = vector.transpose();
+            stacked.emplace_back(v);
+        }
+
+        return HStack(stacked);
+    }
+
+    template<typename T>
+    inline auto Find(const VectorX<T> &in, T value) -> VectorX<int> {
+        std::vector<int> _out;
+        for (int r = 0; r < in.rows(); ++r) {
+            if (in(r) == value) { _out.push_back(r); }
+        }
+
+        VectorX<int> out(_out.size());
+        for (int i = 0; i < _out.size(); ++i) { out(i) = _out.at(i); }
+
+        return out;
+    }
+
+    template<typename Derived>
+    inline auto Slice(const Eigen::DenseBase<Derived> &in, const int start, const int end,
+                      Eigen::PlainObjectBase<Derived> &out) -> void {
+        NEON_ASSERT_ERROR(start < end, "YOU PROVIDED AN INVALID SLICE RANGE");
+        NEON_ASSERT_ERROR(start != end, "START AND END ARE THE SAME");
+        NEON_ASSERT_ERROR(start < in.rows(), "START VALUE TOO LARGE");
+        NEON_ASSERT_ERROR(end <= in.rows(), "END VALUE TOO LARGE");
+
+        out.resize((end - start) + 1, in.cols());
+        for (int i = start, out_idx = 0; i <= end; ++i, ++out_idx) { out(out_idx) = in(i); }
+    }
+
+
+    template<typename DerivedIn, typename DerivedOut, typename DerivedIndices>
+    inline auto Slice(const Eigen::DenseBase<DerivedIn> &in, const Eigen::DenseBase<DerivedIndices> &rows,
+                      const Eigen::DenseBase<DerivedIndices> &cols, Eigen::PlainObjectBase<DerivedOut> &out) -> void {
+        NEON_ASSERT_ERROR(rows.minCoeff() >= 0, "ROW INDEX IS LESS THAN 0");
+        NEON_ASSERT_ERROR(rows.maxCoeff() <= in.rows(), "ROW INDEX IS BIGGER THAN MAX SIZE OF INPUT MATRIX");
+        NEON_ASSERT_ERROR(cols.minCoeff() >= 0, "COLUMN INDEX IS LESS THAN 0");
+        NEON_ASSERT_ERROR(cols.maxCoeff() <= in.cols(), "COLUMN INDEX IS BIGGER THAN MAX SIZE OF INPUT MATRIX");
+        out.resize(rows.size(), cols.size());
+
+        for (int row = 0; row < rows.size(); ++row) {
+            for (int col = 0; col < cols.size(); ++col) { out(row, col) = in(rows(row), cols(col)); }
+        }
+    }
+
+    template<typename T>
+    inline auto STLVectorToEigenVector(const std::vector<T> &in) -> VectorX<T> {
+        VectorX<T> v(in.size());
+        for (int row = 0; row < in.size(); ++row) { v(row) = in.at(row); }
+        return v;
+    }
+
+    template<typename T>
+    inline auto EigenVectorToSTLVector(const VectorX<T> &in) -> std::vector<T> {
+        std::vector<T> v;
+        v.reserve(in.rows());
+        for (int row = 0; row < in.rows(); ++row) { v.push_back(in(row)); }
+
+        return v;
+    }
+
+
+    template<typename T>
+    auto Sort(VectorX<T> &out) -> void {
+        auto v = EigenVectorToSTLVector(out);
+        std::sort(v.begin(), v.end());
+
+        out = STLVectorToEigenVector(v);
+    }
+
+    template<typename T>
+    auto Dedupe(VectorX<T> &out) -> void {
+        Sort(out);
+        auto v = EigenVectorToSTLVector(out);
+        v.erase(std::unique(v.begin(), v.end()), v.end());
+        out = STLVectorToEigenVector(v);
+    }
+}// namespace utilities::math
 
 #endif//NEON_LINEARALGEBRA_H

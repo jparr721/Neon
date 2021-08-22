@@ -8,8 +8,8 @@
 //
 
 #include <solvers/materials/Material.h>
-neon::solvers::Material neon::solvers::MaterialFromLameCoefficients(unsigned int number, const std::string &name,
-                                                                    Real G, Real lambda) {
+solvers::materials::Material
+solvers::materials::MaterialFromLameCoefficients(unsigned int number, const std::string &name, Real G, Real lambda) {
     Material m;
     m.number = number;
     m.name = name;
@@ -20,7 +20,8 @@ neon::solvers::Material neon::solvers::MaterialFromLameCoefficients(unsigned int
 
     return m;
 }
-neon::solvers::Material neon::solvers::MaterialFromEandv(unsigned int number, const std::string &name, Real E, Real v) {
+solvers::materials::Material solvers::materials::MaterialFromEandv(unsigned int number, const std::string &name, Real E,
+                                                                   Real v) {
     Material m;
     m.number = number;
     m.name = name;
