@@ -32,7 +32,8 @@ endforeach ()
 
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 include_directories("${PROJECT_SOURCE_DIR}"
-        "${PROJECT_BINARY_DIR}")
+        "${PROJECT_BINARY_DIR}"
+        ${Boost_INCLUDE_DIRS})
 
 add_executable(Neon src/main.cpp)
 
@@ -45,3 +46,4 @@ target_link_libraries(Neon PRIVATE Eigen3::Eigen igl::core igl::opengl_glfw solv
 file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_BINARY_DIR})
 
 add_subdirectory(solvers)
+add_subdirectory(utilities)

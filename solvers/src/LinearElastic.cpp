@@ -3,9 +3,9 @@
 //
 
 #include <iostream>
-#include <solvers/LinearElastic.h>
+#include <solvers/include/FEM/LinearElastic.h>
 
-auto LinearElastic::Solve() -> void {
+auto neon::solvers::LinearElastic::Solve() -> void {
     foobar.resize(10, 10);
     foobar.setRandom();
     std::cout << foobar << std::endl;
