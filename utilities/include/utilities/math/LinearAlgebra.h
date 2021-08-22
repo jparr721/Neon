@@ -523,6 +523,7 @@ namespace utilities::math {
     }
 
 
+    /// \brief Sorts an Eigen Vector
     template<typename T>
     auto Sort(VectorX<T> &out) -> void {
         auto v = EigenVectorToSTLVector(out);
@@ -531,6 +532,7 @@ namespace utilities::math {
         out = STLVectorToEigenVector(v);
     }
 
+    /// \brief Removes duplicates from an Eigen Vector
     template<typename T>
     auto Dedupe(VectorX<T> &out) -> void {
         Sort(out);

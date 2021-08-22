@@ -30,14 +30,12 @@ namespace meshing {
 
     class Cube {
     public:
-        /// <summary>
-        /// Cube is an anonymous cube structure for cuboid-based inclusions.
-        /// </summary>
-        /// <param name="rows">The rows of the cube</param>
-        /// <param name="cols">The cols of the cube</param>
-        /// <param name="layers">The layers of the cube</param>
-        /// <param name="starting_index">The xyz coordinate of the
-        /// bottom-left position to build the cube from</param>
+        /// \Cube is an anonymous cube structure for cuboid-based inclusions.
+        /// @param rows The rows of the cube
+        /// @param cols The cols of the cube
+        /// @param layers The layers of the cube
+        /// @param starting_index The xyz coordinate of the
+        /// bottom-left position to build the cube from
         Cube(int rows, int cols, int layers, const Vector3<unsigned int> &starting_index);
 
         auto Indices() const -> std::vector<Vector3<unsigned int>> { return indices_; }

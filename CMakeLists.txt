@@ -39,21 +39,22 @@ include_directories("${PROJECT_SOURCE_DIR}"
         "${PROJECT_BINARY_DIR}"
         ${Boost_INCLUDE_DIRS})
 
-add_executable(Neon src/main.cpp)
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}}/include>
-        $<INSTALL_INTERFACE:include>)
-
-target_link_libraries(Neon PRIVATE
-        Eigen3::Eigen
-        igl::core
-        igl::opengl_glfw
-        solvers
-        utilities)
-
-file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_BINARY_DIR})
+#add_executable(Neon src/main.cpp)
+#
+#target_include_directories(${PROJECT_NAME} PUBLIC
+#        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}}/include>
+#        $<INSTALL_INTERFACE:include>)
+#
+#target_link_libraries(Neon PRIVATE
+#        Eigen3::Eigen
+#        igl::core
+#        igl::opengl_glfw
+#        solvers
+#        utilities)
+#
+#file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_BINARY_DIR})
 
 add_subdirectory(solvers)
 add_subdirectory(utilities)
 add_subdirectory(meshing)
+add_subdirectory(visualizer)
