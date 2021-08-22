@@ -2,5 +2,12 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/build/bin/_deps/libigl-src" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/build/bin/_deps/libigl-src/external/eigen" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/build/bin/_deps/libigl-src/external/glad" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/build/bin/_deps/libigl-src/external/glfw" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/build/bin/_deps/libigl-src/external/imgui" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/build/bin/_deps/libigl-src/external/imguizmo" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/build/build/bin/_deps/libigl-src/external/libigl-imgui" vcs="Git" />
   </component>
 </project>

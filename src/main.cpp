@@ -1,7 +1,12 @@
-#include <iostream>
+#include <Eigen/Core>
 #include <Eigen/Dense>
-#include <igl/readOBJ.h>
+#include <cassert>
+#include <filesystem>
 #include <igl/opengl/glfw/Viewer.h>
+#include <igl/readOBJ.h>
+#include <iostream>
+#include <solvers/LinearElastic.h>
+#include <string>
 
 int main() {
     Eigen::MatrixXd V;
@@ -12,6 +17,9 @@ int main() {
 
     viewer.data().set_mesh(V, F);
     viewer.launch();
+
+    LinearElastic e;
+    e.Solve();
 
     return 0;
 }
