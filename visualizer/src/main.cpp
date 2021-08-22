@@ -9,18 +9,24 @@
 #include <Eigen/Core>
 #include <filesystem>
 #include <igl/opengl/glfw/Viewer.h>
-#include <igl/readOBJ.h>
 #include <utilities/math/LinearAlgebra.h>
+#include <visualizer/Visualizer.h>
 
 int main() {
+// Igl's viewer requires vertex matrices to be doubles, fail if unset
+#ifndef NEON_USE_DOUBLE
+    throw std::runtime_exception("Please enable NEON_USE_DOUBLE to use igl viewer.");
+#endif
     MatrixXr V;
     MatrixX<int> F;
 
     igl::readOBJ("Assets/armadillo.obj", V, F);
-    igl::opengl::glfw::Viewer viewer;
 
-    viewer.data().set_mesh(V, F);
-    viewer.launch();
+    NEON_ASSERT_WARN(V.cols() == 3, "Reading Vertex asset likely failed!");
+
+    const auto visualizer = std::make_unique<visualizer::Visualizer>();
+    visualizer->SetMesh(V, F);
+    visualizer->Launch();
 
     return 0;
 }

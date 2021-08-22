@@ -23,6 +23,7 @@ using Real = double;
 using Real = float;
 #endif
 
+// Reals
 // Dense Vector Types
 using Vector2r = Eigen::Matrix<Real, 2, 1>;
 using Vector3r = Eigen::Matrix<Real, 3, 1>;
@@ -42,6 +43,27 @@ using MatrixXr = Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;
 
 // Sparse MatrixTypes
 using SparseMatrixXr = Eigen::SparseMatrix<Real>;
+
+// Integers
+// Dense Vector Types
+using Vector2i = Eigen::Matrix<int, 2, 1>;
+using Vector3i = Eigen::Matrix<int, 3, 1>;
+using Vector4i = Eigen::Matrix<int, 4, 1>;
+using Vector6i = Eigen::Matrix<int, 6, 1>;
+using Vector12i = Eigen::Matrix<int, 12, 1>;
+using VectorXi = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+
+// Dense Matrix Types
+using Matrix2i = Eigen::Matrix<int, 2, 2>;
+using Matrix3i = Eigen::Matrix<int, 3, 3>;
+using Matrix4i = Eigen::Matrix<int, 4, 4>;
+using Matrix6i = Eigen::Matrix<int, 6, 6>;
+using Matrix36i = Eigen::Matrix<int, 3, 6>;
+using Matrix12i = Eigen::Matrix<int, 12, 12>;
+using MatrixXi = Eigen::Matrix<int, Eigen::Dynamic, Eigen::Dynamic>;
+
+// Sparse MatrixTypes
+using SparseMatrixXi = Eigen::SparseMatrix<int>;
 
 template<typename T>
 using VectorX = Eigen::Matrix<T, Eigen::Dynamic, 1>;
