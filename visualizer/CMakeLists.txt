@@ -13,4 +13,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         solvers
         utilities)
 
-file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

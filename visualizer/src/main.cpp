@@ -16,7 +16,7 @@ int main() {
     MatrixXr V;
     MatrixX<int> F;
 
-    igl::readOBJ("../Assets/armadillo.obj", V, F);
+    igl::readOBJ("Assets/armadillo.obj", V, F);
     igl::opengl::glfw::Viewer viewer;
 
     viewer.data().set_mesh(V, F);
