@@ -42,9 +42,8 @@ namespace solvers::materials {
                 return v;
             }
         };
-        Homogenization(utilities::math::Tensor3r implicit_surface, const Material &material_1);
-        Homogenization(utilities::math::Tensor3r implicit_surface, const Material &material_1,
-                       const Material &material_2);
+        Homogenization(Tensor3r implicit_surface, const Material &material_1);
+        Homogenization(Tensor3r implicit_surface, const Material &material_1, const Material &material_2);
         virtual ~Homogenization() = default;
 
         auto Stiffness() const -> Matrix6r { return constitutive_tensor_; }
@@ -74,9 +73,9 @@ namespace solvers::materials {
         auto ComputeHexahedron(Real a, Real b, Real c) -> std::array<MatrixXr, 4>;
 
         auto ComputeElementDegreesOfFreedom(unsigned int n_elements) -> MatrixXi;
-        auto ComputeUniqueNodes(unsigned int n_elements) -> utilities::math::Tensor3i;
-        auto ComputeUniqueDegreesOfFreedom(const MatrixXi &element_degrees_of_freedom,
-                                           const utilities::math::Tensor3i &unique_nodes) -> MatrixXi;
+        auto ComputeUniqueNodes(unsigned int n_elements) -> Tensor3i;
+        auto ComputeUniqueDegreesOfFreedom(const MatrixXi &element_degrees_of_freedom, const Tensor3i &unique_nodes)
+                -> MatrixXi;
 
         auto AssembleStiffnessMatrix(unsigned int n_degrees_of_freedom, const MatrixXi &unique_degrees_of_freedom,
                                      const MatrixXr &ke_lambda, const MatrixXr &ke_mu) -> SparseMatrixXr;
@@ -96,9 +95,9 @@ namespace solvers::materials {
         auto ComputeDisplacement(unsigned int n_degrees_of_freedom, const MatrixXr &stiffness, const MatrixXr &load,
                                  const MatrixXi &unique_degrees_of_freedom) -> MatrixXr;
         auto ComputeUnitStrainParameters(unsigned int n_elements, const std::array<MatrixXr, 4> &hexahedron)
-                -> utilities::math::Tensor3r;
+                -> Tensor3r;
 
-        auto Voxel() const -> const utilities::math::Tensor3r & { return voxel_; }
+        auto Voxel() const -> const Tensor3r & { return voxel_; }
 
     private:
         bool is_one_material_ = false;
@@ -113,19 +112,19 @@ namespace solvers::materials {
 
         Matrix6r constitutive_tensor_;
 
-        utilities::math::Tensor3r lambda_;
-        utilities::math::Tensor3r mu_;
+        Tensor3r lambda_;
+        Tensor3r mu_;
 
-        utilities::math::Tensor3r voxel_;
+        Tensor3r voxel_;
 
         Material primary_material_;
 
         MaterialCoefficients coefficients_;
 
-        // Constitutive utilities::math::Tensor Collection
+        // Constitutive Tensor Collection
         auto AssembleConstitutiveTensor(const MatrixXi &unique_degrees_of_freedom, const MatrixXr &ke_lambda,
                                         const MatrixXr &ke_mu, const MatrixXr &displacement,
-                                        const utilities::math::Tensor3r &unit_strain_parameter) -> void;
+                                        const Tensor3r &unit_strain_parameter) -> void;
     };
 }// namespace solvers::materials
 

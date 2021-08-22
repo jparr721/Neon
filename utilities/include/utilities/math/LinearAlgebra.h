@@ -346,9 +346,6 @@ namespace utilities::math {
         Eigen::Tensor<T, 3> instance_;
     };
 
-    using Tensor3r = Tensor3<Real>;
-    using Tensor3i = Tensor3<int>;
-
     auto LinSpace(Real start, Real stop, unsigned int num) -> VectorXr;
 
     template<typename Derived>
@@ -542,5 +539,10 @@ namespace utilities::math {
         out = STLVectorToEigenVector(v);
     }
 }// namespace utilities::math
+
+template<typename T>
+using Tensor3 = utilities::math::Tensor3<T>;
+using Tensor3r = utilities::math::Tensor3<Real>;
+using Tensor3i = utilities::math::Tensor3<int>;
 
 #endif//NEON_LINEARALGEBRA_H

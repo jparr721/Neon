@@ -56,3 +56,4 @@ file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_BINARY_DIR})
 
 add_subdirectory(solvers)
 add_subdirectory(utilities)
+add_subdirectory(meshing)

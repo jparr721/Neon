@@ -9,51 +9,48 @@
 #include <utility>
 
 namespace solvers::materials {
-    Homogenization::Homogenization(utilities::math::Tensor3r implicit_surface, const Material &material_1)
+    Homogenization::Homogenization(Tensor3r implicit_surface, const Material &material_1)
         : voxel_(std::move(implicit_surface)), primary_material_(material_1) {
         cell_len_x_ = voxel_.Dimension(0);
         cell_len_y_ = voxel_.Dimension(1);
         cell_len_z_ = voxel_.Dimension(2);
 
-        utilities::math::Tensor3r scalar_tensor_placeholder(voxel_.Dimensions());
+        Tensor3r scalar_tensor_placeholder(voxel_.Dimensions());
         scalar_tensor_placeholder.SetConstant(material_1.lambda);
-        lambda_ = utilities::math::Tensor3r(voxel_.Where(material_1.number).Instance() *
-                                            scalar_tensor_placeholder.Instance());
+        lambda_ = Tensor3r(voxel_.Where(material_1.number).Instance() * scalar_tensor_placeholder.Instance());
 
         scalar_tensor_placeholder.SetConstant(material_1.G);
-        mu_ = utilities::math::Tensor3r(voxel_.Where(material_1.number).Instance() *
-                                        scalar_tensor_placeholder.Instance());
+        mu_ = Tensor3r(voxel_.Where(material_1.number).Instance() * scalar_tensor_placeholder.Instance());
 
         is_one_material_ = true;
     }
 
-    Homogenization::Homogenization(utilities::math::Tensor3r implicit_surface, const Material &material_1,
-                                   const Material &material_2)
+    Homogenization::Homogenization(Tensor3r implicit_surface, const Material &material_1, const Material &material_2)
         : voxel_(std::move(implicit_surface)), primary_material_(material_1) {
         cell_len_x_ = voxel_.Dimension(0);
         cell_len_y_ = voxel_.Dimension(1);
         cell_len_z_ = voxel_.Dimension(2);
 
         // For two-material composites, we sum the material parameters
-        utilities::math::Tensor3r material_one_lambda = voxel_.Where(material_1.number);
-        utilities::math::Tensor3r scalar_tensor_placeholder(material_one_lambda.Dimensions());
+        Tensor3r material_one_lambda = voxel_.Where(material_1.number);
+        Tensor3r scalar_tensor_placeholder(material_one_lambda.Dimensions());
         scalar_tensor_placeholder.SetConstant(material_1.lambda);
         material_one_lambda.Instance() *= scalar_tensor_placeholder.Instance();
 
-        utilities::math::Tensor3r material_two_lambda = voxel_.Where(material_2.number);
+        Tensor3r material_two_lambda = voxel_.Where(material_2.number);
         scalar_tensor_placeholder.SetConstant(material_2.lambda);
         material_two_lambda.Instance() *= scalar_tensor_placeholder.Instance();
 
-        lambda_ = utilities::math::Tensor3r(material_one_lambda.Instance() + material_two_lambda.Instance());
+        lambda_ = Tensor3r(material_one_lambda.Instance() + material_two_lambda.Instance());
 
-        utilities::math::Tensor3r material_one_mu = voxel_.Where(material_1.number);
+        Tensor3r material_one_mu = voxel_.Where(material_1.number);
         scalar_tensor_placeholder.SetConstant(material_1.G);
         material_one_mu.Instance() *= scalar_tensor_placeholder.Instance();
-        utilities::math::Tensor3r material_two_mu = voxel_.Where(material_2.number);
+        Tensor3r material_two_mu = voxel_.Where(material_2.number);
         scalar_tensor_placeholder.SetConstant(material_2.G);
         material_two_mu.Instance() *= scalar_tensor_placeholder.Instance();
 
-        mu_ = utilities::math::Tensor3r(material_one_mu.Instance() + material_two_mu.Instance());
+        mu_ = Tensor3r(material_one_mu.Instance() + material_two_mu.Instance());
     }
 
     auto Homogenization::Solve() -> void {
@@ -75,7 +72,7 @@ namespace solvers::materials {
         const MatrixXr fe_mu = hexahedron.at(3);
 
         const MatrixXi element_degrees_of_freedom = ComputeElementDegreesOfFreedom(n_elements);
-        const utilities::math::Tensor3i unique_nodes_tensor = ComputeUniqueNodes(n_elements);
+        const Tensor3i unique_nodes_tensor = ComputeUniqueNodes(n_elements);
         const MatrixXi unique_degrees_of_freedom =
                 ComputeUniqueDegreesOfFreedom(element_degrees_of_freedom, unique_nodes_tensor);
 
@@ -84,7 +81,7 @@ namespace solvers::materials {
         const SparseMatrixXr F =
                 AssembleLoadMatrix(n_elements, n_degrees_of_freedom, unique_degrees_of_freedom, fe_lambda, fe_mu);
         const MatrixXr X = ComputeDisplacement(n_degrees_of_freedom, K, F, unique_degrees_of_freedom);
-        const utilities::math::Tensor3r X0 = ComputeUnitStrainParameters(n_elements, hexahedron);
+        const Tensor3r X0 = ComputeUnitStrainParameters(n_elements, hexahedron);
         AssembleConstitutiveTensor(unique_degrees_of_freedom, ke_lambda, ke_mu, X, X0);
         ComputeMaterialCoefficients();
 
@@ -203,7 +200,7 @@ namespace solvers::materials {
                     const MatrixXr J = qq * dims;
                     const MatrixXr qxyz = J.fullPivLu().solve(qq);
 
-                    utilities::math::Tensor3r B_e = utilities::math::Tensor3r(6, 3, 8);
+                    Tensor3r B_e = Tensor3r(6, 3, 8);
                     B_e.SetConstant(0);
                     const auto layers = B_e.Dimension(2);
 
@@ -253,24 +250,23 @@ namespace solvers::materials {
         VectorXi _nn = VectorXi::LinSpaced(number_of_nodes, 1, number_of_nodes);
 
         NEON_ASSERT_ERROR(_nn.size() == number_of_nodes, "Node numbers improperly formatted!", number_of_nodes);
-        const utilities::math::Tensor3i node_numbers =
-                utilities::math::Tensor3i::Expand(_nn, 1 + n_el_x, 1 + n_el_y, 1 + n_el_z);
+        const Tensor3i node_numbers = Tensor3i::Expand(_nn, 1 + n_el_x, 1 + n_el_y, 1 + n_el_z);
 
         const unsigned int node_numbers_x = node_numbers.Dimension(0) - 1;
         const unsigned int node_numbers_y = node_numbers.Dimension(1) - 1;
         const unsigned int node_numbers_z = node_numbers.Dimension(2) - 1;
 
-        utilities::math::Tensor3i _dof(node_numbers_x, node_numbers_y, node_numbers_z);
+        Tensor3i _dof(node_numbers_x, node_numbers_y, node_numbers_z);
         for (auto x = 0u; x < node_numbers_x; ++x) {
             for (auto y = 0u; y < node_numbers_y; ++y) {
                 for (auto z = 0u; z < node_numbers_z; ++z) { _dof(x, y, z) = node_numbers.At(x, y, z); }
             }
         }
 
-        utilities::math::Tensor3i three(_dof.Dimensions());
+        Tensor3i three(_dof.Dimensions());
         three.SetConstant(3);
         _dof.Instance() *= three.Instance();
-        utilities::math::Tensor3i one(_dof.Dimensions());
+        Tensor3i one(_dof.Dimensions());
         one.SetConstant(1);
         _dof.Instance() += one.Instance();
 
@@ -294,17 +290,18 @@ namespace solvers::materials {
         return _edof_lhs + _edof_rhs;
     }
 
-    auto Homogenization::ComputeUniqueNodes(unsigned int n_elements) -> utilities::math::Tensor3i {
+    auto Homogenization::ComputeUniqueNodes(unsigned int n_elements) -> Tensor3i {
         NEON_ASSERT_ERROR(voxel_.Dimensions().size() == 3, "Voxel is improperly shaped");
         const unsigned int n_el_x = voxel_.Dimension(0);
         const unsigned int n_el_y = voxel_.Dimension(1);
         const unsigned int n_el_z = voxel_.Dimension(2);
+        NEON_ASSERT_ERROR(n_el_x > 0 && n_el_y > 0 && n_el_z > 0, "Voxel dims are zero!");
 
         const VectorXi _uniq_el = VectorXi::LinSpaced(n_elements, 1, n_elements);
 
-        utilities::math::Tensor3i _uniq_t_1 = utilities::math::Tensor3i::Expand(_uniq_el, n_el_x, n_el_y, n_el_z);
+        Tensor3i _uniq_t_1 = Tensor3i::Expand(_uniq_el, n_el_x, n_el_y, n_el_z);
 
-        utilities::math::Tensor3i _index_tensor((_uniq_t_1.Dimensions().array() + 1).matrix());
+        Tensor3i _index_tensor((_uniq_t_1.Dimensions().array() + 1).matrix());
 
         // Extend with a mirror of the back border
         std::vector<VectorXi> back_borders;
@@ -313,9 +310,8 @@ namespace solvers::materials {
             back_borders.emplace_back(_uniq_t_1.At(layer_idx, row));
         }
 
-        utilities::math::Tensor3i _uniq_t_2 =
-                _uniq_t_1.Append(back_borders, utilities::math::Tensor3i::InsertOpIndex::kEnd,
-                                 utilities::math::Tensor3i::OpOrientation::kRow);
+        Tensor3i _uniq_t_2 =
+                _uniq_t_1.Append(back_borders, Tensor3i::InsertOpIndex::kEnd, Tensor3i::OpOrientation::kRow);
 
         // Extend with a mirror of the left border
         std::vector<VectorXi> left_borders;
@@ -324,17 +320,16 @@ namespace solvers::materials {
             left_borders.emplace_back(_uniq_t_2.Col(layer_idx, col));
         }
 
-        utilities::math::Tensor3i _uniq_t_3 =
-                _uniq_t_2.Append(left_borders, utilities::math::Tensor3i::InsertOpIndex::kEnd,
-                                 utilities::math::Tensor3i::OpOrientation::kCol);
+        Tensor3i _uniq_t_3 =
+                _uniq_t_2.Append(left_borders, Tensor3i::InsertOpIndex::kEnd, Tensor3i::OpOrientation::kCol);
 
         // Finally, extend with a mirror of the top border
         const MatrixXi first_layer = _uniq_t_3.At(0);
-        return _uniq_t_3.Append(first_layer, utilities::math::Tensor3i::InsertOpIndex::kEnd);
+        return _uniq_t_3.Append(first_layer, Tensor3i::InsertOpIndex::kEnd);
     }
 
     auto Homogenization::ComputeUniqueDegreesOfFreedom(const MatrixXi &element_degrees_of_freedom,
-                                                       const utilities::math::Tensor3i &unique_nodes) -> MatrixXi {
+                                                       const Tensor3i &unique_nodes) -> MatrixXi {
         const unsigned int n_nodes = (voxel_.Dimensions().array() + 1).matrix().prod();
 
         VectorXi _dof = VectorXi::Ones(3 * n_nodes);
@@ -488,10 +483,9 @@ namespace solvers::materials {
     }
 
     auto Homogenization::ComputeUnitStrainParameters(const unsigned int n_elements,
-                                                     const std::array<MatrixXr, 4> &hexahedron)
-            -> utilities::math::Tensor3r {
+                                                     const std::array<MatrixXr, 4> &hexahedron) -> Tensor3r {
         // Unit strain displacements
-        utilities::math::Tensor3r X0(n_elements, 24, 6);
+        Tensor3r X0(n_elements, 24, 6);
 
         // Element displacements for each of the 6 epison strains
         MatrixXr X0_epsilon = MatrixXr::Zero(24, 6);
@@ -541,8 +535,8 @@ namespace solvers::materials {
 
     auto Homogenization::AssembleConstitutiveTensor(const MatrixXi &unique_degrees_of_freedom,
                                                     const MatrixXr &ke_lambda, const MatrixXr &ke_mu,
-                                                    const MatrixXr &displacement,
-                                                    const utilities::math::Tensor3r &unit_strain_parameter) -> void {
+                                                    const MatrixXr &displacement, const Tensor3r &unit_strain_parameter)
+            -> void {
         const unsigned int rows = voxel_.Dimension(0);
         const unsigned int cols = voxel_.Dimension(1);
         const unsigned int layers = voxel_.Dimension(2);
@@ -572,19 +566,17 @@ namespace solvers::materials {
 
                 const VectorXr sum_M = prod_M.rowwise().sum();
 
-                utilities::math::Tensor3r lambda_contribution = utilities::math::Tensor3r(
-                        lambda_.Instance() * utilities::math::Tensor3r::Expand(sum_L, lambda_.Dimension(0),
-                                                                               lambda_.Dimension(1),
-                                                                               lambda_.Dimension(2))
-                                                     .Instance());
+                Tensor3r lambda_contribution =
+                        Tensor3r(lambda_.Instance() * Tensor3r::Expand(sum_L, lambda_.Dimension(0),
+                                                                       lambda_.Dimension(1), lambda_.Dimension(2))
+                                                              .Instance());
 
-                utilities::math::Tensor3r mu_contribution = utilities::math::Tensor3r(
+                Tensor3r mu_contribution = Tensor3r(
                         mu_.Instance() *
-                        utilities::math::Tensor3r::Expand(sum_M, mu_.Dimension(0), mu_.Dimension(1), mu_.Dimension(2))
-                                .Instance());
+                        Tensor3r::Expand(sum_M, mu_.Dimension(0), mu_.Dimension(1), mu_.Dimension(2)).Instance());
 
                 const Real contribution_sum =
-                        utilities::math::Tensor3r(lambda_contribution.Instance() + mu_contribution.Instance()).Sum();
+                        Tensor3r(lambda_contribution.Instance() + mu_contribution.Instance()).Sum();
 
                 constitutive_tensor_(i, j) = static_cast<Real>(1) / volume * contribution_sum;
             }

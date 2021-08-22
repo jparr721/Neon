@@ -7,6 +7,7 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
+#include <string>
 #include <utilities/math/LinearAlgebra.h>
 
 #ifndef NEON_MATERIAL_H
@@ -38,6 +39,6 @@ namespace solvers::materials {
     Material MaterialFromLameCoefficients(unsigned int number, const std::string &name, Real G, Real lambda);
 
     Material MaterialFromEandv(unsigned int number, const std::string &name, Real E, Real v);
-}// namespace neon::solvers
+}// namespace solvers::materials
 
 #endif//NEON_MATERIAL_H

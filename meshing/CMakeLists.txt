@@ -1,14 +1,9 @@
-project(solvers)
+project(meshing)
 
 add_library(${PROJECT_NAME} SHARED
-        include/solvers/FEM/LinearElastic.h
-        include/solvers/materials/Homogenization.h
-
-        src/LinearElastic.cpp
-        src/Homogenization.cpp
-        include/solvers/materials/Material.h src/Material.cpp
-        src/Rve.cpp
-        include/solvers/materials/Rve.h)
+        src/MarchingCubes.cpp
+        include/meshing/MarchingCubes.h
+        src/ImplicitSurfaceGenerator.cpp include/meshing/ImplicitSurfaceGenerator.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -22,21 +17,8 @@ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Config
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen igl::core igl::opengl_glfw utilities meshing)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen igl::core utilities)
 
 install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
 install(EXPORT ${PROJECT_NAME}Config DESTINATION share/${PROJECT_NAME}/cmake)
 export(TARGETS ${PROJECT_NAME} FILE ${PROJECT_NAME}Config.cmake)
-
-add_executable(
-        ${PROJECT_NAME}HomogenizationTest
-        tests/HomogenizationTest.cpp
-)
-
-target_link_libraries(
-        ${PROJECT_NAME}HomogenizationTest
-        LINK_PUBLIC ${Boost_LIBRARIES}
-        ${PROJECT_NAME}
-        utilities
-        meshing
-)
