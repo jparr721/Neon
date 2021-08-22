@@ -1,6 +1,10 @@
 project(utilities)
 
-add_library(${PROJECT_NAME} SHARED src/LinearAlgebra.cpp include/runtime/NeonAssert.h)
+add_library(${PROJECT_NAME} SHARED
+        src/LinearAlgebra.cpp
+
+        include/utilities/math/LinearAlgebra.h
+        include/utilities/runtime/NeonAssert.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

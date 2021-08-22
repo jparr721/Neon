@@ -30,6 +30,10 @@ foreach (p LIB BIN INCLUDE CMAKE)
     endif ()
 endforeach ()
 
+if (USE_DOUBLE)
+    add_definitions(-DNEON_USE_DOUBLE)
+endif (USE_DOUBLE)
+
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 include_directories("${PROJECT_SOURCE_DIR}"
         "${PROJECT_BINARY_DIR}"
@@ -41,7 +45,12 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}}/include>
         $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(Neon PRIVATE Eigen3::Eigen igl::core igl::opengl_glfw solvers)
+target_link_libraries(Neon PRIVATE
+        Eigen3::Eigen
+        igl::core
+        igl::opengl_glfw
+        solvers
+        utilities)
 
 file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_BINARY_DIR})
 

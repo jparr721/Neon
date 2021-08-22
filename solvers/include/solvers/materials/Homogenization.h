@@ -7,11 +7,10 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
-#include <iostream>
-#include <solvers/FEM/LinearElastic.h>
+#ifndef NEON_HOMOGENIZATION_H
+#define NEON_HOMOGENIZATION_H
 
-auto neon::solvers::LinearElastic::Solve() -> void {
-    foobar.resize(10, 10);
-    foobar.setRandom();
-    std::cout << foobar << std::endl;
-}
+class Homogenization {};
+
+
+#endif//NEON_HOMOGENIZATION_H

@@ -1,11 +1,17 @@
+// This file is part of Neon, an FEM research application.
 //
-// Created by jparr on 8/21/2021.
+// Copyright (c) 2021 Jarred Parr <jarred.parr@ucdenver.edu>. All rights reserved.
+//
+// This Source Code Form is subject to the terms of the GNU General Public License v3.
+// If a copy of the GPL was not included with this file, you can
+// obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
 #include <unsupported/Eigen/CXX11/Tensor>
+#include <utilities/runtime/NeonAssert.h>
 
 #ifndef NEON_LINEARALGEBRA_H
 #define NEON_LINEARALGEBRA_H
@@ -140,10 +146,8 @@ namespace utilities::linear_algebra {
             const int rows = Dimension(0);
             const int cols = Dimension(1);
 
-            numerics_assertion.Assert(layer.rows() == rows, __FUNCTION__, __FILE__, __LINE__,
-                                      "Layer rows must match tensor dimensions");
-            numerics_assertion.Assert(layer.cols() == cols, __FUNCTION__, __FILE__, __LINE__,
-                                      "Layer cols must match tensor dimensions");
+            NEON_ASSERT_ERROR(layer.rows() == rows, "Layer rows must match tensor dimensions");
+            NEON_ASSERT_ERROR(layer.cols() == cols, "Layer cols must match tensor dimensions");
 
             for (int row = 0; row < rows; ++row) {
                 for (int col = 0; col < cols; ++col) { instance_(row, col, idx) = layer(row, col); }
@@ -197,10 +201,10 @@ namespace utilities::linear_algebra {
             int cols = Dimension(1);
             int layers = Dimension(2);
 
-            numerics_assertion.Assert(seqs.size() == layers, __FUNCTION__, __FILE__, __LINE__,
-                                      "Sequences must be able to broadcast across "
-                                      "all layers, you provided: ",
-                                      seqs.size(), " sequences, we need: ", layers);
+            NEON_ASSERT_ERROR(seqs.size() == layers,
+                              "Sequences must be able to broadcast across "
+                              "all layers, you provided: ",
+                              seqs.size(), " sequences, we need: ", layers);
 
             // Collapsed list of modified vectors in column-preserved order
             std::vector<VectorX<T>> collapsed_indices;
@@ -270,9 +274,9 @@ namespace utilities::linear_algebra {
             // Prep to add the next layer
             int layers = Dimension(2) + 1;
 
-            numerics_assertion.Assert(layer.rows() == rows && layer.cols() == cols, __FUNCTION__, __FILE__, __LINE__,
-                                      "Layer does not match dimensions, got: ", layer.rows(), " ", layer.cols(),
-                                      " wanted: ", rows, " ", cols);
+            NEON_ASSERT_ERROR(layer.rows() == rows && layer.cols() == cols,
+                              "Layer does not match dimensions, got: ", layer.rows(), " ", layer.cols(),
+                              " wanted: ", rows, " ", cols);
 
             // "resize" sweeps the tensor instance so, instead, make a new one.
             Tensor3<T> new_tensor(rows, cols, layers);

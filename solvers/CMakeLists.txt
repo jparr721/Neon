@@ -1,12 +1,12 @@
 project(solvers)
 
 add_library(${PROJECT_NAME} SHARED
-        include/FEM/LinearElastic.h
-        include/materials/Homogenization.h
+        include/solvers/FEM/LinearElastic.h
+        include/solvers/materials/Homogenization.h
 
         src/LinearElastic.cpp
         src/Homogenization.cpp
-        )
+        include/solvers/materials/Material.h src/Material.cpp)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -20,7 +20,7 @@ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Config
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen igl::core igl::opengl_glfw)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen igl::core igl::opengl_glfw utilities)
 
 install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
 install(EXPORT ${PROJECT_NAME}Config DESTINATION share/${PROJECT_NAME}/cmake)
