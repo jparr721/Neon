@@ -13,6 +13,10 @@
 #include <random>
 #include <utilities/math/LinearAlgebra.h>
 #include <utilities/runtime/NeonAssert.h>
+#include <igl/grid.h>
+#include <igl/parallel_for.h>
+#include <igl/copyleft/marching_cubes.h>
+// #include <igl/marching_cubes.h>
 #include <vector>
 
 namespace meshing {
@@ -30,7 +34,7 @@ namespace meshing {
 
     class Cube {
     public:
-        /// \Cube is an anonymous cube structure for cuboid-based inclusions.
+        /// \brief Cube is an anonymous cube structure for cuboid-based inclusions.
         /// @param rows The rows of the cube
         /// @param cols The cols of the cube
         /// @param layers The layers of the cube
@@ -94,6 +98,8 @@ namespace meshing {
             implicit_surface_.SetConstant(static_cast<T>(material_1_number_));
         }
 
+        auto Surface() const -> Tensor3<T> { return implicit_surface_; }
+
         auto Generate() -> Tensor3<T> {
             if (microstructure_ == ImplicitSurfaceMicrostructure::kComposite) {
                 behavior_ == ImplicitSurfaceCharacteristics::kIsotropic ? GenerateIsotropicMaterial()
@@ -104,9 +110,9 @@ namespace meshing {
         }
 
         auto AddSquarePaddingLayers() -> Tensor3<T> {
-            const int rows = implicit_surface_.Dimension(0) + 2;
-            const int cols = implicit_surface_.Dimension(1) + 2;
-            const int layers = implicit_surface_.Dimension(2) + 2;
+            const int rows = implicit_surface_.Dimension(0);
+            const int cols = implicit_surface_.Dimension(1);
+            const int layers = implicit_surface_.Dimension(2);
 
             Tensor3<T> new_surface(rows, cols, layers);
 
@@ -117,13 +123,64 @@ namespace meshing {
                             col == cols - 1) {
                             new_surface(row, col, layer) = 0;
                         } else {
-                            new_surface(row, col, layer) = implicit_surface_(row - 1, col - 1, layer - 1);
+                            new_surface(row, col, layer) = implicit_surface_(row, col, layer);
                         }
                     }
                 }
             }
 
             return new_surface;
+        }
+
+        auto GenerateImplicitFunctionBasedMaterial(MatrixXr& V, MatrixXi& F) -> void {
+            const int rows = implicit_surface_.Dimension(0);
+            const int cols = implicit_surface_.Dimension(1);
+            const int layers = implicit_surface_.Dimension(2);
+
+            MatrixXr GV;
+            RowVector3i resolution(rows, cols, layers);
+            igl::grid(resolution, GV);
+
+            if (behavior_ == ImplicitSurfaceCharacteristics::kIsotropic) {
+                const int voids_per_row = inclusion_.n_inclusions / inclusion_.rows;
+
+                NEON_ASSERT_WARN(voids_per_row * inclusion_.rows == inclusion_.n_inclusions,
+                                 "Invalid division rounding, this might cause problems");
+
+                int n_voids_in_row = 0;
+
+                VectorXr y_axis_origins = utilities::math::LinSpace(
+                    inclusion_.rows + inclusion_.area,
+                    (rows + 1 - (inclusion_.rows + inclusion_.area)),
+                    inclusion_.rows);
+                y_axis_origins -= VectorXr::Ones(y_axis_origins.rows());
+
+                VectorXr x_axis_origins = utilities::math::LinSpace(
+                    inclusion_.cols + inclusion_.area,
+                    (cols + 1 - (inclusion_.cols + inclusion_.area)),
+                    inclusion_.cols);
+                x_axis_origins -= VectorXr::Ones(x_axis_origins.rows());
+
+                VectorXr Gf(GV.rows());
+                igl::parallel_for(GV.rows(), [&](const int i) {
+                    const Vector3r pos = GV.row(i);
+
+                    // If the position lines up with surface padding start,
+                    // begin adding data as voids.
+                    // if (i % rows >= inclusion_.area && i % rows <= inclusion_.area) {
+                    //     Gf(i) =  0;
+                    // } else {
+                    //     Gf(i) = 1;
+                    // }
+                    Gf(i) = 1;
+                 });
+
+                implicit_surface_ = Tensor3<T>::Expand(Gf, rows, cols, layers);
+                implicit_surface_ = AddSquarePaddingLayers();
+                Gf = implicit_surface_.Vector();
+
+                igl::copyleft::marching_cubes(Gf, GV, rows, cols, layers, 0, V, F);
+            }
         }
 
         auto Info() -> GeneratorInfo { return info_; }
@@ -280,6 +337,7 @@ namespace meshing {
 
             return implicit_surface_;
         }
+
 
         // Shape Generators
         auto MakeShapedIndices(const Vector2<unsigned> &centroid, const Vector3<unsigned> &shape,

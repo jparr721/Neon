@@ -28,6 +28,7 @@ namespace meshing {
         Mesh(const std::string &file_path, MeshFileType file_type);
         Mesh(const std::string &file_path, const std::string &tetgen_flags, MeshFileType file_type);
         Mesh(const MatrixXr &V, const MatrixXi &F);
+        Mesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags);
 
         auto Update(const VectorXr &displacements) -> void;
 

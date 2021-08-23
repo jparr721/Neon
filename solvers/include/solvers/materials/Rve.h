@@ -29,6 +29,8 @@ namespace solvers::materials {
         auto ComputeRenderableMesh(MatrixXr &V, MatrixX<int> &F) -> void;
         auto ComputeSurfaceMesh() -> void;
         auto ComputeSurfaceMesh(const Vector3<int> &inclusion_size, int n_inclusions, bool is_isotropic) -> void;
+        auto ComputeGridMesh(const Vector3<int> &inclusion_size, int n_inclusions, bool is_isotropic,
+        MatrixXr& V, MatrixXi& F) -> void;
 
         auto Height() const noexcept -> unsigned int { return height_; }
         auto Width() const noexcept -> unsigned int { return width_; }

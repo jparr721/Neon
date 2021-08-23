@@ -32,6 +32,10 @@ meshing::Mesh::Mesh(const MatrixXr &V, const MatrixXi &F) {
     rest_positions = utilities::math::MatrixToVector(V);
 }
 
+meshing::Mesh::Mesh(const MatrixXr& V, const MatrixXi& F, const std::string& tetgen_flags) {
+    ReloadMesh(V, F, tetgen_flags);
+}
+
 auto meshing::Mesh::Update(const VectorXr &displacements) -> void {}
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void { ReloadMesh(V, F, "zpq"); }

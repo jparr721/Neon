@@ -32,6 +32,10 @@ using Vector6r = Eigen::Matrix<Real, 6, 1>;
 using Vector12r = Eigen::Matrix<Real, 12, 1>;
 using VectorXr = Eigen::Matrix<Real, Eigen::Dynamic, 1>;
 
+// Dense Row Vector Types
+using RowVector3r = Eigen::Matrix<Real, 1, 3>;
+using RowVectorXr = Eigen::Matrix<Real, 1, Eigen::Dynamic>;
+
 // Dense Matrix Types
 using Matrix2r = Eigen::Matrix<Real, 2, 2>;
 using Matrix3r = Eigen::Matrix<Real, 3, 3>;
@@ -52,6 +56,10 @@ using Vector4i = Eigen::Matrix<int, 4, 1>;
 using Vector6i = Eigen::Matrix<int, 6, 1>;
 using Vector12i = Eigen::Matrix<int, 12, 1>;
 using VectorXi = Eigen::Matrix<int, Eigen::Dynamic, 1>;
+
+// Dense Row Vector Types
+using RowVector3i = Eigen::Matrix<int, 1, 3>;
+using RowVectorXi = Eigen::Matrix<int, 1, Eigen::Dynamic>;
 
 // Dense Matrix Types
 using Matrix2i = Eigen::Matrix<int, 2, 2>;
@@ -107,7 +115,6 @@ namespace utilities::math {
         Tensor3() = default;
 
         explicit Tensor3(const Eigen::Tensor<T, 3> &instance) : instance_(instance) {}
-
         explicit Tensor3(const Vector3<int> &dims) { Resize(dims.x(), dims.y(), dims.z()); }
 
         Tensor3(int rows, int cols, int layers) { Resize(rows, cols, layers); }

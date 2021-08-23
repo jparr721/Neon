@@ -10,16 +10,24 @@
 #include <filesystem>
 #include <igl/opengl/glfw/Viewer.h>
 #include <utilities/math/LinearAlgebra.h>
+#include <solvers/materials/Material.h>
+#include <solvers/materials/Rve.h>
 #include <visualizer/Visualizer.h>
+#include <meshing/Mesh.h>
+#include <igl/grid.h>
 
 int main() {
 // Igl's viewer requires vertex matrices to be doubles, fail if unset
 #ifndef NEON_USE_DOUBLE
     throw std::runtime_exception("Please enable NEON_USE_DOUBLE to use igl viewer.");
 #endif
-    const auto mesh = std::make_shared<meshing::Mesh>("Assets/armadillo.obj", meshing::MeshFileType::kObj);
+    // const auto mesh = std::make_shared<meshing::Mesh>("Assets/armadillo.obj", meshing::MeshFileType::kObj);
+    const auto rve = std::make_unique<solvers::materials::Rve>(
+            Vector3i(10, 10, 10), solvers::materials::MaterialFromEandv(1, "mat_1", 10000, 0.3));
+    MatrixXr V;
+    MatrixXi F;
+    rve->ComputeGridMesh(Vector3i(2, 2, 2), 20, true, V, F);
+    const auto mesh = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
     const auto visualizer = std::make_unique<visualizer::Visualizer>(mesh);
     visualizer->Launch();
-
-    return 0;
 }
