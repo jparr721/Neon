@@ -14,11 +14,9 @@
 #include <utilities/math/LinearAlgebra.h>
 
 namespace meshing {
-    enum class MeshFileType {
-        kObj = 0,
-        kPly,
-        kOff,
-    };
+    enum class MeshFileType { kObj = 0, kPly, kOff, kUnsupported };
+
+    auto ReadFileExtension(const std::string &filename) -> MeshFileType;
 
     class Mesh {
     public:
@@ -33,8 +31,14 @@ namespace meshing {
 
         auto Update(const VectorXr &displacements) -> void;
 
-        auto ReloadMesh(const MatrixXr &V, const MatrixXi &F);
-        auto ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags);
+        auto ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void;
+        auto ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags) -> void;
+        auto ReloadMesh(const std::string &file_path, MeshFileType file_type) -> void;
+
+        auto RenderablePositions() -> MatrixXr;
+
+    private:
+        auto ReadFile(const std::string &file_path, MeshFileType file_type, MatrixXr &V, MatrixXi &F) -> void;
     };
 }// namespace meshing
 

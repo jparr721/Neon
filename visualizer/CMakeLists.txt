@@ -12,6 +12,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         igl::opengl
         igl::opengl_glfw
         igl::opengl_glfw_imgui
+        meshing
         solvers
         utilities)
 

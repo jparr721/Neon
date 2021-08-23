@@ -3,7 +3,12 @@ project(meshing)
 add_library(${PROJECT_NAME} SHARED
         src/MarchingCubes.cpp
         include/meshing/MarchingCubes.h
-        src/ImplicitSurfaceGenerator.cpp include/meshing/ImplicitSurfaceGenerator.h src/Mesh.cpp include/meshing/Mesh.h)
+
+        src/ImplicitSurfaceGenerator.cpp
+        include/meshing/ImplicitSurfaceGenerator.h
+
+        src/Mesh.cpp
+        include/meshing/Mesh.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

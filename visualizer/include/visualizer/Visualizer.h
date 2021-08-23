@@ -14,12 +14,13 @@
 #include <igl/opengl/glfw/imgui/ImGuiHelpers.h>
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <imgui/imgui.h>
+#include <meshing/Mesh.h>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace visualizer {
     class Visualizer {
     public:
-        Visualizer();
+        explicit Visualizer(std::shared_ptr<meshing::Mesh> mesh);
 
         auto Viewer() const -> const igl::opengl::glfw::Viewer & { return viewer_; }
 
@@ -27,13 +28,21 @@ namespace visualizer {
 
         auto Launch() -> void;
 
-        auto SetMesh(const MatrixXr &V, const MatrixXi &F) -> void;
-
         auto AddObjectToViewer() -> void;
 
+        auto Refresh() -> void;
+        auto UpdateVertexPositions(const VectorXr &displacements) -> void;
+
     private:
+        Real pixel_ratio_;
+        Real hidpi_scaling_;
+
         igl::opengl::glfw::Viewer viewer_;
         igl::opengl::glfw::imgui::ImGuiMenu menu_;
+
+        std::shared_ptr<meshing::Mesh> mesh_;
+
+        auto GeneratorMenu() -> void;
     };
 }// namespace visualizer
 

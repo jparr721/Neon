@@ -17,15 +17,8 @@ int main() {
 #ifndef NEON_USE_DOUBLE
     throw std::runtime_exception("Please enable NEON_USE_DOUBLE to use igl viewer.");
 #endif
-    MatrixXr V;
-    MatrixX<int> F;
-
-    igl::readOBJ("Assets/armadillo.obj", V, F);
-
-    NEON_ASSERT_WARN(V.cols() == 3, "Reading Vertex asset likely failed!");
-
-    const auto visualizer = std::make_unique<visualizer::Visualizer>();
-    visualizer->SetMesh(V, F);
+    const auto mesh = std::make_shared<meshing::Mesh>("Assets/armadillo.obj", meshing::MeshFileType::kObj);
+    const auto visualizer = std::make_unique<visualizer::Visualizer>(mesh);
     visualizer->Launch();
 
     return 0;
