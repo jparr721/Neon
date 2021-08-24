@@ -162,17 +162,22 @@ namespace meshing {
                 x_axis_origins -= VectorXr::Ones(x_axis_origins.rows());
 
                 VectorXr Gf(GV.rows());
+
+                thread_local int current_cube_size = 0;
                 igl::parallel_for(GV.rows(), [&](const int i) {
                     const Vector3r pos = GV.row(i);
+                    const Real x = pos.x();
+                    const Real y = pos.y();
+
+                    // Y must be at the right point
 
                     // If the position lines up with surface padding start,
                     // begin adding data as voids.
-                    // if (i % rows >= inclusion_.area && i % rows <= inclusion_.area) {
-                    //     Gf(i) =  0;
-                    // } else {
-                    //     Gf(i) = 1;
-                    // }
-                    Gf(i) = 1;
+                    if (i % rows >= inclusion_.area && i % rows <= inclusion_.area) {
+                        Gf(i) =  0;
+                    } else {
+                        Gf(i) = 1;
+                    }
                  });
 
                 implicit_surface_ = Tensor3<T>::Expand(Gf, rows, cols, layers);

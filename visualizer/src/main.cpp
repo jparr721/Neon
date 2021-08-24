@@ -21,7 +21,6 @@ int main() {
 #ifndef NEON_USE_DOUBLE
     throw std::runtime_exception("Please enable NEON_USE_DOUBLE to use igl viewer.");
 #endif
-    // const auto mesh = std::make_shared<meshing::Mesh>("Assets/armadillo.obj", meshing::MeshFileType::kObj);
     const auto rve = std::make_unique<solvers::materials::Rve>(
             Vector3i(10, 10, 10), solvers::materials::MaterialFromEandv(1, "mat_1", 10000, 0.3));
     MatrixXr V;
