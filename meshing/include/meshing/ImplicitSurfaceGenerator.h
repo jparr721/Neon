@@ -10,13 +10,13 @@
 #ifndef NEON_IMPLICITSURFACEGENERATOR_H
 #define NEON_IMPLICITSURFACEGENERATOR_H
 
+#include <igl/copyleft/marching_cubes.h>
+#include <igl/grid.h>
+#include <igl/parallel_for.h>
 #include <random>
 #include <utilities/math/LinearAlgebra.h>
 #include <utilities/runtime/NeonAssert.h>
-#include <igl/grid.h>
-#include <igl/parallel_for.h>
-#include <igl/copyleft/marching_cubes.h>
-// #include <igl/marching_cubes.h>
+#include <utilities/runtime/NeonLog.h>
 #include <vector>
 
 namespace meshing {
@@ -132,7 +132,7 @@ namespace meshing {
             return new_surface;
         }
 
-        auto GenerateImplicitFunctionBasedMaterial(MatrixXr& V, MatrixXi& F) -> void {
+        auto GenerateImplicitFunctionBasedMaterial(MatrixXr &V, MatrixXi &F, const int thickness = 1) -> void {
             const int rows = implicit_surface_.Dimension(0);
             const int cols = implicit_surface_.Dimension(1);
             const int layers = implicit_surface_.Dimension(2);
@@ -142,53 +142,57 @@ namespace meshing {
             igl::grid(resolution, GV);
 
             if (behavior_ == ImplicitSurfaceCharacteristics::kIsotropic) {
-                const int voids_per_row = inclusion_.n_inclusions / inclusion_.rows;
+                const int n_rows = inclusion_.n_inclusions / inclusion_.rows;
+                const int n_cols = inclusion_.n_inclusions / n_rows;
+                const int x_interval_pad = (rows - (inclusion_.cols + thickness) * n_cols) / 2;
 
-                NEON_ASSERT_WARN(voids_per_row * inclusion_.rows == inclusion_.n_inclusions,
-                                 "Invalid division rounding, this might cause problems");
+                // Pre-calculate the starting zones for x
+                VectorXi x_starting_positions =
+                        VectorXi::LinSpaced(n_cols, x_interval_pad, cols - x_interval_pad - inclusion_.cols);
 
-                int n_voids_in_row = 0;
+                if (cols - x_starting_positions(x_starting_positions.rows() - 1) != x_starting_positions.x()) {
+                    NEON_LOG_WARN("Uneven surface found! No longer isotropic. Attempting fix");
+                    FixColumnStartingPositions(cols, x_starting_positions);
+                }
+                const VectorXi y_starting_positions =
+                        VectorXi::LinSpaced(n_rows, inclusion_.rows, rows - inclusion_.rows * 2);
 
-                VectorXr y_axis_origins = utilities::math::LinSpace(
-                    inclusion_.rows + inclusion_.area,
-                    (rows + 1 - (inclusion_.rows + inclusion_.area)),
-                    inclusion_.rows);
-                y_axis_origins -= VectorXr::Ones(y_axis_origins.rows());
 
-                VectorXr x_axis_origins = utilities::math::LinSpace(
-                    inclusion_.cols + inclusion_.area,
-                    (cols + 1 - (inclusion_.cols + inclusion_.area)),
-                    inclusion_.cols);
-                x_axis_origins -= VectorXr::Ones(x_axis_origins.rows());
-
-                VectorXr Gf(GV.rows());
-
-                thread_local int current_cube_size = 0;
-                igl::parallel_for(GV.rows(), [&](const int i) {
-                    const Vector3r pos = GV.row(i);
-                    const Real x = pos.x();
-                    const Real y = pos.y();
-
-                    // Y must be at the right point
-
-                    // If the position lines up with surface padding start,
-                    // begin adding data as voids.
-                    if (i % rows >= inclusion_.area && i % rows <= inclusion_.area) {
-                        Gf(i) =  0;
-                    } else {
-                        Gf(i) = 1;
+                implicit_surface_.SetConstant(1);
+                for (int layer = 0; layer < layers; ++layer) {
+                    for (int y_i = 0; y_i < n_rows; ++y_i) {
+                        const int y = y_starting_positions(y_i);
+                        for (int j = y; j < y + inclusion_.rows; ++j) {
+                            for (int x_i = 0; x_i < n_cols; ++x_i) {
+                                const int x = x_starting_positions(x_i);
+                                for (int i = x; i < x + inclusion_.cols; ++i) { implicit_surface_(j, i, layer) = 0; }
+                            }
+                        }
                     }
-                 });
+                }
 
-                implicit_surface_ = Tensor3<T>::Expand(Gf, rows, cols, layers);
                 implicit_surface_ = AddSquarePaddingLayers();
-                Gf = implicit_surface_.Vector();
+                const VectorXr Gf = implicit_surface_.Vector();
 
                 igl::copyleft::marching_cubes(Gf, GV, rows, cols, layers, 0, V, F);
             }
         }
 
         auto Info() -> GeneratorInfo { return info_; }
+
+        auto FixColumnStartingPositions(const int cols, VectorXi &x_starting_positions) -> void {
+            const int start_padding = x_starting_positions.x();
+            const int end_padding = cols - (x_starting_positions(x_starting_positions.rows() - 1) + inclusion_.cols);
+            const int padding_diff = end_padding - start_padding;
+
+            if (padding_diff % 2 == 0) {
+                x_starting_positions.array() += padding_diff / 2;
+            } else {
+                NEON_LOG_WARN("Unable to fix isotropic padding due to invalid number of available columns, have: ",
+                              cols, " padding: ", padding_diff);
+                return;
+            }
+        }
 
     private:
         ImplicitSurfaceCharacteristics behavior_;

@@ -4,7 +4,7 @@ add_library(${PROJECT_NAME} SHARED
         src/LinearAlgebra.cpp
 
         include/utilities/math/LinearAlgebra.h
-        include/utilities/runtime/NeonAssert.h)
+        include/utilities/runtime/NeonAssert.h include/utilities/runtime/NeonLog.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -31,6 +31,17 @@ add_executable(
 
 target_link_libraries(
         ${PROJECT_NAME}AssertionTest
+        LINK_PUBLIC ${Boost_LIBRARIES}
+        ${PROJECT_NAME}
+)
+
+add_executable(
+        ${PROJECT_NAME}LinearAlgebraTest
+        tests/LinearAlgebraTest.cpp
+)
+
+target_link_libraries(
+        ${PROJECT_NAME}LinearAlgebraTest
         LINK_PUBLIC ${Boost_LIBRARIES}
         ${PROJECT_NAME}
 )

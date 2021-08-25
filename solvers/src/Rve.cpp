@@ -78,7 +78,7 @@ auto solvers::materials::Rve::ComputeSurfaceMesh(const Vector3<int> &inclusion_s
 }
 
 auto solvers::materials::Rve::ComputeGridMesh(const Vector3<int> &inclusion_size, const int n_inclusions,
-                                                 const bool is_isotropic, MatrixXr& V, MatrixXi& F) -> void {
+                                              const bool is_isotropic, MatrixXr &V, MatrixXi &F) -> void {
     const meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{
             n_inclusions, inclusion_size.x(), inclusion_size.x(), inclusion_size.y(), inclusion_size.z(),
     };

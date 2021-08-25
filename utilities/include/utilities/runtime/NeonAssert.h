@@ -42,7 +42,7 @@ namespace utilities::assert {
 
         const auto formatter = [](const std::string &func, const std::string &f, const int l) -> std::ostringstream {
             std::ostringstream ss;
-            ss << "Assertion failed in " << f << "()[line:" << l << "] " << func << ": ";
+            ss << "Assertion failed in " << f << "[line:" << l << "] " << func << "(): ";
             return ss;
         };
         switch (level) {

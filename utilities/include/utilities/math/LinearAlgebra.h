@@ -128,7 +128,8 @@ namespace utilities::math {
         auto Matrix() const -> MatrixX<T> {
             const int rows = Dimension(0) * Dimension(2);
             const int cols = Dimension(1);
-            return Matrix();
+            const T *d = instance_.data();
+            return Eigen::Map<const MatrixX<T>>(d, rows, cols);
         }
 
         auto Vector() const -> VectorX<T> {
@@ -172,15 +173,15 @@ namespace utilities::math {
             return m;
         }
 
-        auto SetLayer(const int idx, const MatrixX<T> &layer) -> void {
+        auto SetLayer(const int layer, const MatrixX<T> &data) -> void {
             const int rows = Dimension(0);
             const int cols = Dimension(1);
 
-            NEON_ASSERT_ERROR(layer.rows() == rows, "Layer rows must match tensor dimensions");
-            NEON_ASSERT_ERROR(layer.cols() == cols, "Layer cols must match tensor dimensions");
+            NEON_ASSERT_ERROR(data.rows() == rows, "Layer rows must match tensor dimensions");
+            NEON_ASSERT_ERROR(data.cols() == cols, "Layer cols must match tensor dimensions");
 
             for (int row = 0; row < rows; ++row) {
-                for (int col = 0; col < cols; ++col) { instance_(row, col, idx) = layer(row, col); }
+                for (int col = 0; col < cols; ++col) { instance_(row, col, layer) = data(row, col); }
             }
         }
 
@@ -200,6 +201,19 @@ namespace utilities::math {
             for (int row = 0; row < rows; ++row) { v(row) = instance_(row, col, layer); }
 
             return v;
+        }
+
+        auto SetCol(const int layer, const int col, const VectorX<T> &data) -> void {
+            NEON_ASSERT_ERROR(data.rows() == Dimension(0),
+                              "Rows of new data must match the existing dimensions of the tensor");
+            const int rows = Dimension(0);
+
+            for (int row = 0; row < rows; ++row) { instance_(row, col, layer) = data(row); }
+        }
+
+        auto SetColConstant(const int layer, const int col, const T value) -> void {
+            const VectorX<T> data = VectorX<T>::Constant(Dimension(0), value);
+            SetCol(layer, col, data);
         }
 
         auto Where(T value) const -> Tensor3<T> {
