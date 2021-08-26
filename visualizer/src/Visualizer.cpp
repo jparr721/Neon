@@ -8,6 +8,7 @@
 //
 #include <igl/file_dialog_open.h>
 #include <visualizer/Visualizer.h>
+#include <utilities/runtime/NeonLog.h>
 
 #include <utility>
 
@@ -114,5 +115,12 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
         make_checkbox("Show vertex labels", viewer_.data().show_vertex_labels);
         make_checkbox("Show faces labels", viewer_.data().show_face_labels);
         make_checkbox("Show extra labels", viewer_.data().show_custom_labels);
+    }
+
+    // Shape Generator
+    if (ImGui::CollapsingHeader("Shape Generator", ImGuiTreeNodeFlags_DefaultOpen)) {
+        float w = ImGui::GetContentRegionAvailWidth();
+        float p = ImGui::GetStyle().FramePadding.x;
+        if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) { NEON_LOG_INFO("Foobar"); }
     }
 }

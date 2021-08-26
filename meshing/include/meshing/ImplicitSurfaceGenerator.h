@@ -144,7 +144,8 @@ namespace meshing {
             if (behavior_ == ImplicitSurfaceCharacteristics::kIsotropic) {
                 const int n_rows = inclusion_.n_inclusions / inclusion_.rows;
                 const int n_cols = inclusion_.n_inclusions / n_rows;
-                const int x_interval_pad = (rows - (inclusion_.cols + thickness) * n_cols) / 2;
+                const int x_interval_pad = (cols - (inclusion_.cols + thickness) * n_cols) / 2;
+                const int y_interval_pad = (rows - (inclusion_.rows + thickness) * n_rows) / 2;
 
                 // Pre-calculate the starting zones for x
                 VectorXi x_starting_positions =
@@ -152,11 +153,16 @@ namespace meshing {
 
                 if (cols - x_starting_positions(x_starting_positions.rows() - 1) != x_starting_positions.x()) {
                     NEON_LOG_WARN("Uneven surface found! No longer isotropic. Attempting fix");
-                    FixColumnStartingPositions(cols, x_starting_positions);
+                    FixStartingPositions(cols, x_starting_positions);
                 }
-                const VectorXi y_starting_positions =
-                        VectorXi::LinSpaced(n_rows, inclusion_.rows, rows - inclusion_.rows * 2);
 
+                VectorXi y_starting_positions =
+                        VectorXi::LinSpaced(n_rows, y_interval_pad, rows - y_interval_pad - inclusion_.rows);
+
+                if (rows - y_starting_positions(y_starting_positions.rows() - 1) != y_starting_positions.x()) {
+                    NEON_LOG_WARN("Uneven y-axis surface found! Attempting to fix");
+                    FixStartingPositions(rows, y_starting_positions);
+                }
 
                 implicit_surface_.SetConstant(1);
                 for (int layer = 1; layer < layers - 1; ++layer) {
@@ -184,7 +190,7 @@ namespace meshing {
 
         auto Info() -> GeneratorInfo { return info_; }
 
-        auto FixColumnStartingPositions(const int cols, VectorXi &x_starting_positions) -> void {
+        auto FixStartingPositions(const int cols, VectorXi &x_starting_positions) -> void {
             const int start_padding = x_starting_positions.x();
             const int end_padding = cols - (x_starting_positions(x_starting_positions.rows() - 1) + inclusion_.cols);
             const int padding_diff = end_padding - start_padding;
