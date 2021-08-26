@@ -20,13 +20,13 @@ int main() {
     throw std::runtime_exception("Please enable NEON_USE_DOUBLE to use igl viewer.");
 #endif
     NEON_LOG_INFO("Warming up...");
-    const auto rve = std::make_unique<solvers::materials::Rve>(
-            Vector3i(51, 51, 51), solvers::materials::MaterialFromEandv(1, "mat_1", 10000, 0.3));
-    MatrixXr V;
-    MatrixXi F;
-    NEON_LOG_INFO("Loading grid mesh...");
-    rve->ComputeGridMesh(Vector3i(5, 5, 5), 20, true, V, F);
-    const auto mesh = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
-    const auto visualizer = std::make_unique<visualizer::Visualizer>(mesh);
+    // const auto rve = std::make_unique<solvers::materials::Rve>(
+    //         Vector3i(51, 51, 51), solvers::materials::MaterialFromEandv(1, "mat_1", 10000, 0.3));
+    // MatrixXr V;
+    // MatrixXi F;
+    // NEON_LOG_INFO("Loading grid mesh...");
+    // rve->ComputeGridMesh(Vector3i(5, 5, 5), 20, true, V, F);
+    // const auto mesh = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
+    const auto visualizer = std::make_unique<visualizer::Visualizer>();
     visualizer->Launch();
 }

@@ -20,6 +20,7 @@
 namespace visualizer {
     class Visualizer {
     public:
+        Visualizer();
         explicit Visualizer(std::shared_ptr<meshing::Mesh> mesh);
 
         auto Viewer() const -> const igl::opengl::glfw::Viewer & { return viewer_; }
@@ -34,8 +35,9 @@ namespace visualizer {
         auto UpdateVertexPositions(const VectorXr &displacements) -> void;
 
     private:
-        Real pixel_ratio_;
-        Real hidpi_scaling_;
+        int rve_dims = 10;
+        int void_dims = 10;
+        int n_voids = 5;
 
         igl::opengl::glfw::Viewer viewer_;
         igl::opengl::glfw::imgui::ImGuiMenu menu_;

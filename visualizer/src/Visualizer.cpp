@@ -9,8 +9,14 @@
 #include <igl/file_dialog_open.h>
 #include <visualizer/Visualizer.h>
 #include <utilities/runtime/NeonLog.h>
-
+#include <solvers/materials/Material.h>
+#include <solvers/materials/Rve.h>
 #include <utility>
+
+visualizer::Visualizer::Visualizer() {
+    viewer_.plugins.push_back(&menu_);
+    menu_.callback_draw_viewer_menu = [&]() { GeneratorMenu(); };
+}
 
 visualizer::Visualizer::Visualizer(std::shared_ptr<meshing::Mesh> mesh) : mesh_(std::move(mesh)) {
     // Add the menu plugin to the viewer so it shows up.
@@ -121,6 +127,28 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
     if (ImGui::CollapsingHeader("Shape Generator", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
         float p = ImGui::GetStyle().FramePadding.x;
-        if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) { NEON_LOG_INFO("Foobar"); }
+        ImGui::InputInt("Rve Dim", &rve_dims);
+        ImGui::InputInt("Void Dim", &void_dims);
+        ImGui::InputInt("N Voids", &n_voids);
+        if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) {
+            NEON_LOG_INFO("Generating Shape");
+            const auto rve = std::make_unique<solvers::materials::Rve>(
+                    Vector3i(rve_dims, rve_dims, rve_dims), solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
+            MatrixXr V;
+            MatrixXi F;
+            if (mesh_ == nullptr) {
+                NEON_LOG_INFO("Computing new grid mesh...");
+                rve->ComputeGridMesh(Vector3i(void_dims, void_dims, void_dims), n_voids, true, V, F);
+                mesh_ = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
+                Refresh();
+            } else {
+                NEON_LOG_INFO("Reloading grid mesh...");
+                rve->ComputeGridMesh(Vector3i(void_dims, void_dims, void_dims), n_voids, true, V, F);
+                mesh_->ReloadMesh(V, F, "Yzpq");
+                Refresh();
+            }
+
+            NEON_LOG_INFO("Regeneration complete");
+        }
     }
 }

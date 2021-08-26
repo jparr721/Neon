@@ -142,6 +142,7 @@ namespace meshing {
             igl::grid(resolution, GV);
 
             if (behavior_ == ImplicitSurfaceCharacteristics::kIsotropic) {
+                // TODO(@jparr721) - This can cause divide by zero issues.
                 const int n_rows = inclusion_.n_inclusions / inclusion_.rows;
                 const int n_cols = inclusion_.n_inclusions / n_rows;
                 const int x_interval_pad = (cols - (inclusion_.cols + thickness) * n_cols) / 2;
