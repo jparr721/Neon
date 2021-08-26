@@ -5,7 +5,18 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "cl.exe - Build and debug active file",
+      "name": "LinearAlgebraTest",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/build/bin/bin/Debug/utilitiesLinearAlgebraTest.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "environment": [],
+      "console": "externalTerminal",
+    },
+    {
+      "name": "Visualizer",
       "type": "cppvsdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/bin/bin/Debug/visualizer.exe",
@@ -14,7 +25,6 @@
       "cwd": "${workspaceFolder}",
       "environment": [],
       "console": "externalTerminal",
-      // "preLaunchTask": "C/C++: cl.exe build active file"
     }
   ]
 }

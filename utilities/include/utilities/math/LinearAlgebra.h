@@ -173,6 +173,106 @@ namespace utilities::math {
             return m;
         }
 
+        auto Top(const int layer) const -> MatrixX<T> {
+            const int rows = Dimension(1);
+            const int cols = Dimension(2);
+
+            MatrixX<T> data(rows, cols);
+
+            for (int row = 0; row < rows; ++row) {
+                for (int col = 0; col < cols; ++col) { data(row, col) = instance_(layer, row, col); }
+            }
+
+            return data;
+         }
+
+        auto SetTop(const int layer, const MatrixX<T> &data) -> void {
+            const int rows = Dimension(1);
+            const int cols = Dimension(2);
+
+            NEON_ASSERT_ERROR(data.rows() == rows, "Layer rows must match tensor column dimensions");
+            NEON_ASSERT_ERROR(data.cols() == cols, "Layer cols must match tensor layer dimensions");
+
+            for (int row = 0; row < rows; ++row) {
+                for (int col = 0; col < cols; ++col) { instance_(layer, row, col) = data(row, col); }
+            }
+        }
+
+        auto SetTopBitmask(const int layer, const MatrixX<T> &data) -> void {
+            const int rows = Dimension(1);
+            const int cols = Dimension(2);
+
+            NEON_ASSERT_ERROR(data.rows() == rows, "Layer rows must match tensor column dimensions");
+            NEON_ASSERT_ERROR(data.cols() == cols, "Layer cols must match tensor layer dimensions");
+
+            for (int row = 0; row < rows; ++row) {
+                for (int col = 0; col < cols; ++col) {
+                    if (data(row, col) == 0) {
+                        instance_(layer, row, col) = data(row, col);
+                    }
+                }
+            }
+        }
+
+        auto SetTops(const MatrixX<T> &data) -> void {
+            const int layers = Dimension(1);
+            for (int layer = 0; layer < layers; ++layer) { SetTop(layer, data); }
+        }
+
+        auto SetTopsBitmask(const MatrixX<T> &data) -> void {
+            const int layers = Dimension(1);
+            for (int layer = 0; layer < layers; ++layer) { SetTopBitmask(layer, data); }
+        }
+
+        auto Side(const int layer) const -> MatrixX<T> {
+            const int rows = Dimension(0);
+            const int cols = Dimension(2);
+            MatrixX<T> data(rows, cols);
+
+            for (int row = 0; row < rows; ++row) {
+                for (int col = 0; col < cols; ++col) { data(row, col) = instance_(row, layer, col); } }
+
+            return data;
+        }
+
+        auto SetSide(const int layer, const MatrixX<T> &data) -> void {
+            const int rows = Dimension(0);
+            const int cols = Dimension(2);
+
+            NEON_ASSERT_ERROR(data.rows() == rows, "Layer rows must match tensor dimensions");
+            NEON_ASSERT_ERROR(data.cols() == cols, "Layer cols must match tensor dimensions");
+
+            for (int row = 0; row < rows; ++row) {
+                for (int col = 0; col < cols; ++col) { instance_(row, layer, col) = data(row, col); }
+            }
+        }
+
+        auto SetSideBitmask(const int layer, const MatrixX<T> &data) -> void {
+            const int rows = Dimension(0);
+            const int cols = Dimension(2);
+
+            NEON_ASSERT_ERROR(data.rows() == rows, "Layer rows must match tensor dimensions");
+            NEON_ASSERT_ERROR(data.cols() == cols, "Layer cols must match tensor dimensions");
+
+            for (int row = 0; row < rows; ++row) {
+                for (int col = 0; col < cols; ++col) {
+                    if (data(row, col) == 0) {
+                        instance_(row, layer, col) = data(row, col);
+                    }
+                }
+            }
+        }
+
+        auto SetSides(const MatrixX<T> &data) -> void {
+            const int layers = Dimension(1);
+
+            for (int layer = 0; layer < layers; ++layer) { SetSide(layer, data); } }
+
+        auto SetSidesBitmask(const MatrixX<T> &data) -> void {
+            const int layers = Dimension(1);
+
+            for (int layer = 0; layer < layers; ++layer) { SetSideBitmask(layer, data); } }
+
         auto SetLayer(const int layer, const MatrixX<T> &data) -> void {
             const int rows = Dimension(0);
             const int cols = Dimension(1);

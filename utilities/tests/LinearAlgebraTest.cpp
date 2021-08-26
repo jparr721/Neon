@@ -126,7 +126,6 @@ BOOST_AUTO_TEST_CASE(TestTensor3AppendLayerToFront) {
     layer.setConstant(2);
 
     Tensor3i t2 = t.Append(layer, Tensor3i::InsertOpIndex::kStart);
-    std::cout << t2 << std::endl;
     BOOST_REQUIRE(t2.Dimension(0) == 2);
     BOOST_REQUIRE(t2.Dimension(1) == 2);
     BOOST_REQUIRE(t2.Dimension(2) == 2);
@@ -142,6 +141,60 @@ BOOST_AUTO_TEST_CASE(TestTensor3AppendLayerToFront) {
     MatrixX<int> layer_1 = t2.At(1);
     BOOST_REQUIRE(layer_1.isApprox(l1_comp));
 }
+
+BOOST_AUTO_TEST_CASE(TestTop) {
+    Tensor3i t(2, 2, 2);
+    t.SetConstant(1);
+
+    MatrixXi d(2, 2);
+    d.setConstant(10);
+    t.SetTop(0, d);
+
+    const MatrixXi v = t.Top(0);
+
+    BOOST_REQUIRE(v.isApprox(d));
+ }
+
+
+BOOST_AUTO_TEST_CASE(TestSetTop) {
+    Tensor3i t(2, 2, 2);
+    t.SetConstant(1);
+
+    MatrixXi d(2, 2);
+    d.setConstant(10);
+    t.SetTop(0, d);
+
+    const MatrixXi v = t.Top(0);
+
+    BOOST_REQUIRE(v.isApprox(d));
+}
+
+BOOST_AUTO_TEST_CASE(TestSide) {
+    Tensor3i t(2, 2, 2);
+    t.SetConstant(1);
+
+    MatrixXi d(2, 2);
+    d.setConstant(10);
+    t.SetSide(0, d);
+
+    const MatrixXi v = t.Side(0);
+
+    BOOST_REQUIRE(v.isApprox(d));
+}
+
+BOOST_AUTO_TEST_CASE(TestSetSide) {
+    Tensor3i t(2, 2, 2);
+    t.SetConstant(1);
+
+    MatrixXi d(2, 2);
+    d.setConstant(10);
+    t.SetSide(0, d);
+
+    const MatrixXi v = t.Side(0);
+
+    BOOST_REQUIRE(v.isApprox(d));
+}
+
 
 BOOST_AUTO_TEST_CASE(TestIntoVector) {
     Tensor3i t(2, 2, 1);

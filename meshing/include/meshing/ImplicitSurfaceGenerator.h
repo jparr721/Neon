@@ -171,6 +171,10 @@ namespace meshing {
                     }
                 }
 
+                const MatrixXr l = implicit_surface_.Layer(2);
+                implicit_surface_.SetSidesBitmask(l);
+                implicit_surface_.SetTopsBitmask(l);
+
                 implicit_surface_ = AddSquarePaddingLayers();
                 const VectorXr Gf = implicit_surface_.Vector();
 
