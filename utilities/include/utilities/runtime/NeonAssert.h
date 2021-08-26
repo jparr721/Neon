@@ -40,20 +40,21 @@ namespace utilities::assert {
         // Short circuit before we run through all the other logic.
         if (condition) { return; }
 
-        const auto formatter = [](const std::string &func, const std::string &f, const int l) -> std::ostringstream {
-            std::ostringstream ss;
-            ss << "Assertion failed in " << f << "[line:" << l << "] " << func << "(): ";
-            return ss;
+        const auto formatter = [&](const std::string &level) -> std::ostringstream {
+            std::ostringstream oss;
+            oss << "[" << level << "]"
+                << "[" << file << ":" << line << "]" << function << "(): ";
+            return oss;
         };
         switch (level) {
             case NeonAssertionLevel::kWarn: {
-                std::ostringstream ss = formatter(function, file, line);
+                std::ostringstream ss = formatter("WARN");
                 LogAll(ss, context...);
                 std::cerr << ss.str() << std::endl;
                 break;
             }
             case NeonAssertionLevel::kError: {
-                std::ostringstream ss = formatter(function, file, line);
+                std::ostringstream ss = formatter("ERROR");
                 LogAll(ss, context...);
                 throw std::runtime_error(ss.str());
             }

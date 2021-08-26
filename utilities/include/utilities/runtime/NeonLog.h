@@ -16,19 +16,6 @@ enum class NeonLogLevel {
     kError,
 };
 
-//namespace {
-//    template<typename T>
-//    void LogAll(std::ostringstream &o, T val) {
-//        o << val;
-//    }
-//
-//    template<typename T, typename... Context>
-//    void LogAll(std::ostringstream &o, T val, Context... context) {
-//        LogAll(o, val);
-//        LogAll(o, context...);
-//    }
-//}// namespace
-
 namespace utilities::runtime {
     template<typename... Context>
     auto NeonLog(const NeonLogLevel level, const std::string &function, const std::string &file, const int line,

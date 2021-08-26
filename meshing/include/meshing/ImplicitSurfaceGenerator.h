@@ -159,7 +159,7 @@ namespace meshing {
 
 
                 implicit_surface_.SetConstant(1);
-                for (int layer = 0; layer < layers; ++layer) {
+                for (int layer = 1; layer < layers - 1; ++layer) {
                     for (int y_i = 0; y_i < n_rows; ++y_i) {
                         const int y = y_starting_positions(y_i);
                         for (int j = y; j < y + inclusion_.rows; ++j) {
@@ -187,9 +187,10 @@ namespace meshing {
 
             if (padding_diff % 2 == 0) {
                 x_starting_positions.array() += padding_diff / 2;
+                NEON_LOG_INFO("Successfully fixed improper padding.");
             } else {
-                NEON_LOG_WARN("Unable to fix isotropic padding due to invalid number of available columns, have: ",
-                              cols, " padding: ", padding_diff);
+                NEON_LOG_ERROR("Unable to fix isotropic padding due to invalid number of available columns, have: ",
+                               cols, " padding: ", padding_diff);
                 return;
             }
         }
