@@ -34,12 +34,16 @@ namespace visualizer {
         auto UpdateVertexPositions(const VectorXr &displacements) -> void;
 
     private:
+        bool tetrahedralize_ = false;
+
         int rve_dims_ = 10;
         int void_dims_ = 10;
         int n_voids_ = 5;
 
         Real youngs_modulus_ = 1000;
         Real poissons_ratio_ = 0;
+
+        std::string tetgen_flags_ = "Yzpq";
 
         igl::opengl::glfw::Viewer viewer_;
         igl::opengl::glfw::imgui::ImGuiMenu menu_;

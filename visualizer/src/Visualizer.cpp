@@ -130,6 +130,9 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
         ImGui::InputInt("Rve Dim", &rve_dims_);
         ImGui::InputInt("Void Dim", &void_dims_);
         ImGui::InputInt("N Voids", &n_voids_);
+
+        ImGui::Checkbox("Tetrahedralize", &tetrahedralize_);
+
         if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) {
             NEON_LOG_INFO("Generating Shape");
             rve_ = std::make_unique<solvers::materials::Rve>(
@@ -140,12 +143,21 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
             if (mesh_ == nullptr) {
                 NEON_LOG_INFO("Computing new grid mesh...");
                 rve_->ComputeGridMesh(Vector3i(void_dims_, void_dims_, void_dims_), n_voids_, true, V, F);
-                mesh_ = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
+                if (tetrahedralize_) {
+                    mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags_);
+                } else {
+                    mesh_ = std::make_shared<meshing::Mesh>(V, F);
+                }
+
                 Refresh();
             } else {
                 NEON_LOG_INFO("Reloading grid mesh...");
                 rve_->ComputeGridMesh(Vector3i(void_dims_, void_dims_, void_dims_), n_voids_, true, V, F);
-                mesh_->ReloadMesh(V, F, "Yzpq");
+                if (tetrahedralize_) {
+                    mesh_->ReloadMesh(V, F, tetgen_flags_);
+                } else {
+                    mesh_->ReloadMesh(V, F);
+                }
                 Refresh();
             }
 
@@ -186,7 +198,7 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
             };
             std::thread t(homo_task);
             t.join();
-            
+
             const solvers::materials::Homogenization::MaterialCoefficients coeffs = rve_->Homogenized()->Coefficients();
 
             E_x = coeffs.E_11;

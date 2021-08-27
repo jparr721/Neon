@@ -185,10 +185,13 @@ namespace meshing {
                 implicit_surface_.SetSidesBitmask(l);
                 implicit_surface_.SetTopsBitmask(l.transpose());
 
-                implicit_surface_ = AddSquarePaddingLayers();
-                const VectorXr Gf = implicit_surface_.Vector();
+                const Tensor3r mc_surface = AddSquarePaddingLayers();
+                NEON_LOG_INFO(mc_surface);
+                const VectorXr Gf = mc_surface.Vector();
 
-                igl::copyleft::marching_cubes(Gf, GV, rows, cols, layers, 0, V, F);
+                try {
+                    igl::copyleft::marching_cubes(Gf, GV, rows, cols, layers, 0, V, F);
+                } catch (...) { NEON_LOG_ERROR("Marching cubes failed"); }
             }
         }
 

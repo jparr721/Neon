@@ -26,6 +26,7 @@ solvers::materials::Rve::Rve(const Vector3<int> &size, Material material_1, Mate
 
 auto solvers::materials::Rve::Homogenize() -> void {
     NEON_ASSERT_ERROR(contains_surface_mesh_, "No surface mesh found");
+    NEON_LOG_INFO(surface_mesh_);
     if (material_2_.IsInit()) {
         homogenization_ = std::make_unique<Homogenization>(surface_mesh_, material_1_, material_2_);
     } else {
