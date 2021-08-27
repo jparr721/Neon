@@ -22,40 +22,32 @@
 namespace solvers::materials {
     class Rve {
     public:
-        Rve(const Vector3<int> &size, Material material_1);
-        Rve(const Vector3<int> &size, Material material_1, Material material_2);
+        Rve(const Vector3<int> &size, Material material);
 
         auto Homogenize() -> void;
-        auto ComputeRenderableMesh(MatrixXr &V, MatrixX<int> &F) -> void;
-        auto ComputeSurfaceMesh() -> void;
-        auto ComputeSurfaceMesh(const Vector3<int> &inclusion_size, int n_inclusions, bool is_isotropic) -> void;
-        auto ComputeGridMesh(const Vector3<int> &inclusion_size, int n_inclusions, bool is_isotropic,
-        MatrixXr& V, MatrixXi& F) -> void;
+        auto ComputeUniformMesh() -> void;
+        auto ComputeUnfiformMesh(MatrixXr &V, MatrixXi &F) -> void;
+        auto ComputeCompositeMesh(const meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion, bool is_isotropic,
+                                  MatrixXr &V, MatrixXi &F) -> void;
 
         auto Height() const noexcept -> unsigned int { return height_; }
         auto Width() const noexcept -> unsigned int { return width_; }
         auto Depth() const noexcept -> unsigned int { return depth_; }
         auto ConsitutiveTensor() const -> Matrix6r { return C_; }
         auto SurfaceMesh() const -> Tensor3r { return surface_mesh_; }
-        auto PrimaryMaterial() const -> Material { return material_1_; }
-        auto SecondaryMaterial() const -> Material { return material_2_; }
+        auto PrimaryMaterial() const -> Material { return material_; }
         auto Homogenized() const noexcept -> const std::unique_ptr<Homogenization> & { return homogenization_; }
 
     private:
-        static constexpr unsigned int kCellLength = 1;
-
-        bool is_homogenized_ = false;
         bool contains_surface_mesh_ = false;
 
         unsigned int height_ = 0;
         unsigned int width_ = 0;
         unsigned int depth_ = 0;
 
-        Material material_1_;
-        Material material_2_;
+        Material material_;
 
         std::unique_ptr<meshing::ImplicitSurfaceGenerator<Real>> generator_;
-        std::unique_ptr<meshing::MarchingCubes> marching_cubes_;
         std::unique_ptr<Homogenization> homogenization_;
 
         Matrix6r C_;

@@ -35,6 +35,7 @@ namespace visualizer {
 
     private:
         bool tetrahedralize_ = false;
+        bool isotropic_ = true;
 
         int rve_dims_ = 10;
         int void_dims_ = 10;
@@ -42,6 +43,13 @@ namespace visualizer {
 
         Real youngs_modulus_ = 1000;
         Real poissons_ratio_ = 0;
+
+        Real E_x = 0;
+        Real E_y = 0;
+        Real E_z = 0;
+        Real G_x = 0;
+        Real G_y = 0;
+        Real G_z = 0;
 
         std::string tetgen_flags_ = "Yzpq";
 

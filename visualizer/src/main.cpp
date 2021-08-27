@@ -25,7 +25,7 @@ int main() {
     // MatrixXr V;
     // MatrixXi F;
     // NEON_LOG_INFO("Loading grid mesh...");
-    // rve->ComputeGridMesh(Vector3i(5, 5, 5), 20, true, V, F);
+    // rve->ComputeCompositeMesh(Vector3i(5, 5, 5), 20, true, V, F);
     // const auto mesh = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
     const auto visualizer = std::make_unique<visualizer::Visualizer>();
     visualizer->Launch();

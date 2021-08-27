@@ -58,56 +58,41 @@ namespace meshing {
     public:
         struct Inclusion {
             int n_inclusions;
-            int area;
             int depth;
             int rows;
             int cols;
         };
 
         enum class GeneratorInfo {
-            kSuccess = 0x00,
-            kFailure = 0x01,
+            kSuccess = 0,
+            kFailure,
         };
 
-        enum class ImplicitSurfaceCharacteristics {
-            kIsotropic = 0x00,
-            kAnisotropic = 0x01,
+        enum class Behavior {
+            kIsotropic = 0,
+            kAnisotropic,
         };
 
-        enum class ImplicitSurfaceMicrostructure {
-            kUniform = 0x00,
-            kComposite = 0x01,
+        enum class Microstructure {
+            kUniform = 0,
+            kComposite,
         };
 
-        int minimum_surface_padding = 1;
-
-        ImplicitSurfaceGenerator(const unsigned int height, const unsigned int width, const unsigned int depth,
-                                 ImplicitSurfaceCharacteristics behavior, ImplicitSurfaceMicrostructure microstructure,
-                                 const Inclusion inclusion, const int &material_1_number, const int &material_2_number)
-            : behavior_(behavior), microstructure_(microstructure), inclusion_(inclusion),
-              material_1_number_(material_1_number), material_2_number_(material_2_number) {
+        ImplicitSurfaceGenerator(const unsigned int height, const unsigned int width, const unsigned int depth)
+            : microstructure_(Microstructure::kUniform) {
             implicit_surface_.Resize(height, width, depth);
-            implicit_surface_.SetConstant(static_cast<T>(material_1_number_));
+            implicit_surface_.SetConstant(static_cast<T>(material_number_));
         }
 
         ImplicitSurfaceGenerator(const unsigned int height, const unsigned int width, const unsigned int depth,
-                                 const int &material_1_number)
-            : material_1_number_(material_1_number), microstructure_(ImplicitSurfaceMicrostructure::kUniform),
-              behavior_(ImplicitSurfaceCharacteristics::kIsotropic) {
+                                 Behavior behavior, const Inclusion inclusion, const int &material_number = 1)
+            : behavior_(behavior), microstructure_(Microstructure::kComposite), inclusion_(inclusion),
+              material_number_(material_number) {
             implicit_surface_.Resize(height, width, depth);
-            implicit_surface_.SetConstant(static_cast<T>(material_1_number_));
+            implicit_surface_.SetConstant(static_cast<T>(material_number_));
         }
 
         auto Surface() const -> Tensor3<T> { return implicit_surface_; }
-
-        auto Generate() -> Tensor3<T> {
-            if (microstructure_ == ImplicitSurfaceMicrostructure::kComposite) {
-                behavior_ == ImplicitSurfaceCharacteristics::kIsotropic ? GenerateIsotropicMaterial()
-                                                                        : GenerateAnisotropicMaterial();
-            }
-
-            return implicit_surface_;
-        }
 
         auto AddSquarePaddingLayers() -> Tensor3<T> {
             const int rows = implicit_surface_.Dimension(0);
@@ -132,10 +117,8 @@ namespace meshing {
             return new_surface;
         }
 
-        // \brief Generate implicit function material.
-        // TODO(@jparr721) Add support for taking loaded rendered mesh and allowing it to be
-        // re-homogenized.
-        auto GenerateImplicitFunctionBasedMaterial(MatrixXr &V, MatrixXi &F, const int thickness = 1) -> void {
+        /// \brief Generate implicit function material.
+        auto GenerateImplicitFunctionBasedMaterial(const int thickness, MatrixXr &V, MatrixXi &F) -> void {
             const int rows = implicit_surface_.Dimension(0);
             const int cols = implicit_surface_.Dimension(1);
             const int layers = implicit_surface_.Dimension(2);
@@ -144,163 +127,81 @@ namespace meshing {
             RowVector3i resolution(rows, cols, layers);
             igl::grid(resolution, GV);
 
-            if (behavior_ == ImplicitSurfaceCharacteristics::kIsotropic) {
-                // TODO(@jparr721) - This can cause divide by zero issues.
-                const int n_rows = inclusion_.n_inclusions / inclusion_.rows;
-                const int n_cols = inclusion_.n_inclusions / n_rows;
-                const int x_interval_pad = (cols - (inclusion_.cols + thickness) * n_cols) / 2;
-                const int y_interval_pad = (rows - (inclusion_.rows + thickness) * n_rows) / 2;
-
-                // Pre-calculate the starting zones for x
-                VectorXi x_starting_positions =
-                        VectorXi::LinSpaced(n_cols, x_interval_pad, cols - x_interval_pad - inclusion_.cols);
-
-                if (cols - x_starting_positions(x_starting_positions.rows() - 1) != x_starting_positions.x()) {
-                    NEON_LOG_WARN("Uneven surface found! No longer isotropic. Attempting fix");
-                    FixStartingPositions(cols, x_starting_positions);
+            if (behavior_ == Behavior::kIsotropic) {
+                if (microstructure_ == Microstructure::kUniform) {
+                    MakeRenderable(GV, V, F);
+                } else {
+                    GenerateIsotropicMaterial(thickness, GV, V, F);
                 }
-
-                VectorXi y_starting_positions =
-                        VectorXi::LinSpaced(n_rows, y_interval_pad, rows - y_interval_pad - inclusion_.rows);
-
-                if (rows - y_starting_positions(y_starting_positions.rows() - 1) != y_starting_positions.x()) {
-                    NEON_LOG_WARN("Uneven y-axis surface found! Attempting to fix");
-                    FixStartingPositions(rows, y_starting_positions);
-                }
-
-                implicit_surface_.SetConstant(1);
-                for (int layer = 1; layer < layers - 1; ++layer) {
-                    for (int y_i = 0; y_i < n_rows; ++y_i) {
-                        const int y = y_starting_positions(y_i);
-                        for (int j = y; j < y + inclusion_.rows; ++j) {
-                            for (int x_i = 0; x_i < n_cols; ++x_i) {
-                                const int x = x_starting_positions(x_i);
-                                for (int i = x; i < x + inclusion_.cols; ++i) { implicit_surface_(j, i, layer) = 0; }
-                            }
-                        }
-                    }
-                }
-
-                const MatrixXr l = implicit_surface_.Layer(2);
-                implicit_surface_.SetSidesBitmask(l);
-                implicit_surface_.SetTopsBitmask(l.transpose());
-
-                const Tensor3r mc_surface = AddSquarePaddingLayers();
-                NEON_LOG_INFO(mc_surface);
-                const VectorXr Gf = mc_surface.Vector();
-
-                try {
-                    igl::copyleft::marching_cubes(Gf, GV, rows, cols, layers, 0, V, F);
-                } catch (...) { NEON_LOG_ERROR("Marching cubes failed"); }
             }
+            if (behavior_ == Behavior::kAnisotropic) { GenerateAnisotropicMaterial(1000, GV, V, F); }
         }
 
-        auto Info() -> GeneratorInfo { return info_; }
-
-        auto FixStartingPositions(const int cols, VectorXi &x_starting_positions) -> void {
-            const int start_padding = x_starting_positions.x();
-            const int end_padding = cols - (x_starting_positions(x_starting_positions.rows() - 1) + inclusion_.cols);
-            const int padding_diff = end_padding - start_padding;
-
-            if (padding_diff % 2 == 0) {
-                x_starting_positions.array() += padding_diff / 2;
-                NEON_LOG_INFO("Successfully fixed improper padding.");
-            } else {
-                NEON_LOG_ERROR("Unable to fix isotropic padding due to invalid number of available columns, have: ",
-                               cols, " padding: ", padding_diff);
-                return;
-            }
-        }
 
     private:
-        ImplicitSurfaceCharacteristics behavior_;
-
-        ImplicitSurfaceMicrostructure microstructure_;
+        Behavior behavior_;
+        Microstructure microstructure_;
 
         Tensor3<T> implicit_surface_;
 
         Inclusion inclusion_;
 
-        int material_1_number_;
-        int material_2_number_;
+        int material_number_ = 1;
 
         std::vector<Cube> cubes_;
 
         GeneratorInfo info_ = GeneratorInfo::kSuccess;
 
-        // Helpers ======================
-        auto LayerContainsSecondaryMaterial(const MatrixXr &layer) -> bool {
-            const auto rows = layer.rows();
-            const auto cols = layer.cols();
+        auto GenerateIsotropicMaterial(const int thickness, const MatrixXr &GV, MatrixXr &V, MatrixXi &F) -> void {
+            const int rows = implicit_surface_.Dimension(0);
+            const int cols = implicit_surface_.Dimension(1);
+            const int layers = implicit_surface_.Dimension(2);
 
-            for (int row = 0; row < rows; ++row) {
-                for (int col = 0; col < cols; ++col) {
-                    if (layer(row, col) == material_2_number_) { return true; }
+            const int n_rows = inclusion_.n_inclusions / inclusion_.rows;
+            const int n_cols = inclusion_.n_inclusions / n_rows;
+
+            const int x_interval_pad = (cols - (inclusion_.cols + thickness) * n_cols) / 2;
+            const int y_interval_pad = (rows - (inclusion_.rows + thickness) * n_rows) / 2;
+
+            // Pre-calculate the starting zones for x
+            VectorXi x_starting_positions =
+                    VectorXi::LinSpaced(n_cols, x_interval_pad, cols - x_interval_pad - inclusion_.cols);
+
+            if (cols - x_starting_positions(x_starting_positions.rows() - 1) != x_starting_positions.x()) {
+                NEON_LOG_WARN("Uneven surface found! No longer isotropic. Attempting fix");
+                FixStartingPositions(cols, x_starting_positions);
+            }
+
+            VectorXi y_starting_positions =
+                    VectorXi::LinSpaced(n_rows, y_interval_pad, rows - y_interval_pad - inclusion_.rows);
+
+            if (rows - y_starting_positions(y_starting_positions.rows() - 1) != y_starting_positions.x()) {
+                NEON_LOG_WARN("Uneven y-axis surface found! Attempting to fix");
+                FixStartingPositions(rows, y_starting_positions);
+            }
+
+            implicit_surface_.SetConstant(1);
+            for (int layer = 1; layer < layers - 1; ++layer) {
+                for (int y_i = 0; y_i < n_rows; ++y_i) {
+                    const int y = y_starting_positions(y_i);
+                    for (int j = y; j < y + inclusion_.rows; ++j) {
+                        for (int x_i = 0; x_i < n_cols; ++x_i) {
+                            const int x = x_starting_positions(x_i);
+                            for (int i = x; i < x + inclusion_.cols; ++i) { implicit_surface_(j, i, layer) = 0; }
+                        }
+                    }
                 }
             }
 
-            return false;
+            const MatrixXr l = implicit_surface_.Layer(2);
+            implicit_surface_.SetSidesBitmask(l);
+            implicit_surface_.SetTopsBitmask(l.transpose());
+
+            MakeRenderable(GV, V, F);
         }
 
-        /*
-        @brief Ensures padding is even on all sides, returning false if not. Only
-        applies to isotropic material meshes.
-        */
-        auto CheckLayerPadding(const VectorXr &layer, int max) -> void {
-            const auto left_padding = layer(0) + 1;
-            const auto right_padding = max - layer(layer.rows() - 1);
-
-            NEON_ASSERT_WARN(left_padding == right_padding, "Padding does not match: ", left_padding, right_padding,
-                             layer);
-        }
-
-        auto GenerateIsotropicMaterial() -> Tensor3<T> {
-            // Y axis origin with padding
-            VectorXr y_axis_origins = utilities::math::LinSpace(
-                    inclusion_.area + minimum_surface_padding,
-                    (implicit_surface_.Dimension(1) + 1 - (inclusion_.area + minimum_surface_padding)),
-                    inclusion_.rows);
-            y_axis_origins -= VectorXr::Ones(y_axis_origins.rows());
-            CheckLayerPadding(y_axis_origins, implicit_surface_.Dimension(1));
-
-            VectorXr x_axis_origins = utilities::math::LinSpace(
-                    inclusion_.area + minimum_surface_padding,
-                    (implicit_surface_.Dimension(0) + 1 - (inclusion_.area + minimum_surface_padding)),
-                    inclusion_.cols);
-            x_axis_origins -= VectorXr::Ones(x_axis_origins.rows());
-            CheckLayerPadding(x_axis_origins, implicit_surface_.Dimension(0));
-
-            std::vector<Vector2<unsigned int>> centroids;
-            for (int i = 0; i < y_axis_origins.rows(); ++i) {
-                for (int j = 0; j < x_axis_origins.rows(); ++j) {
-                    const int y = static_cast<int>(y_axis_origins(i));
-                    const int x = static_cast<int>(x_axis_origins(j));
-                    centroids.emplace_back(x, y);
-                }
-            }
-
-            const VectorXr layer_layout =
-                    utilities::math::LinSpace(0, implicit_surface_.Dimension(2) - inclusion_.depth,
-                                              implicit_surface_.Dimension(2) / inclusion_.depth);
-
-            std::vector<Vector3<unsigned int>> indices;
-            for (int i = 0; i < layer_layout.rows(); ++i) {
-                const int layer = static_cast<int>(layer_layout(i));
-                for (const auto &centroid : centroids) {
-                    const auto cube_indices = MakeShapedIndices(
-                            centroid, Vector3<unsigned int>(inclusion_.area, inclusion_.area, inclusion_.depth), layer);
-                    indices.insert(indices.end(), cube_indices.begin(), cube_indices.end());
-                }
-            }
-
-            SetFromIndices(indices);
-
-            return implicit_surface_;
-        }
-
-        auto GenerateAnisotropicMaterial(const unsigned int size_variability = 1,
-                                         const unsigned int min_inclusion_separation = 1,
-                                         const unsigned int max_iter = 1000) -> Tensor3<T> {
+        auto GenerateAnisotropicMaterial(const unsigned int max_iter, const MatrixXr &GV, MatrixXr &V, MatrixXi &F)
+                -> void {
             constexpr unsigned int min = 0;
 
             // Ensure the cutoff conditions are met
@@ -312,7 +213,7 @@ namespace meshing {
             int n_iterations = 0;
 
             // RNG
-            std::default_random_engine generator;
+            std::mt19937 generator;
             const std::uniform_int_distribution<int> rows_distribution(min, max_rows);
             const std::uniform_int_distribution<int> cols_distribution(min, max_cols);
             const std::uniform_int_distribution<int> layers_distribution(min, max_layers);
@@ -340,7 +241,7 @@ namespace meshing {
 
                             if (n_iterations >= max_iter) {
                                 info_ = GeneratorInfo::kFailure;
-                                return implicit_surface_;
+                                return;
                             } else {
                                 n_iterations = 0;
                             }
@@ -358,45 +259,39 @@ namespace meshing {
                     const unsigned int col = index.y();
                     const unsigned int layer = index.z();
 
-                    implicit_surface_(row, col, layer) = static_cast<T>(material_2_number_);
+                    implicit_surface_(row, col, layer) = 0;
                 }
             }
 
-            return implicit_surface_;
+            MakeRenderable(GV, V, F);
+        }
+
+        auto MakeRenderable(const MatrixXr &GV, MatrixXr &V, MatrixXi &F) -> void {
+            const int rows = implicit_surface_.Dimension(0);
+            const int cols = implicit_surface_.Dimension(1);
+            const int layers = implicit_surface_.Dimension(2);
+
+            const Tensor3r mc_surface = AddSquarePaddingLayers();
+            const VectorXr Gf = mc_surface.Vector();
+
+            try {
+                igl::copyleft::marching_cubes(Gf, GV, rows, cols, layers, 0, V, F);
+            } catch (...) { NEON_LOG_ERROR("Marching cubes failed"); }
         }
 
 
-        // Shape Generators
-        auto MakeShapedIndices(const Vector2<unsigned> &centroid, const Vector3<unsigned> &shape,
-                               unsigned int layer_number) -> std::vector<Vector3<unsigned int>> {
-            std::vector<Vector3<unsigned int>> indices;
-            const unsigned int width{shape.x() / 2};
-            const unsigned int height{shape.y() / 2};
-            const unsigned int depth = shape.z();
+        auto FixStartingPositions(const int cols, VectorXi &x_starting_positions) -> void {
+            const int start_padding = x_starting_positions.x();
+            const int end_padding = cols - (x_starting_positions(x_starting_positions.rows() - 1) + inclusion_.cols);
+            const int padding_diff = end_padding - start_padding;
 
-            const unsigned int current_x = centroid.x();
-            const unsigned int current_y = centroid.y();
-            for (auto layer = layer_number; layer < layer_number + depth; ++layer) {
-                for (auto x = 0u; x < width; ++x) {
-                    for (auto y = 0u; y < height; ++y) {
-                        indices.emplace_back(current_x + x, current_y + y, layer);
-                        indices.emplace_back(current_x - x, current_y - y, layer);
-                        indices.emplace_back(current_x - x, current_y + y, layer);
-                        indices.emplace_back(current_x + x, current_y - y, layer);
-                    }
-                }
-            }
-
-            // TODO(@jparr721) - This is stupid and should be re-written.
-            std::sort(indices.begin(), indices.end(), UnsignedVectorComparison);
-            indices.erase(std::unique(indices.begin(), indices.end(), UnsignedVectorEqual), indices.end());
-
-            return indices;
-        }
-
-        auto SetFromIndices(const std::vector<Vector3<unsigned int>> &indices) -> void {
-            for (const Vector3<unsigned int> &index : indices) {
-                implicit_surface_(index.x(), index.y(), index.z()) = material_2_number_;
+            if (padding_diff % 2 == 0) {
+                x_starting_positions.array() += padding_diff / 2;
+                NEON_LOG_INFO("Successfully fixed improper padding.");
+            } else {
+                NEON_LOG_ERROR("Unable to fix isotropic padding due to invalid number of available columns, have: ",
+                               cols, " padding: ", padding_diff);
+                return;
             }
         }
     };

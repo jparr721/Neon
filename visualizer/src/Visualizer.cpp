@@ -6,9 +6,11 @@
 // If a copy of the GPL was not included with this file, you can
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
+#include <future>
 #include <igl/file_dialog_open.h>
 #include <solvers/materials/Material.h>
 #include <solvers/materials/Rve.h>
+#include <thread>
 #include <utilities/runtime/NeonLog.h>
 #include <utility>
 #include <visualizer/Visualizer.h>
@@ -132,6 +134,7 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
         ImGui::InputInt("N Voids", &n_voids_);
 
         ImGui::Checkbox("Tetrahedralize", &tetrahedralize_);
+        ImGui::Checkbox("Isotropic", &isotropic_);
 
         if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) {
             NEON_LOG_INFO("Generating Shape");
@@ -140,9 +143,10 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
                     solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
             MatrixXr V;
             MatrixXi F;
+            meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{n_voids_, void_dims_, void_dims_, void_dims_};
             if (mesh_ == nullptr) {
                 NEON_LOG_INFO("Computing new grid mesh...");
-                rve_->ComputeGridMesh(Vector3i(void_dims_, void_dims_, void_dims_), n_voids_, true, V, F);
+                rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
                 if (tetrahedralize_) {
                     mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags_);
                 } else {
@@ -152,7 +156,7 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
                 Refresh();
             } else {
                 NEON_LOG_INFO("Reloading grid mesh...");
-                rve_->ComputeGridMesh(Vector3i(void_dims_, void_dims_, void_dims_), n_voids_, true, V, F);
+                rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
                 if (tetrahedralize_) {
                     mesh_->ReloadMesh(V, F, tetgen_flags_);
                 } else {
@@ -175,12 +179,6 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
         ImGui::LabelText("E", "%.0e", youngs_modulus_);
         ImGui::LabelText("v", "%.0e", poissons_ratio_);
 
-        Real E_x = 0;
-        Real E_y = 0;
-        Real E_z = 0;
-        Real G_x = 0;
-        Real G_y = 0;
-        Real G_z = 0;
         ImGui::LabelText("E_x", "%.0e", E_x);
         ImGui::LabelText("E_y", "%.0e", E_y);
         ImGui::LabelText("E_z", "%.0e", E_z);
@@ -192,12 +190,7 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
             NEON_LOG_INFO("Homogenizing current geometry...");
             if (mesh_ == nullptr) { NEON_LOG_ERROR("Cannot homogenize empty mesh, aborting operation!!"); }
 
-            const auto homo_task = [&]() -> void {
-                NEON_LOG_INFO("Background homogenization task started");
-                rve_->Homogenize();
-            };
-            std::thread t(homo_task);
-            t.join();
+            rve_->Homogenize();
 
             const solvers::materials::Homogenization::MaterialCoefficients coeffs = rve_->Homogenized()->Coefficients();
 

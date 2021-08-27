@@ -48,7 +48,7 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::
     const int res = igl::copyleft::tetgen::tetrahedralize(V, F, tetgen_flags, TV, TT, TF);
 
     if (res != 0) {
-        NEON_LOG_ERROR("Tetgen failed to tetrahedralize mesh. Falling back to surface mesh!");
+        NEON_LOG_ERROR("Tetgen failed to tetrahedralize mesh. Falling back to surface mesh.");
         ReloadMesh(V, F);
         return;
     }
