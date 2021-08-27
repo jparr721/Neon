@@ -8,9 +8,13 @@
 //
 
 #include <Eigen/Cholesky>
+#include <functional>
+#include <future>
+#include <igl/slice.h>
 #include <solvers/materials/Homogenization.h>
+#include <thread>
 #include <unsupported/Eigen/KroneckerProduct>
-#include <utilities/runtime/NeonAssert.h>
+#include <utilities/runtime/NeonLog.h>
 #include <utility>
 
 namespace solvers::materials {
@@ -335,6 +339,7 @@ namespace solvers::materials {
 
     auto Homogenization::ComputeUniqueDegreesOfFreedom(const MatrixXi &element_degrees_of_freedom,
                                                        const Tensor3i &unique_nodes) -> MatrixXi {
+        NEON_LOG_INFO("Assembling DOFs");
         const unsigned int n_nodes = (voxel_.Dimensions().array() + 1).matrix().prod();
 
         VectorXi _dof = VectorXi::Ones(3 * n_nodes);
@@ -363,6 +368,7 @@ namespace solvers::materials {
     auto Homogenization::AssembleStiffnessMatrix(const unsigned int n_degrees_of_freedom,
                                                  const MatrixXi &unique_degrees_of_freedom, const MatrixXr &ke_lambda,
                                                  const MatrixXr &ke_mu) -> SparseMatrixXr {
+        NEON_LOG_INFO("Assembling stiffness matrix");
         const MatrixXi idx_i_kron = Eigen::kroneckerProduct(unique_degrees_of_freedom, MatrixXi::Ones(24, 1)).adjoint();
         const VectorXi idx_i = ((utilities::math::MatrixToVector(idx_i_kron)).array() - 1).matrix();
 
@@ -391,6 +397,7 @@ namespace solvers::materials {
     auto Homogenization::AssembleLoadMatrix(unsigned int n_elements, unsigned int n_degrees_of_freedom,
                                             const MatrixXi &unique_degrees_of_freedom, const MatrixXr &fe_lambda,
                                             const MatrixXr &fe_mu) -> SparseMatrixXr {
+        NEON_LOG_INFO("Assembling load matrix");
         const MatrixXi idx_i_exp = unique_degrees_of_freedom.transpose().replicate(6, 1);
         const VectorXi idx_i = (utilities::math::MatrixToVector(idx_i_exp).array() - 1).matrix();
 
@@ -416,9 +423,10 @@ namespace solvers::materials {
         return F;
     }
 
-    auto Homogenization::ComputeDisplacement(unsigned int n_degrees_of_freedom, const MatrixXr &stiffness,
-                                             const MatrixXr &load, const MatrixXi &unique_degrees_of_freedom)
+    auto Homogenization::ComputeDisplacement(unsigned int n_degrees_of_freedom, const SparseMatrixXr &stiffness,
+                                             const SparseMatrixXr &load, const MatrixXi &unique_degrees_of_freedom)
             -> MatrixXr {
+        NEON_LOG_INFO("Computing Displacement");
         // Get active dofs for nonzero sections
         VectorXi active_dofs;
 
@@ -443,8 +451,6 @@ namespace solvers::materials {
         utilities::math::Dedupe(active_dofs);
         active_dofs -= VectorXi::Ones(active_dofs.rows());
 
-        MatrixXr K_sub;
-
         const unsigned int end = active_dofs.rows();
 
         VectorXi x_indices;
@@ -457,14 +463,17 @@ namespace solvers::materials {
             y_indices(i - 3) = active_dofs(i);
         }
 
-        utilities::math::Slice(stiffness, x_indices, y_indices, K_sub);
+        SparseMatrixXr K_sub;
+        igl::slice(stiffness, x_indices, y_indices, K_sub);
 
-        SparseMatrixXr K_sub_sparse = K_sub.sparseView();
         Eigen::ConjugateGradient<SparseMatrixXr, Eigen::Lower, Eigen::IncompleteCholesky<Real>> pcg;
-        pcg.compute(K_sub_sparse);
+        pcg.compute(K_sub);
 
+        NEON_LOG_INFO("Preparing solver");
         std::vector<VectorXr> X_entries;
-        for (int i = 0; i < 6; ++i) {
+
+        const auto task = [&](int i) -> VectorXr {
+            NEON_LOG_INFO("Starting task: ", i);
             VectorXr F_sub(end - 3);
             const VectorXr l = load.col(i);
             for (int j = 3; j < end; ++j) { F_sub(j - 3) = l(active_dofs(j)); }
@@ -473,8 +482,32 @@ namespace solvers::materials {
 
             for (int j = 3; j < active_dofs.rows(); ++j) { entry(active_dofs(j)) = result(j - 3); }
 
-            X_entries.emplace_back(entry);
-        }
+            return entry;
+        };
+
+        // The PCG Solver takes a _very_ long time at greater resolution than 40x40x40
+        auto p_0 = std::async(task, 0);
+        auto p_1 = std::async(task, 1);
+        auto p_2 = std::async(task, 2);
+        auto p_3 = std::async(task, 3);
+        auto p_4 = std::async(task, 4);
+        auto p_5 = std::async(task, 5);
+
+        const VectorXr entry_0 = p_0.get();
+        const VectorXr entry_1 = p_1.get();
+        const VectorXr entry_2 = p_2.get();
+        const VectorXr entry_3 = p_3.get();
+        const VectorXr entry_4 = p_4.get();
+        const VectorXr entry_5 = p_5.get();
+
+        X_entries.emplace_back(entry_0);
+        X_entries.emplace_back(entry_1);
+        X_entries.emplace_back(entry_2);
+        X_entries.emplace_back(entry_3);
+        X_entries.emplace_back(entry_4);
+        X_entries.emplace_back(entry_5);
+
+        NEON_LOG_INFO("Solver completed");
 
         MatrixXr X = MatrixXr::Zero(n_degrees_of_freedom, 6);
         X.col(0) = X_entries.at(0);
@@ -489,6 +522,7 @@ namespace solvers::materials {
 
     auto Homogenization::ComputeUnitStrainParameters(const unsigned int n_elements,
                                                      const std::array<MatrixXr, 4> &hexahedron) -> Tensor3r {
+        NEON_LOG_INFO("Computing unit strain parameters");
         // Unit strain displacements
         Tensor3r X0(n_elements, 24, 6);
 
@@ -542,10 +576,7 @@ namespace solvers::materials {
                                                     const MatrixXr &ke_lambda, const MatrixXr &ke_mu,
                                                     const MatrixXr &displacement, const Tensor3r &unit_strain_parameter)
             -> void {
-        const unsigned int rows = voxel_.Dimension(0);
-        const unsigned int cols = voxel_.Dimension(1);
-        const unsigned int layers = voxel_.Dimension(2);
-
+        NEON_LOG_INFO("Assembling constitutive tensor");
         const Real volume = cell_len_x_ * cell_len_y_ * cell_len_z_;
 
         const MatrixXi indices = (unique_degrees_of_freedom.array() - 1).matrix();

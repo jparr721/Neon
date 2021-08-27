@@ -7,11 +7,11 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 #include <igl/file_dialog_open.h>
-#include <visualizer/Visualizer.h>
-#include <utilities/runtime/NeonLog.h>
 #include <solvers/materials/Material.h>
 #include <solvers/materials/Rve.h>
+#include <utilities/runtime/NeonLog.h>
 #include <utility>
+#include <visualizer/Visualizer.h>
 
 visualizer::Visualizer::Visualizer() {
     viewer_.plugins.push_back(&menu_);
@@ -127,28 +127,74 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
     if (ImGui::CollapsingHeader("Shape Generator", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
         float p = ImGui::GetStyle().FramePadding.x;
-        ImGui::InputInt("Rve Dim", &rve_dims);
-        ImGui::InputInt("Void Dim", &void_dims);
-        ImGui::InputInt("N Voids", &n_voids);
+        ImGui::InputInt("Rve Dim", &rve_dims_);
+        ImGui::InputInt("Void Dim", &void_dims_);
+        ImGui::InputInt("N Voids", &n_voids_);
         if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) {
             NEON_LOG_INFO("Generating Shape");
-            const auto rve = std::make_unique<solvers::materials::Rve>(
-                    Vector3i(rve_dims, rve_dims, rve_dims), solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
+            rve_ = std::make_unique<solvers::materials::Rve>(
+                    Vector3i(rve_dims_, rve_dims_, rve_dims_),
+                    solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
             MatrixXr V;
             MatrixXi F;
             if (mesh_ == nullptr) {
                 NEON_LOG_INFO("Computing new grid mesh...");
-                rve->ComputeGridMesh(Vector3i(void_dims, void_dims, void_dims), n_voids, true, V, F);
+                rve_->ComputeGridMesh(Vector3i(void_dims_, void_dims_, void_dims_), n_voids_, true, V, F);
                 mesh_ = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
                 Refresh();
             } else {
                 NEON_LOG_INFO("Reloading grid mesh...");
-                rve->ComputeGridMesh(Vector3i(void_dims, void_dims, void_dims), n_voids, true, V, F);
+                rve_->ComputeGridMesh(Vector3i(void_dims_, void_dims_, void_dims_), n_voids_, true, V, F);
                 mesh_->ReloadMesh(V, F, "Yzpq");
                 Refresh();
             }
 
             NEON_LOG_INFO("Regeneration complete");
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Homogenization", ImGuiTreeNodeFlags_DefaultOpen)) {
+        float w = ImGui::GetContentRegionAvailWidth();
+        float p = ImGui::GetStyle().FramePadding.x;
+
+        ImGui::InputDouble("Young's Modulus", &youngs_modulus_);
+        ImGui::InputDouble("Poisson's Ratio", &poissons_ratio_);
+
+        ImGui::LabelText("E", "%.0e", youngs_modulus_);
+        ImGui::LabelText("v", "%.0e", poissons_ratio_);
+
+        Real E_x = 0;
+        Real E_y = 0;
+        Real E_z = 0;
+        Real G_x = 0;
+        Real G_y = 0;
+        Real G_z = 0;
+        ImGui::LabelText("E_x", "%.0e", E_x);
+        ImGui::LabelText("E_y", "%.0e", E_y);
+        ImGui::LabelText("E_z", "%.0e", E_z);
+        ImGui::LabelText("G_x", "%.0e", G_x);
+        ImGui::LabelText("G_y", "%.0e", G_y);
+        ImGui::LabelText("G_z", "%.0e", G_z);
+
+        if (ImGui::Button("Homogenize##Homogenization", ImVec2((w - p) / 2.f, 0))) {
+            NEON_LOG_INFO("Homogenizing current geometry...");
+            if (mesh_ == nullptr) { NEON_LOG_ERROR("Cannot homogenize empty mesh, aborting operation!!"); }
+
+            const auto homo_task = [&]() -> void {
+                NEON_LOG_INFO("Background homogenization task started");
+                rve_->Homogenize();
+            };
+            std::thread t(homo_task);
+            t.join();
+            
+            const solvers::materials::Homogenization::MaterialCoefficients coeffs = rve_->Homogenized()->Coefficients();
+
+            E_x = coeffs.E_11;
+            E_y = coeffs.E_22;
+            E_z = coeffs.E_33;
+            G_x = coeffs.G_23;
+            G_y = coeffs.G_31;
+            G_z = coeffs.G_12;
         }
     }
 }

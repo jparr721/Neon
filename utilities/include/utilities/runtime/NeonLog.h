@@ -48,6 +48,8 @@ namespace utilities::runtime {
             }
         }
     }
+
+    inline auto NeonLogSeparator() -> void { std::cout << "========================" << std::endl; }
 }// namespace utilities::runtime
 
 #define NEON_LOG_INFO(...)                                                                                             \
@@ -58,5 +60,7 @@ namespace utilities::runtime {
 
 #define NEON_LOG_ERROR(...)                                                                                            \
     utilities::runtime::NeonLog(NeonLogLevel::kError, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+
+#define NEON_LOG_SEPARATOR() utilities::runtime::NeonLogSeparator();
 
 #endif//NEON_NEONLOG_H

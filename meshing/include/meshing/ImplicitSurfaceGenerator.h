@@ -132,6 +132,9 @@ namespace meshing {
             return new_surface;
         }
 
+        // \brief Generate implicit function material.
+        // TODO(@jparr721) Add support for taking loaded rendered mesh and allowing it to be
+        // re-homogenized.
         auto GenerateImplicitFunctionBasedMaterial(MatrixXr &V, MatrixXi &F, const int thickness = 1) -> void {
             const int rows = implicit_surface_.Dimension(0);
             const int cols = implicit_surface_.Dimension(1);

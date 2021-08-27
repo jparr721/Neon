@@ -23,9 +23,8 @@ namespace visualizer {
         Visualizer();
         explicit Visualizer(std::shared_ptr<meshing::Mesh> mesh);
 
-        auto Viewer() const -> const igl::opengl::glfw::Viewer & { return viewer_; }
-
-        auto Menu() const -> const igl::opengl::glfw::imgui::ImGuiMenu & { return menu_; }
+        [[nodiscard]] auto Viewer() const -> const igl::opengl::glfw::Viewer & { return viewer_; }
+        [[nodiscard]] auto Menu() const -> const igl::opengl::glfw::imgui::ImGuiMenu & { return menu_; }
 
         auto Launch() -> void;
 
@@ -35,14 +34,18 @@ namespace visualizer {
         auto UpdateVertexPositions(const VectorXr &displacements) -> void;
 
     private:
-        int rve_dims = 10;
-        int void_dims = 10;
-        int n_voids = 5;
+        int rve_dims_ = 10;
+        int void_dims_ = 10;
+        int n_voids_ = 5;
+
+        Real youngs_modulus_ = 1000;
+        Real poissons_ratio_ = 0;
 
         igl::opengl::glfw::Viewer viewer_;
         igl::opengl::glfw::imgui::ImGuiMenu menu_;
 
         std::shared_ptr<meshing::Mesh> mesh_;
+        std::unique_ptr<solvers::materials::Rve> rve_;
 
         auto GeneratorMenu() -> void;
     };

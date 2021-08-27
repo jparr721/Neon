@@ -32,6 +32,11 @@ using Vector6r = Eigen::Matrix<Real, 6, 1>;
 using Vector12r = Eigen::Matrix<Real, 12, 1>;
 using VectorXr = Eigen::Matrix<Real, Eigen::Dynamic, 1>;
 
+// Sparse Vector Types
+using SparseVectorXr = Eigen::SparseVector<Real>;
+template<typename T>
+using SparseVectorX = Eigen::SparseVector<T>;
+
 // Dense Row Vector Types
 using RowVector3r = Eigen::Matrix<Real, 1, 3>;
 using RowVectorXr = Eigen::Matrix<Real, 1, Eigen::Dynamic>;
@@ -184,7 +189,7 @@ namespace utilities::math {
             }
 
             return data;
-         }
+        }
 
         auto SetTop(const int layer, const MatrixX<T> &data) -> void {
             const int rows = Dimension(1);
@@ -207,9 +212,7 @@ namespace utilities::math {
 
             for (int row = 0; row < rows; ++row) {
                 for (int col = 0; col < cols; ++col) {
-                    if (data(row, col) == 0) {
-                        instance_(layer, row, col) = data(row, col);
-                    }
+                    if (data(row, col) == 0) { instance_(layer, row, col) = data(row, col); }
                 }
             }
         }
@@ -230,7 +233,8 @@ namespace utilities::math {
             MatrixX<T> data(rows, cols);
 
             for (int row = 0; row < rows; ++row) {
-                for (int col = 0; col < cols; ++col) { data(row, col) = instance_(row, layer, col); } }
+                for (int col = 0; col < cols; ++col) { data(row, col) = instance_(row, layer, col); }
+            }
 
             return data;
         }
@@ -256,9 +260,7 @@ namespace utilities::math {
 
             for (int row = 0; row < rows; ++row) {
                 for (int col = 0; col < cols; ++col) {
-                    if (data(row, col) == 0) {
-                        instance_(row, layer, col) = data(row, col);
-                    }
+                    if (data(row, col) == 0) { instance_(row, layer, col) = data(row, col); }
                 }
             }
         }
@@ -266,12 +268,14 @@ namespace utilities::math {
         auto SetSides(const MatrixX<T> &data) -> void {
             const int layers = Dimension(1);
 
-            for (int layer = 0; layer < layers; ++layer) { SetSide(layer, data); } }
+            for (int layer = 0; layer < layers; ++layer) { SetSide(layer, data); }
+        }
 
         auto SetSidesBitmask(const MatrixX<T> &data) -> void {
             const int layers = Dimension(1);
 
-            for (int layer = 0; layer < layers; ++layer) { SetSideBitmask(layer, data); } }
+            for (int layer = 0; layer < layers; ++layer) { SetSideBitmask(layer, data); }
+        }
 
         auto SetLayer(const int layer, const MatrixX<T> &data) -> void {
             const int rows = Dimension(0);

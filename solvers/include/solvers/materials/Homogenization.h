@@ -47,29 +47,22 @@ namespace solvers::materials {
         virtual ~Homogenization() = default;
 
         auto Stiffness() const -> Matrix6r { return constitutive_tensor_; }
+        auto Coefficients() const -> MaterialCoefficients { return coefficients_; }
         auto CoefficientVector() const -> VectorXr { return coefficients_.Vector(); }
 
-        /// <summary>
-        /// Solves the integral over the volume of the voxel for the difference of
+        /// \brief Solves the integral over the volume of the voxel for the difference of
         /// the macro and micro scale strain tensors.
-        /// </summary>
         auto Solve() -> void;
 
-        /// <summary>
-        /// Creates the matrix S by inverting the stiffness constutive tensor C and
+        /// \brief Creates the matrix S by inverting the stiffness constutive tensor C and
         /// gets the 6x6 compliance matrix which contains our material coefficients.
-        /// </summary>
-        /// <returns></returns>
         auto ComputeMaterialCoefficients() -> void;
 
-        /// <summary>
-        /// Computes the finite element approximation of the stiffness and load
+        /// \brief Computes the finite element approximation of the stiffness and load
         /// matrices
-        /// </summary>
-        /// <param name="a"></param>
-        /// <param name="b"></param>
-        /// <param name="c"></param>
-        /// <returns></returns>
+        /// \param a x dim
+        /// \param b y dim
+        /// \param c z dim
         auto ComputeHexahedron(Real a, Real b, Real c) -> std::array<MatrixXr, 4>;
 
         auto ComputeElementDegreesOfFreedom(unsigned int n_elements) -> MatrixXi;
@@ -92,8 +85,8 @@ namespace solvers::materials {
         /// @param unique_degrees_of_freedom The degrees of freedom for
         /// non-void regions
         /// @returns Nodal displacement matrix Chi (X_e)
-        auto ComputeDisplacement(unsigned int n_degrees_of_freedom, const MatrixXr &stiffness, const MatrixXr &load,
-                                 const MatrixXi &unique_degrees_of_freedom) -> MatrixXr;
+        auto ComputeDisplacement(unsigned int n_degrees_of_freedom, const SparseMatrixXr &stiffness,
+                                 const SparseMatrixXr &load, const MatrixXi &unique_degrees_of_freedom) -> MatrixXr;
         auto ComputeUnitStrainParameters(unsigned int n_elements, const std::array<MatrixXr, 4> &hexahedron)
                 -> Tensor3r;
 
