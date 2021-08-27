@@ -35,6 +35,7 @@ if (USE_DOUBLE)
     add_definitions(-DNEON_USE_DOUBLE)
 endif (USE_DOUBLE)
 
+find_package(OpenMP REQUIRED)
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 include_directories("${PROJECT_SOURCE_DIR}"
         "${PROJECT_BINARY_DIR}"

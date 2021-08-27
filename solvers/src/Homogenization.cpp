@@ -580,6 +580,7 @@ namespace solvers::materials {
         const Real volume = cell_len_x_ * cell_len_y_ * cell_len_z_;
 
         const MatrixXi indices = (unique_degrees_of_freedom.array() - 1).matrix();
+#pragma omp parallel for collapse(2)
         for (int i = 0; i < 6; ++i) {
             for (int j = 0; j < 6; ++j) {
                 const MatrixXr sum_L_lhs = (unit_strain_parameter.Layer(i) -

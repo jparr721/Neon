@@ -6,12 +6,14 @@
 // If a copy of the GPL was not included with this file, you can
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
+#include <chrono>
 #include <future>
 #include <igl/file_dialog_open.h>
 #include <solvers/materials/Material.h>
 #include <solvers/materials/Rve.h>
 #include <thread>
-#include <utilities/runtime/NeonLog.h>
+#include <utilities/filesystem/CsvFile.h>
+#include <utilities/math/Time.h>
 #include <utility>
 #include <visualizer/Visualizer.h>
 
@@ -136,37 +138,7 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
         ImGui::Checkbox("Tetrahedralize", &tetrahedralize_);
         ImGui::Checkbox("Isotropic", &isotropic_);
 
-        if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) {
-            NEON_LOG_INFO("Generating Shape");
-            rve_ = std::make_unique<solvers::materials::Rve>(
-                    Vector3i(rve_dims_, rve_dims_, rve_dims_),
-                    solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
-            MatrixXr V;
-            MatrixXi F;
-            meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{n_voids_, void_dims_, void_dims_, void_dims_};
-            if (mesh_ == nullptr) {
-                NEON_LOG_INFO("Computing new grid mesh...");
-                rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
-                if (tetrahedralize_) {
-                    mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags_);
-                } else {
-                    mesh_ = std::make_shared<meshing::Mesh>(V, F);
-                }
-
-                Refresh();
-            } else {
-                NEON_LOG_INFO("Reloading grid mesh...");
-                rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
-                if (tetrahedralize_) {
-                    mesh_->ReloadMesh(V, F, tetgen_flags_);
-                } else {
-                    mesh_->ReloadMesh(V, F);
-                }
-                Refresh();
-            }
-
-            NEON_LOG_INFO("Regeneration complete");
-        }
+        if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) { GenerateShape(); }
     }
 
     if (ImGui::CollapsingHeader("Homogenization", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -186,20 +158,77 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
         ImGui::LabelText("G_y", "%.0e", G_y);
         ImGui::LabelText("G_z", "%.0e", G_z);
 
-        if (ImGui::Button("Homogenize##Homogenization", ImVec2((w - p) / 2.f, 0))) {
-            NEON_LOG_INFO("Homogenizing current geometry...");
-            if (mesh_ == nullptr) { NEON_LOG_ERROR("Cannot homogenize empty mesh, aborting operation!!"); }
+        if (ImGui::Button("Homogenize##Homogenization", ImVec2((w - p) / 2.f, 0))) { HomogenizeCurrentGeometry(); }
+    }
 
-            rve_->Homogenize();
+    if (ImGui::CollapsingHeader("Dataset Generator", ImGuiTreeNodeFlags_DefaultOpen)) {
+        float w = ImGui::GetContentRegionAvailWidth();
+        float p = ImGui::GetStyle().FramePadding.x;
 
-            const solvers::materials::Homogenization::MaterialCoefficients coeffs = rve_->Homogenized()->Coefficients();
+        ImGui::InputInt("Samples", &n_samples_);
 
-            E_x = coeffs.E_11;
-            E_y = coeffs.E_22;
-            E_z = coeffs.E_33;
-            G_x = coeffs.G_23;
-            G_y = coeffs.G_31;
-            G_z = coeffs.G_12;
+        if (ImGui::Button("Generate##Dataset Generator", ImVec2((w - p) / 2.f, 0))) {
+            const std::string filename = "Generator.csv";
+            utilities::filesystem::CsvFile<std::string> csv(filename,
+                                                            std::vector<std::string>{"Voxel", "Coefficients"});
+            for (int i = 0; i < n_samples_; ++i) {
+                GenerateShape();
+                HomogenizeCurrentGeometry();
+                const VectorXr coeffs = rve_->Homogenized()->CoefficientVector();
+                std::stringstream ss;
+                ss << coeffs.transpose();
+                const std::vector<std::string> entries({rve_->Homogenized()->Voxel().ToString(), ss.str()});
+                csv << entries;
+            }
         }
+    }
+}
+
+auto visualizer::Visualizer::GenerateShape() -> void {
+    NEON_LOG_INFO("Generating Shape");
+    rve_ = std::make_unique<solvers::materials::Rve>(Vector3i(rve_dims_, rve_dims_, rve_dims_),
+                                                     solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
+    MatrixXr V;
+    MatrixXi F;
+    meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{n_voids_, void_dims_, void_dims_, void_dims_};
+    if (mesh_ == nullptr) {
+        NEON_LOG_INFO("Computing new grid mesh...");
+        rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
+        if (tetrahedralize_) {
+            mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags_);
+        } else {
+            mesh_ = std::make_shared<meshing::Mesh>(V, F);
+        }
+        Refresh();
+    } else {
+        NEON_LOG_INFO("Reloading grid mesh...");
+        rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
+        if (tetrahedralize_) {
+            mesh_->ReloadMesh(V, F, tetgen_flags_);
+        } else {
+            mesh_->ReloadMesh(V, F);
+        }
+        Refresh();
+    }
+
+    NEON_LOG_INFO("Regeneration complete");
+}
+
+auto visualizer::Visualizer::HomogenizeCurrentGeometry() -> void {
+    NEON_LOG_INFO("Homogenizing current geometry...");
+    if (mesh_ == nullptr) {
+        NEON_LOG_ERROR("Cannot homogenize empty mesh, aborting operation!!");
+    } else {
+        rve_->Homogenize();
+
+        const solvers::materials::Homogenization::MaterialCoefficients coeffs = rve_->Homogenized()->Coefficients();
+
+        E_x = coeffs.E_11;
+        E_y = coeffs.E_22;
+        E_z = coeffs.E_33;
+        G_x = coeffs.G_23;
+        G_y = coeffs.G_31;
+        G_z = coeffs.G_12;
+        NEON_LOG_INFO("Homogenization complete");
     }
 }

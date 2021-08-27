@@ -33,16 +33,20 @@ namespace visualizer {
         auto Refresh() -> void;
         auto UpdateVertexPositions(const VectorXr &displacements) -> void;
 
+        auto GenerateShape() -> void;
+        auto HomogenizeCurrentGeometry() -> void;
+
     private:
         bool tetrahedralize_ = false;
         bool isotropic_ = true;
 
-        int rve_dims_ = 10;
-        int void_dims_ = 10;
-        int n_voids_ = 5;
+        int rve_dims_ = 20;
+        int void_dims_ = 5;
+        int n_voids_ = 10;
+        int n_samples_ = 100;
 
         Real youngs_modulus_ = 1000;
-        Real poissons_ratio_ = 0;
+        Real poissons_ratio_ = 0.3;
 
         Real E_x = 0;
         Real E_y = 0;

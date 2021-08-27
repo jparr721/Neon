@@ -213,7 +213,8 @@ namespace meshing {
             int n_iterations = 0;
 
             // RNG
-            std::mt19937 generator;
+            std::random_device rd;
+            std::mt19937 generator(rd());
             const std::uniform_int_distribution<int> rows_distribution(min, max_rows);
             const std::uniform_int_distribution<int> cols_distribution(min, max_cols);
             const std::uniform_int_distribution<int> layers_distribution(min, max_layers);
