@@ -37,6 +37,7 @@ auto meshing::Mesh::Update(const VectorXr &displacements) -> void { positions = 
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void {
     faces = F;
+    tetrahedra = F;
     positions = utilities::math::MatrixToVector(V);
     rest_positions = utilities::math::MatrixToVector(V);
 }

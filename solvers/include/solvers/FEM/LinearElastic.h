@@ -52,10 +52,10 @@ namespace solvers::fem {
         helpers::BoundaryConditions boundary_conditions;
 
         LinearElastic(helpers::BoundaryConditions boundary_conditions, Real youngs_modulus, Real poissons_ratio,
-                      std::shared_ptr<meshing::Mesh> mesh, Type type = Type::kDynamic);
+                      std::shared_ptr<meshing::Mesh> mesh, Type type = Type::kStatic);
 
-        auto SolveWithIntegrator() -> void;
-        auto SolveStatic() -> void;
+        auto SolveWithIntegrator() -> MatrixXr;
+        auto SolveStatic() -> MatrixXr;
 
         /// \brief Assemble the global stiffness matrix by slicing together all of the
         /// element stiffness matrices.

@@ -9,6 +9,7 @@
 
 #include <igl/slice.h>
 #include <solvers/FEM/LinearElastic.h>
+#include <utilities/runtime/NeonLog.h>
 
 #include <utility>
 
@@ -17,6 +18,7 @@ solvers::fem::LinearElastic::LinearElastic(helpers::BoundaryConditions boundary_
     : boundary_conditions(std::move(boundary_conditions)), youngs_modulus_(youngs_modulus),
       poissons_ratio_(poissons_ratio), mesh_(std::move(mesh)) {
     // Since this is a linear solver, we can formulate all of our starting assets right away.
+    AssembleConstitutiveMatrix();
     AssembleElementStiffness();
     AssembleGlobalStiffness();
     if (type == Type::kStatic) {
@@ -30,17 +32,16 @@ solvers::fem::LinearElastic::LinearElastic(helpers::BoundaryConditions boundary_
     U = VectorXr::Zero(mesh_->positions.rows());
 }
 
-auto solvers::fem::LinearElastic::SolveWithIntegrator() -> void {
+auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
     // Iterate the boundary conditions, assigning only where active nodes exist.
     int i = 0;
     for (const auto &[node, _] : boundary_conditions) {
         U.segment(node, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
         i += 3;
     }
+    return ComputeElementStress();
 }
-auto solvers::fem::LinearElastic::SolveStatic() -> void {
-    // U must be initialized for all dofs, not just the active ones.
-    U = VectorXr::Zero(mesh_->positions.rows());
+auto solvers::fem::LinearElastic::SolveStatic() -> MatrixXr {
     U_e = K_e_static.fullPivLu().solve(F_e);
 
     int i = 0;
@@ -50,7 +51,7 @@ auto solvers::fem::LinearElastic::SolveStatic() -> void {
     }
 
     F = K * U;
-    ComputeElementStress();
+    return ComputeElementStress();
 }
 
 auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {
@@ -253,12 +254,11 @@ auto solvers::fem::LinearElastic::AssembleBoundaryForces() -> void {
                      "No boundary conditions found. This simulation will not run properly.");
     F_e = VectorXr::Zero(boundary_conditions.size() * 3);
     VectorXr boundary_force_indices(boundary_conditions.size() * 3);
-    const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
 
     int segment = 0;
     for (const auto &[node, force] : boundary_conditions) {
         F_e.segment(segment, 3) << force;
-        boundary_force_indices.segment(segment, 3) << pm.row(node);
+        boundary_force_indices.segment(segment, 3) << node, node + 1, node + 2;
         segment += 3;
     }
 
@@ -295,7 +295,7 @@ auto solvers::fem::LinearElastic::ComputeElementStress() -> MatrixXr {
     // Convert the positions vector to a matrix for easier indexing.
     // Note: for large geometry this could cause performance issues.
     const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
-    const MatrixXr dsp = utilities::math::VectorToMatrix(U, U.rows() / 3, 3);
+    const MatrixXr dsp = utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose();
     for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
         const Vector4i tetrahedral = mesh_->tetrahedra.row(row);
 

@@ -11,8 +11,8 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MAIN
 
-#include "../include/solvers/materials/Homogenization.h"
 #include <boost/test/unit_test.hpp>
+#include <solvers/materials/Homogenization.h>
 #include <solvers/materials/Material.h>
 #include <solvers/materials/Rve.h>
 #include <utilities/include/utilities/math/LinearAlgebra.h>
