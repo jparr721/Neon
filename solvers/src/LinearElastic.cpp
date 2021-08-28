@@ -8,15 +8,267 @@
 //
 
 #include <solvers/FEM/LinearElastic.h>
+#include <utilities/runtime/NeonAssert.h>
+#include <utilities/runtime/NeonLog.h>
 
 auto solvers::fem::LinearElastic::SolveWithIntegrator() -> void {}
 auto solvers::fem::LinearElastic::SolveStatic() -> void {}
-auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {}
-auto solvers::fem::LinearElastic::AssembleElementStiffness() -> void {}
 
-auto solvers::fem::LinearElastic::AssemblePlaneStresses(const MatrixXr &sigma) -> MatrixXr { return MatrixXr(); }
+auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {
+    // Because it's nxn in matrix form, the vector form is 3n
+    const unsigned int size = mesh_->rest_positions.rows();
+    K = MatrixXr::Zero(size, size);
+
+    for (const auto &element_stiffness : K_e) {
+        const Matrix12r k = element_stiffness.stiffness;
+        const auto i = element_stiffness.tetrahedral(0);
+        const auto j = element_stiffness.tetrahedral(1);
+        const auto m = element_stiffness.tetrahedral(2);
+        const auto n = element_stiffness.tetrahedral(3);
+
+        K(3 * i, 3 * i) += k(0, 0);
+        K(3 * i, 3 * i + 1) += k(0, 1);
+        K(3 * i, 3 * i + 2) += k(0, 2);
+        K(3 * i, 3 * j) += k(0, 3);
+        K(3 * i, 3 * j + 1) += k(0, 4);
+        K(3 * i, 3 * j + 2) += k(0, 5);
+        K(3 * i, 3 * m) += k(0, 6);
+        K(3 * i, 3 * m + 1) += k(0, 7);
+        K(3 * i, 3 * m + 2) += k(0, 8);
+        K(3 * i, 3 * n) += k(0, 9);
+        K(3 * i, 3 * n + 1) += k(0, 10);
+        K(3 * i, 3 * n + 2) += k(0, 11);
+
+        K(3 * i + 1, 3 * i) += k(1, 0);
+        K(3 * i + 1, 3 * i + 1) += k(1, 1);
+        K(3 * i + 1, 3 * i + 2) += k(1, 2);
+        K(3 * i + 1, 3 * j) += k(1, 3);
+        K(3 * i + 1, 3 * j + 1) += k(1, 4);
+        K(3 * i + 1, 3 * j + 2) += k(1, 5);
+        K(3 * i + 1, 3 * m) += k(1, 6);
+        K(3 * i + 1, 3 * m + 1) += k(1, 7);
+        K(3 * i + 1, 3 * m + 2) += k(1, 8);
+        K(3 * i + 1, 3 * n) += k(1, 9);
+        K(3 * i + 1, 3 * n + 1) += k(1, 10);
+        K(3 * i + 1, 3 * n + 2) += k(1, 11);
+
+        K(3 * i + 2, 3 * i) += k(2, 0);
+        K(3 * i + 2, 3 * i + 1) += k(2, 1);
+        K(3 * i + 2, 3 * i + 2) += k(2, 2);
+        K(3 * i + 2, 3 * j) += k(2, 3);
+        K(3 * i + 2, 3 * j + 1) += k(2, 4);
+        K(3 * i + 2, 3 * j + 2) += k(2, 5);
+        K(3 * i + 2, 3 * m) += k(2, 6);
+        K(3 * i + 2, 3 * m + 1) += k(2, 7);
+        K(3 * i + 2, 3 * m + 2) += k(2, 8);
+        K(3 * i + 2, 3 * n) += k(2, 9);
+        K(3 * i + 2, 3 * n + 1) += k(2, 10);
+        K(3 * i + 2, 3 * n + 2) += k(2, 11);
+
+        // j
+        K(3 * j, 3 * i) += k(3, 0);
+        K(3 * j, 3 * i + 1) += k(3, 1);
+        K(3 * j, 3 * i + 2) += k(3, 2);
+        K(3 * j, 3 * j) += k(3, 3);
+        K(3 * j, 3 * j + 1) += k(3, 4);
+        K(3 * j, 3 * j + 2) += k(3, 5);
+        K(3 * j, 3 * m) += k(3, 6);
+        K(3 * j, 3 * m + 1) += k(3, 7);
+        K(3 * j, 3 * m + 2) += k(3, 8);
+        K(3 * j, 3 * n) += k(3, 9);
+        K(3 * j, 3 * n + 1) += k(3, 10);
+        K(3 * j, 3 * n + 2) += k(3, 11);
+
+        K(3 * j + 1, 3 * i) += k(4, 0);
+        K(3 * j + 1, 3 * i + 1) += k(4, 1);
+        K(3 * j + 1, 3 * i + 2) += k(4, 2);
+        K(3 * j + 1, 3 * j) += k(4, 3);
+        K(3 * j + 1, 3 * j + 1) += k(4, 4);
+        K(3 * j + 1, 3 * j + 2) += k(4, 5);
+        K(3 * j + 1, 3 * m) += k(4, 6);
+        K(3 * j + 1, 3 * m + 1) += k(4, 7);
+        K(3 * j + 1, 3 * m + 2) += k(4, 8);
+        K(3 * j + 1, 3 * n) += k(4, 9);
+        K(3 * j + 1, 3 * n + 1) += k(4, 10);
+        K(3 * j + 1, 3 * n + 2) += k(4, 11);
+
+        K(3 * j + 2, 3 * i) += k(5, 0);
+        K(3 * j + 2, 3 * i + 1) += k(5, 1);
+        K(3 * j + 2, 3 * i + 2) += k(5, 2);
+        K(3 * j + 2, 3 * j) += k(5, 3);
+        K(3 * j + 2, 3 * j + 1) += k(5, 4);
+        K(3 * j + 2, 3 * j + 2) += k(5, 5);
+        K(3 * j + 2, 3 * m) += k(5, 6);
+        K(3 * j + 2, 3 * m + 1) += k(5, 7);
+        K(3 * j + 2, 3 * m + 2) += k(5, 8);
+        K(3 * j + 2, 3 * n) += k(5, 9);
+        K(3 * j + 2, 3 * n + 1) += k(5, 10);
+        K(3 * j + 2, 3 * n + 2) += k(5, 11);
+
+        // m
+        K(3 * m, 3 * i) += k(6, 0);
+        K(3 * m, 3 * i + 1) += k(6, 1);
+        K(3 * m, 3 * i + 2) += k(6, 2);
+        K(3 * m, 3 * j) += k(6, 3);
+        K(3 * m, 3 * j + 1) += k(6, 4);
+        K(3 * m, 3 * j + 2) += k(6, 5);
+        K(3 * m, 3 * m) += k(6, 6);
+        K(3 * m, 3 * m + 1) += k(6, 7);
+        K(3 * m, 3 * m + 2) += k(6, 8);
+        K(3 * m, 3 * n) += k(6, 9);
+        K(3 * m, 3 * n + 1) += k(6, 10);
+        K(3 * m, 3 * n + 2) += k(6, 11);
+
+        K(3 * m + 1, 3 * i) += k(7, 0);
+        K(3 * m + 1, 3 * i + 1) += k(7, 1);
+        K(3 * m + 1, 3 * i + 2) += k(7, 2);
+        K(3 * m + 1, 3 * j) += k(7, 3);
+        K(3 * m + 1, 3 * j + 1) += k(7, 4);
+        K(3 * m + 1, 3 * j + 2) += k(7, 5);
+        K(3 * m + 1, 3 * m) += k(7, 6);
+        K(3 * m + 1, 3 * m + 1) += k(7, 7);
+        K(3 * m + 1, 3 * m + 2) += k(7, 8);
+        K(3 * m + 1, 3 * n) += k(7, 9);
+        K(3 * m + 1, 3 * n + 1) += k(7, 10);
+        K(3 * m + 1, 3 * n + 2) += k(7, 11);
+
+        K(3 * m + 2, 3 * i) += k(8, 0);
+        K(3 * m + 2, 3 * i + 1) += k(8, 1);
+        K(3 * m + 2, 3 * i + 2) += k(8, 2);
+        K(3 * m + 2, 3 * j) += k(8, 3);
+        K(3 * m + 2, 3 * j + 1) += k(8, 4);
+        K(3 * m + 2, 3 * j + 2) += k(8, 5);
+        K(3 * m + 2, 3 * m) += k(8, 6);
+        K(3 * m + 2, 3 * m + 1) += k(8, 7);
+        K(3 * m + 2, 3 * m + 2) += k(8, 8);
+        K(3 * m + 2, 3 * n) += k(8, 9);
+        K(3 * m + 2, 3 * n + 1) += k(8, 10);
+        K(3 * m + 2, 3 * n + 2) += k(8, 11);
+
+        // n
+        K(3 * n, 3 * i) += k(9, 0);
+        K(3 * n, 3 * i + 1) += k(9, 1);
+        K(3 * n, 3 * i + 2) += k(9, 2);
+        K(3 * n, 3 * j) += k(9, 3);
+        K(3 * n, 3 * j + 1) += k(9, 4);
+        K(3 * n, 3 * j + 2) += k(9, 5);
+        K(3 * n, 3 * m) += k(9, 6);
+        K(3 * n, 3 * m + 1) += k(9, 7);
+        K(3 * n, 3 * m + 2) += k(9, 8);
+        K(3 * n, 3 * n) += k(9, 9);
+        K(3 * n, 3 * n + 1) += k(9, 10);
+        K(3 * n, 3 * n + 2) += k(9, 11);
+
+        K(3 * n + 1, 3 * i) += k(10, 0);
+        K(3 * n + 1, 3 * i + 1) += k(10, 1);
+        K(3 * n + 1, 3 * i + 2) += k(10, 2);
+        K(3 * n + 1, 3 * j) += k(10, 3);
+        K(3 * n + 1, 3 * j + 1) += k(10, 4);
+        K(3 * n + 1, 3 * j + 2) += k(10, 5);
+        K(3 * n + 1, 3 * m) += k(10, 6);
+        K(3 * n + 1, 3 * m + 1) += k(10, 7);
+        K(3 * n + 1, 3 * m + 2) += k(10, 8);
+        K(3 * n + 1, 3 * n) += k(10, 9);
+        K(3 * n + 1, 3 * n + 1) += k(10, 10);
+        K(3 * n + 1, 3 * n + 2) += k(10, 11);
+
+        K(3 * n + 2, 3 * i) += k(11, 0);
+        K(3 * n + 2, 3 * i + 1) += k(11, 1);
+        K(3 * n + 2, 3 * i + 2) += k(11, 2);
+        K(3 * n + 2, 3 * j) += k(11, 3);
+        K(3 * n + 2, 3 * j + 1) += k(11, 4);
+        K(3 * n + 2, 3 * j + 2) += k(11, 5);
+        K(3 * n + 2, 3 * m) += k(11, 6);
+        K(3 * n + 2, 3 * m + 1) += k(11, 7);
+        K(3 * n + 2, 3 * m + 2) += k(11, 8);
+        K(3 * n + 2, 3 * n) += k(11, 9);
+        K(3 * n + 2, 3 * n + 1) += k(11, 10);
+        K(3 * n + 2, 3 * n + 2) += k(11, 11);
+    }
+}
+
+auto solvers::fem::LinearElastic::AssembleElementStiffness() -> void {
+    // Convert the positions vector to a matrix for easier indexing.
+    // Note: for large geometry this could cause performance issues.
+    const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
+    for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
+        const Vector4r tetrahedral = mesh_->tetrahedra.row(row);
+
+        // Get vertices corresponding to the tetrahedral node labels.
+        const VectorXr shape_one = pm.row(tetrahedral(0));
+        const VectorXr shape_two = pm.row(tetrahedral(1));
+        const VectorXr shape_three = pm.row(tetrahedral(2));
+        const VectorXr shape_four = pm.row(tetrahedral(3));
+
+        // Prepare to compute the nodal stresses by transforming via the shape functions
+        // and then computing the stress.
+        const MatrixXr B = AssembleStrainRelationshipMatrix(shape_one, shape_two, shape_three, shape_four);
+        const Real V = ComputeTetrahedralElementVolume(shape_one, shape_two, shape_three, shape_four);
+        const Matrix12r stiffness = V * B.transpose() * constitutive_matrix_ * B;
+        K_e.emplace_back(ElementStiffness{stiffness, tetrahedral});
+    }
+}
+
+auto solvers::fem::LinearElastic::AssembleBoundaryForces() -> void {
+    NEON_ASSERT_WARN(!boundary_conditions.empty(),
+                     "No boundary conditions found. This simulation will not run properly.");
+}
+
+auto solvers::fem::LinearElastic::AssemblePlaneStresses(const MatrixXr &sigmas) -> MatrixXr {
+    MatrixXr plane_stresses;
+    plane_stresses.resize(sigmas.rows(), 3);
+
+    for (int row = 0; row < sigmas.rows(); ++row) {
+        const VectorXr sigma = sigmas.row(row);
+        const Real s1 = sigma.sum();
+        const Real s2 = (sigma(0) * sigma(1) + sigma(0) * sigma(2) + sigma(1) * sigma(2)) -
+                        (sigma(3) * sigma(3) - sigma(4) * sigma(4) - sigma(5) * sigma(5));
+
+        Eigen::Matrix3f ms3;
+        ms3.row(0) << sigma(0), sigma(3), sigma(5);
+        ms3.row(1) << sigma(3), sigma(1), sigma(4);
+        ms3.row(2) << sigma(5), sigma(4), sigma(2);
+
+        const Real s3 = ms3.determinant();
+
+        const Eigen::Vector3f plane_stress(s1, s2, s3);
+        plane_stresses.row(row) = plane_stress;
+    }
+
+    return plane_stresses;
+}
 auto solvers::fem::LinearElastic::ComputeElementStress(const VectorXr &nodal_displacement) -> MatrixXr {
-    return MatrixXr();
+    MatrixXr element_stresses;
+    element_stresses.resize(mesh_->tetrahedra.rows(), 6);
+
+    // Convert the positions vector to a matrix for easier indexing.
+    // Note: for large geometry this could cause performance issues.
+    const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
+    const MatrixXr dsp = utilities::math::VectorToMatrix(nodal_displacement, nodal_displacement.rows() / 3, 3);
+    for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
+        const Vector4r tetrahedral = mesh_->tetrahedra.row(row);
+
+        // Get vertices corresponding to the tetrahedral node labels.
+        const VectorXr shape_one = pm.row(tetrahedral(0));
+        const VectorXr shape_two = pm.row(tetrahedral(1));
+        const VectorXr shape_three = pm.row(tetrahedral(2));
+        const VectorXr shape_four = pm.row(tetrahedral(3));
+
+        // Get the corresponding node displacement values by tetrahedral index.
+        const VectorXr displacement_one = dsp.row(tetrahedral(0));
+        const VectorXr displacement_two = dsp.row(tetrahedral(1));
+        const VectorXr displacement_three = dsp.row(tetrahedral(2));
+        const VectorXr displacement_four = dsp.row(tetrahedral(3));
+
+        // Prepare to compute the nodal stresses by transforming via the shape functions
+        // and then computing the stress.
+        const MatrixXr B = AssembleStrainRelationshipMatrix(shape_one, shape_two, shape_three, shape_four);
+        Vector12r u;
+        u << displacement_one, displacement_two, displacement_three, displacement_four;
+        element_stresses.row(row) = constitutive_matrix_ * B * u;
+    }
+
+    return element_stresses;
 }
 auto solvers::fem::LinearElastic::ComputeShapeFunctionFromPoints(const Vector6r &points) -> Real {
     const Real p0 = points(0);

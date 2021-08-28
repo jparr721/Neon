@@ -24,6 +24,7 @@ namespace meshing {
         VectorXr rest_positions;
 
         MatrixXi faces;
+        MatrixXi tetrahedra;
 
         Mesh(const std::string &file_path, MeshFileType file_type);
         Mesh(const std::string &file_path, const std::string &tetgen_flags, MeshFileType file_type);

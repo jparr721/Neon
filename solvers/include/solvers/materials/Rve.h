@@ -26,7 +26,7 @@ namespace solvers::materials {
 
         auto Homogenize() -> void;
         auto ComputeUniformMesh() -> void;
-        auto ComputeUnfiformMesh(MatrixXr &V, MatrixXi &F) -> void;
+        auto ComputeUniformMesh(MatrixXr &V, MatrixXi &F) -> void;
         auto ComputeCompositeMesh(const meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion, bool is_isotropic,
                                   MatrixXr &V, MatrixXi &F) -> void;
 

@@ -193,7 +193,11 @@ auto visualizer::Visualizer::GenerateShape() -> void {
     meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{n_voids_, void_dims_, void_dims_, void_dims_};
     if (mesh_ == nullptr) {
         NEON_LOG_INFO("Computing new grid mesh...");
-        rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
+        if (n_voids_ == 0) {
+            rve_->ComputeUniformMesh(V, F);
+        } else {
+            rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
+        }
         if (tetrahedralize_) {
             mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags_);
         } else {
@@ -202,7 +206,11 @@ auto visualizer::Visualizer::GenerateShape() -> void {
         Refresh();
     } else {
         NEON_LOG_INFO("Reloading grid mesh...");
-        rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
+        if (n_voids_ == 0) {
+            rve_->ComputeUniformMesh(V, F);
+        } else {
+            rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
+        }
         if (tetrahedralize_) {
             mesh_->ReloadMesh(V, F, tetgen_flags_);
         } else {

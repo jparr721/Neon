@@ -56,6 +56,7 @@ namespace meshing {
     template<typename T>
     class ImplicitSurfaceGenerator {
     public:
+        static constexpr int kNoThickness = -1;
         struct Inclusion {
             int n_inclusions;
             int depth;
@@ -79,7 +80,7 @@ namespace meshing {
         };
 
         ImplicitSurfaceGenerator(const unsigned int height, const unsigned int width, const unsigned int depth)
-            : microstructure_(Microstructure::kUniform) {
+            : microstructure_(Microstructure::kUniform), behavior_(Behavior::kIsotropic) {
             implicit_surface_.Resize(height, width, depth);
             implicit_surface_.SetConstant(static_cast<T>(material_number_));
         }

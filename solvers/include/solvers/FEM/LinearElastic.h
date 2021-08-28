@@ -13,12 +13,17 @@
 
 namespace solvers::fem {
     class LinearElastic {
+        struct ElementStiffness {
+            Matrix12r stiffness;
+            Vector4r tetrahedral;
+        };
+
     public:
         /// \brief Global stiffness matrix.
         MatrixXr K;
 
-        /// \brief Per-node element stiffness matrix.
-        MatrixXr K_e;
+        /// \brief Per-node element stiffness matrices.
+        std::vector<ElementStiffness> K_e;
 
         /// \brief Global displacement vector.
         VectorXr U;
@@ -36,10 +41,12 @@ namespace solvers::fem {
         /// \brief Assemble the element stiffness matrix by solving K_e = V * B^T * D * B.
         auto AssembleElementStiffness() -> void;
 
+        auto AssembleBoundaryForces() -> void;
+
         auto AssembleConstitutiveMatrix() -> void;
 
         /// \brief Computes the plane stresses for the tetrahedral element.
-        auto AssemblePlaneStresses(const MatrixXr &sigma) -> MatrixXr;
+        auto AssemblePlaneStresses(const MatrixXr &sigmas) -> MatrixXr;
 
         auto ComputeElementStress(const VectorXr &nodal_displacement) -> MatrixXr;
 
