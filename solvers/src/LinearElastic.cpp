@@ -7,12 +7,51 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
+#include <igl/slice.h>
 #include <solvers/FEM/LinearElastic.h>
-#include <utilities/runtime/NeonAssert.h>
-#include <utilities/runtime/NeonLog.h>
 
-auto solvers::fem::LinearElastic::SolveWithIntegrator() -> void {}
-auto solvers::fem::LinearElastic::SolveStatic() -> void {}
+#include <utility>
+
+solvers::fem::LinearElastic::LinearElastic(helpers::BoundaryConditions boundary_conditions, Real youngs_modulus,
+                                           Real poissons_ratio, std::shared_ptr<meshing::Mesh> mesh, Type type)
+    : boundary_conditions(std::move(boundary_conditions)), youngs_modulus_(youngs_modulus),
+      poissons_ratio_(poissons_ratio), mesh_(std::move(mesh)) {
+    // Since this is a linear solver, we can formulate all of our starting assets right away.
+    AssembleElementStiffness();
+    AssembleGlobalStiffness();
+    if (type == Type::kStatic) {
+        AssembleBoundaryForces();
+    } else {
+        // Element nodes for the dynamic case so we only use active dofs.
+        U_e = VectorXr::Zero(boundary_conditions.size() * 3);
+    }
+
+    // Global displacement is always for all nodes.
+    U = VectorXr::Zero(mesh_->positions.rows());
+}
+
+auto solvers::fem::LinearElastic::SolveWithIntegrator() -> void {
+    // Iterate the boundary conditions, assigning only where active nodes exist.
+    int i = 0;
+    for (const auto &[node, _] : boundary_conditions) {
+        U.segment(node, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
+        i += 3;
+    }
+}
+auto solvers::fem::LinearElastic::SolveStatic() -> void {
+    // U must be initialized for all dofs, not just the active ones.
+    U = VectorXr::Zero(mesh_->positions.rows());
+    U_e = K_e_static.fullPivLu().solve(F_e);
+
+    int i = 0;
+    for (const auto &[node, _] : boundary_conditions) {
+        U.segment(node, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
+        i += 3;
+    }
+
+    F = K * U;
+    ComputeElementStress();
+}
 
 auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {
     // Because it's nxn in matrix form, the vector form is 3n
@@ -192,13 +231,13 @@ auto solvers::fem::LinearElastic::AssembleElementStiffness() -> void {
     // Note: for large geometry this could cause performance issues.
     const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
     for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
-        const Vector4r tetrahedral = mesh_->tetrahedra.row(row);
+        const Vector4i tetrahedral = mesh_->tetrahedra.row(row);
 
         // Get vertices corresponding to the tetrahedral node labels.
-        const VectorXr shape_one = pm.row(tetrahedral(0));
-        const VectorXr shape_two = pm.row(tetrahedral(1));
-        const VectorXr shape_three = pm.row(tetrahedral(2));
-        const VectorXr shape_four = pm.row(tetrahedral(3));
+        const Vector3r shape_one = pm.row(tetrahedral(0));
+        const Vector3r shape_two = pm.row(tetrahedral(1));
+        const Vector3r shape_three = pm.row(tetrahedral(2));
+        const Vector3r shape_four = pm.row(tetrahedral(3));
 
         // Prepare to compute the nodal stresses by transforming via the shape functions
         // and then computing the stress.
@@ -212,6 +251,18 @@ auto solvers::fem::LinearElastic::AssembleElementStiffness() -> void {
 auto solvers::fem::LinearElastic::AssembleBoundaryForces() -> void {
     NEON_ASSERT_WARN(!boundary_conditions.empty(),
                      "No boundary conditions found. This simulation will not run properly.");
+    F_e = VectorXr::Zero(boundary_conditions.size() * 3);
+    VectorXr boundary_force_indices(boundary_conditions.size() * 3);
+    const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
+
+    int segment = 0;
+    for (const auto &[node, force] : boundary_conditions) {
+        F_e.segment(segment, 3) << force;
+        boundary_force_indices.segment(segment, 3) << pm.row(node);
+        segment += 3;
+    }
+
+    igl::slice(K, boundary_force_indices, boundary_force_indices, K_e_static);
 }
 
 auto solvers::fem::LinearElastic::AssemblePlaneStresses(const MatrixXr &sigmas) -> MatrixXr {
@@ -224,41 +275,41 @@ auto solvers::fem::LinearElastic::AssemblePlaneStresses(const MatrixXr &sigmas) 
         const Real s2 = (sigma(0) * sigma(1) + sigma(0) * sigma(2) + sigma(1) * sigma(2)) -
                         (sigma(3) * sigma(3) - sigma(4) * sigma(4) - sigma(5) * sigma(5));
 
-        Eigen::Matrix3f ms3;
+        Matrix3r ms3;
         ms3.row(0) << sigma(0), sigma(3), sigma(5);
         ms3.row(1) << sigma(3), sigma(1), sigma(4);
         ms3.row(2) << sigma(5), sigma(4), sigma(2);
 
         const Real s3 = ms3.determinant();
 
-        const Eigen::Vector3f plane_stress(s1, s2, s3);
+        const Vector3r plane_stress(s1, s2, s3);
         plane_stresses.row(row) = plane_stress;
     }
 
     return plane_stresses;
 }
-auto solvers::fem::LinearElastic::ComputeElementStress(const VectorXr &nodal_displacement) -> MatrixXr {
+auto solvers::fem::LinearElastic::ComputeElementStress() -> MatrixXr {
     MatrixXr element_stresses;
     element_stresses.resize(mesh_->tetrahedra.rows(), 6);
 
     // Convert the positions vector to a matrix for easier indexing.
     // Note: for large geometry this could cause performance issues.
     const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
-    const MatrixXr dsp = utilities::math::VectorToMatrix(nodal_displacement, nodal_displacement.rows() / 3, 3);
+    const MatrixXr dsp = utilities::math::VectorToMatrix(U, U.rows() / 3, 3);
     for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
-        const Vector4r tetrahedral = mesh_->tetrahedra.row(row);
+        const Vector4i tetrahedral = mesh_->tetrahedra.row(row);
 
         // Get vertices corresponding to the tetrahedral node labels.
-        const VectorXr shape_one = pm.row(tetrahedral(0));
-        const VectorXr shape_two = pm.row(tetrahedral(1));
-        const VectorXr shape_three = pm.row(tetrahedral(2));
-        const VectorXr shape_four = pm.row(tetrahedral(3));
+        const Vector3r shape_one = pm.row(tetrahedral(0));
+        const Vector3r shape_two = pm.row(tetrahedral(1));
+        const Vector3r shape_three = pm.row(tetrahedral(2));
+        const Vector3r shape_four = pm.row(tetrahedral(3));
 
         // Get the corresponding node displacement values by tetrahedral index.
-        const VectorXr displacement_one = dsp.row(tetrahedral(0));
-        const VectorXr displacement_two = dsp.row(tetrahedral(1));
-        const VectorXr displacement_three = dsp.row(tetrahedral(2));
-        const VectorXr displacement_four = dsp.row(tetrahedral(3));
+        const Vector3r displacement_one = dsp.row(tetrahedral(0));
+        const Vector3r displacement_two = dsp.row(tetrahedral(1));
+        const Vector3r displacement_three = dsp.row(tetrahedral(2));
+        const Vector3r displacement_four = dsp.row(tetrahedral(3));
 
         // Prepare to compute the nodal stresses by transforming via the shape functions
         // and then computing the stress.

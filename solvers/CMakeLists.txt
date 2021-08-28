@@ -40,3 +40,16 @@ target_link_libraries(
         utilities
         meshing
 )
+
+add_executable(
+        ${PROJECT_NAME}LinearElasticTest
+        tests/LinearElasticTest.cpp
+)
+
+target_link_libraries(
+        ${PROJECT_NAME}LinearElasticTest
+        LINK_PUBLIC ${Boost_LIBRARIES}
+        ${PROJECT_NAME}
+        utilities
+        meshing
+)
