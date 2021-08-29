@@ -6,7 +6,6 @@
 // If a copy of the GPL was not included with this file, you can
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
-#include <chrono>
 #include <future>
 #include <igl/file_dialog_open.h>
 #include <solvers/materials/Material.h>
@@ -17,17 +16,10 @@
 #include <utility>
 #include <visualizer/Visualizer.h>
 
-visualizer::Visualizer::Visualizer() {
-    viewer_.plugins.push_back(&menu_);
-    menu_.callback_draw_viewer_menu = [&]() { GeneratorMenu(); };
-}
+visualizer::Visualizer::Visualizer() { SetupMenus(); }
 
 visualizer::Visualizer::Visualizer(std::shared_ptr<meshing::Mesh> mesh) : mesh_(std::move(mesh)) {
-    // Add the menu plugin to the viewer so it shows up.
-    viewer_.plugins.push_back(&menu_);
-
-    menu_.callback_draw_viewer_menu = [&]() { GeneratorMenu(); };
-
+    SetupMenus();
     viewer_.data().set_mesh(mesh_->RenderablePositions(), mesh_->faces);
 }
 
@@ -39,7 +31,113 @@ auto visualizer::Visualizer::Refresh() -> void {
     viewer_.data().set_mesh(mesh_->RenderablePositions(), mesh_->faces);
 }
 auto visualizer::Visualizer::UpdateVertexPositions(const VectorXr &displacements) -> void {}
-auto visualizer::Visualizer::GeneratorMenu() -> void {
+
+auto visualizer::Visualizer::GenerateShape() -> void {
+    NEON_LOG_INFO("Generating Shape");
+    rve_ = std::make_unique<solvers::materials::Rve>(Vector3i(rve_dims_, rve_dims_, rve_dims_),
+                                                     solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
+    MatrixXr V;
+    MatrixXi F;
+    meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{n_voids_, void_dims_, void_dims_, void_dims_};
+    if (mesh_ == nullptr) {
+        NEON_LOG_INFO("Computing new grid mesh...");
+        if (n_voids_ == 0) {
+            rve_->ComputeUniformMesh(V, F);
+        } else {
+            rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
+        }
+        if (tetrahedralize_) {
+            mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags_);
+        } else {
+            mesh_ = std::make_shared<meshing::Mesh>(V, F);
+        }
+        Refresh();
+    } else {
+        NEON_LOG_INFO("Reloading grid mesh...");
+        if (n_voids_ == 0) {
+            rve_->ComputeUniformMesh(V, F);
+        } else {
+            rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
+        }
+        if (tetrahedralize_) {
+            mesh_->ReloadMesh(V, F, tetgen_flags_);
+        } else {
+            mesh_->ReloadMesh(V, F);
+        }
+        Refresh();
+    }
+
+    NEON_LOG_INFO("Regeneration complete");
+}
+
+auto visualizer::Visualizer::HomogenizeCurrentGeometry() -> void {
+    NEON_LOG_INFO("Homogenizing current geometry...");
+    if (mesh_ == nullptr) {
+        NEON_LOG_ERROR("Cannot homogenize empty mesh, aborting operation!!");
+    } else {
+        rve_->Homogenize();
+
+        const solvers::materials::Homogenization::MaterialCoefficients coeffs = rve_->Homogenized()->Coefficients();
+
+        E_x = coeffs.E_11;
+        E_y = coeffs.E_22;
+        E_z = coeffs.E_33;
+        G_x = coeffs.G_23;
+        G_y = coeffs.G_31;
+        G_z = coeffs.G_12;
+        v_21 = coeffs.v_21;
+        v_31 = coeffs.v_31;
+        v_12 = coeffs.v_12;
+        v_32 = coeffs.v_32;
+        v_13 = coeffs.v_13;
+        v_23 = coeffs.v_23;
+        NEON_LOG_INFO("Homogenization complete");
+    }
+}
+
+auto visualizer::Visualizer::SolveFEM(Real E, Real v) -> Real {
+    const MatrixXr pos_matrix = mesh_->RenderablePositions();
+    // Apply uni-axial y-axis force
+    // Bottom nodes are fixed
+    const auto bottom_nodes = solvers::helpers::FindYAxisBottomNodes(pos_matrix);
+
+    // Top nodes have unit force
+    const auto top_nodes = solvers::helpers::FindYAxisTopNodes(pos_matrix);
+
+    // Since it's a cube, we can assume top nodes are all the same y.
+    const Real fifty_percent_compression_threshold = pos_matrix(top_nodes.at(0)) / 2;
+
+    std::vector<unsigned int> ignored_nodes;
+    std::set_union(bottom_nodes.begin(), bottom_nodes.end(), top_nodes.begin(), top_nodes.end(),
+                   std::back_inserter(ignored_nodes));
+    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, pos_matrix);
+
+    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, y_axis_force_);
+    const auto intermediate_nodes_boundary_conditions =
+            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
+
+    auto all_boundary_conditions = top_boundary_conditions;
+    all_boundary_conditions.insert(all_boundary_conditions.begin(), top_boundary_conditions.begin(),
+                                   top_boundary_conditions.end());
+    fem_solver_ = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, E, v, mesh_);
+    fem_solver_->SolveStatic();
+    return fifty_percent_compression_threshold;
+}
+
+auto visualizer::Visualizer::GeometryMenuWindow() -> void {
+    ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(geometry_menu_width_, -1.0f), ImVec2(geometry_menu_width_, -1.0f));
+    bool _viewer_menu_visible = true;
+    ImGui::Begin("Geometry Options", &_viewer_menu_visible,
+                 ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
+    GeometryMenu();
+    ImGui::PopItemWidth();
+    ImGui::End();
+}
+
+auto visualizer::Visualizer::GeometryMenu() -> void {
     if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
         float p = ImGui::GetStyle().FramePadding.x;
@@ -140,7 +238,23 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
 
         if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) { GenerateShape(); }
     }
+}
 
+auto visualizer::Visualizer::GeneratorMenuWindow() -> void {
+    const float x = geometry_menu_width_;
+    ImGui::SetNextWindowPos(ImVec2(x, 0.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(x, 0.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(generator_menu_width_, -1.0f), ImVec2(generator_menu_width_, -1.0f));
+    bool _viewer_menu_visible = true;
+    ImGui::Begin("Generator Options", &_viewer_menu_visible,
+                 ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.4f);
+    GeneratorMenu();
+    ImGui::PopItemWidth();
+    ImGui::End();
+}
+
+auto visualizer::Visualizer::GeneratorMenu() -> void {
     if (ImGui::CollapsingHeader("Homogenization", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
         float p = ImGui::GetStyle().FramePadding.x;
@@ -188,91 +302,14 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
             }
         }
     }
-}
 
-auto visualizer::Visualizer::GenerateShape() -> void {
-    NEON_LOG_INFO("Generating Shape");
-    rve_ = std::make_unique<solvers::materials::Rve>(Vector3i(rve_dims_, rve_dims_, rve_dims_),
-                                                     solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
-    MatrixXr V;
-    MatrixXi F;
-    meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{n_voids_, void_dims_, void_dims_, void_dims_};
-    if (mesh_ == nullptr) {
-        NEON_LOG_INFO("Computing new grid mesh...");
-        if (n_voids_ == 0) {
-            rve_->ComputeUniformMesh(V, F);
-        } else {
-            rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
-        }
-        if (tetrahedralize_) {
-            mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags_);
-        } else {
-            mesh_ = std::make_shared<meshing::Mesh>(V, F);
-        }
-        Refresh();
-    } else {
-        NEON_LOG_INFO("Reloading grid mesh...");
-        if (n_voids_ == 0) {
-            rve_->ComputeUniformMesh(V, F);
-        } else {
-            rve_->ComputeCompositeMesh(inclusion, isotropic_, V, F);
-        }
-        if (tetrahedralize_) {
-            mesh_->ReloadMesh(V, F, tetgen_flags_);
-        } else {
-            mesh_->ReloadMesh(V, F);
-        }
-        Refresh();
-    }
-
-    NEON_LOG_INFO("Regeneration complete");
-}
-
-auto visualizer::Visualizer::HomogenizeCurrentGeometry() -> void {
-    NEON_LOG_INFO("Homogenizing current geometry...");
-    if (mesh_ == nullptr) {
-        NEON_LOG_ERROR("Cannot homogenize empty mesh, aborting operation!!");
-    } else {
-        rve_->Homogenize();
-
-        const solvers::materials::Homogenization::MaterialCoefficients coeffs = rve_->Homogenized()->Coefficients();
-
-        E_x = coeffs.E_11;
-        E_y = coeffs.E_22;
-        E_z = coeffs.E_33;
-        G_x = coeffs.G_23;
-        G_y = coeffs.G_31;
-        G_z = coeffs.G_12;
-        v_21 = coeffs.v_21;
-        v_31 = coeffs.v_31;
-        v_12 = coeffs.v_12;
-        v_32 = coeffs.v_32;
-        v_13 = coeffs.v_13;
-        v_23 = coeffs.v_23;
-        NEON_LOG_INFO("Homogenization complete");
+    if (ImGui::CollapsingHeader("FEM Solver", ImGuiTreeNodeFlags_DefaultOpen)) {
+        float w = ImGui::GetContentRegionAvailWidth();
+        float p = ImGui::GetStyle().FramePadding.x;
     }
 }
-
-auto visualizer::Visualizer::SolveFEM(Real E, Real v) -> void {
-    // Apply uni-axial y-axis force
-    // Bottom nodes are fixed
-    const auto bottom_nodes = solvers::helpers::FindYAxisBottomNodes(mesh_->RenderablePositions());
-
-    // Top nodes have unit force
-    const auto top_nodes = solvers::helpers::FindYAxisTopNodes(mesh_->RenderablePositions());
-
-    std::vector<unsigned int> ignored_nodes;
-    std::set_union(bottom_nodes.begin(), bottom_nodes.end(), top_nodes.begin(), top_nodes.end(),
-                   std::back_inserter(ignored_nodes));
-    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, mesh_->RenderablePositions());
-
-    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, y_axis_force_);
-    const auto intermediate_nodes_boundary_conditions =
-            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
-
-    auto all_boundary_conditions = top_boundary_conditions;
-    all_boundary_conditions.insert(all_boundary_conditions.begin(), top_boundary_conditions.begin(),
-                                   top_boundary_conditions.end());
-    fem_solver_ = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, E, v, mesh_);
-    fem_solver_->SolveStatic();
+auto visualizer::Visualizer::SetupMenus() -> void {
+    menu_.callback_draw_custom_window = [&]() { GeneratorMenuWindow(); };
+    menu_.callback_draw_viewer_window = [&]() { GeometryMenuWindow(); };
+    viewer_.plugins.push_back(&menu_);
 }

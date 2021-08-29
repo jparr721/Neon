@@ -36,7 +36,7 @@ namespace visualizer {
 
         auto GenerateShape() -> void;
         auto HomogenizeCurrentGeometry() -> void;
-        auto SolveFEM(Real E, Real v) -> void;
+        auto SolveFEM(Real E, Real v) -> Real;
 
     private:
         bool tetrahedralize_ = false;
@@ -76,7 +76,16 @@ namespace visualizer {
         std::unique_ptr<solvers::materials::Rve> rve_;
         std::unique_ptr<solvers::fem::LinearElastic> fem_solver_;
 
+        const float geometry_menu_width_ = 160.f * menu_.menu_scaling();
+        const float generator_menu_width_ = 200.f * menu_.menu_scaling();
+
+        auto GeometryMenu() -> void;
+        auto GeometryMenuWindow() -> void;
+
         auto GeneratorMenu() -> void;
+        auto GeneratorMenuWindow() -> void;
+
+        auto SetupMenus() -> void;
     };
 }// namespace visualizer
 
