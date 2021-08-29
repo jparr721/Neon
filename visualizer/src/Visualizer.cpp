@@ -261,9 +261,9 @@ auto visualizer::Visualizer::SolveFEM(Real E, Real v) -> void {
     // Top nodes have unit force
     const auto top_nodes = solvers::helpers::FindYAxisTopNodes(mesh_->RenderablePositions());
 
-    std::set<unsigned int> ignored_nodes;
+    std::vector<unsigned int> ignored_nodes;
     std::set_union(bottom_nodes.begin(), bottom_nodes.end(), top_nodes.begin(), top_nodes.end(),
-                   std::inserter(ignored_nodes, ignored_nodes.begin()));
+                   std::back_inserter(ignored_nodes));
     const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, mesh_->RenderablePositions());
 
     const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, y_axis_force_);
