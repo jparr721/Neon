@@ -56,7 +56,8 @@ namespace utilities::assert {
             case NeonAssertionLevel::kError: {
                 std::ostringstream ss = formatter("ERROR");
                 LogAll(ss, context...);
-                throw std::runtime_error(ss.str());
+                std::cerr << ss.str() << std::endl;
+                assert(false);
             }
             default:
                 throw std::runtime_error("CANNOT UNWIND ASSERTION");

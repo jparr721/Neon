@@ -28,13 +28,13 @@ namespace solvers::fem {
         Type type;
 
         /// \brief Global stiffness matrix.
-        MatrixXr K;
+        SparseMatrixXr K;
 
         /// \brief Per-node element stiffness matrices for integrated solution.
         std::vector<ElementStiffness> K_e;
 
         /// \brief Per-node element stiffness matrix for static solution.
-        MatrixXr K_e_static;
+        SparseMatrixXr K_e_static;
 
         /// \brief Global displacement vector.
         VectorXr U;

@@ -17,9 +17,9 @@
 #include <utilities/math/LinearAlgebra.h>
 #include <utilities/runtime/NeonLog.h>
 
-meshing::Mesh::Mesh(const std::string &file_path, meshing::MeshFileType file_type) { ReloadMesh(file_path, file_type); }
+meshing::Mesh::Mesh(const std::string &file_path, MeshFileType file_type) { ReloadMesh(file_path, file_type); }
 
-meshing::Mesh::Mesh(const std::string &file_path, const std::string &tetgen_flags, meshing::MeshFileType file_type) {
+meshing::Mesh::Mesh(const std::string &file_path, const std::string &tetgen_flags, MeshFileType file_type) {
     MatrixXr V;
     MatrixXi F;
     ReadFile(file_path, file_type, V, F);
@@ -36,6 +36,7 @@ meshing::Mesh::Mesh(const MatrixXr &V, const MatrixXi &F, const std::string &tet
 auto meshing::Mesh::Update(const VectorXr &displacements) -> void { positions = rest_positions + displacements; }
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void {
+    tetgen_succeeded = true;
     faces = F;
     tetrahedra = F;
     positions = utilities::math::MatrixToVector(V);
@@ -52,6 +53,8 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::
         NEON_LOG_ERROR("Tetgen failed to tetrahedralize mesh. Falling back to surface mesh.");
         ReloadMesh(V, F);
         return;
+    } else {
+        tetgen_succeeded = true;
     }
 
     igl::boundary_facets(TT, faces);
@@ -68,6 +71,14 @@ auto meshing::Mesh::ReloadMesh(const std::string &file_path, MeshFileType file_t
     MatrixXi F;
     ReadFile(file_path, file_type, V, F);
     ReloadMesh(V, F);
+}
+
+auto meshing::Mesh::ReloadMesh(const std::string &file_path, const std::string &tetgen_flags, MeshFileType file_type)
+        -> void {
+    MatrixXr V;
+    MatrixXi F;
+    ReadFile(file_path, file_type, V, F);
+    ReloadMesh(V, F, tetgen_flags);
 }
 
 auto meshing::Mesh::RenderablePositions() -> MatrixXr {

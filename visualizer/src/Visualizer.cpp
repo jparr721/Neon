@@ -96,31 +96,39 @@ auto visualizer::Visualizer::HomogenizeCurrentGeometry() -> void {
 }
 
 auto visualizer::Visualizer::SolveFEM(Real E, Real v) -> Real {
+    const Vector3r force = Vector3r(0, y_axis_force_, 0);
     const MatrixXr pos_matrix = mesh_->RenderablePositions();
+    NEON_LOG_INFO("Total nodes: ", pos_matrix.rows());
     // Apply uni-axial y-axis force
     // Bottom nodes are fixed
     const auto bottom_nodes = solvers::helpers::FindYAxisBottomNodes(pos_matrix);
+    NEON_LOG_INFO("Bottom Nodes: ", bottom_nodes.size());
 
     // Top nodes have unit force
     const auto top_nodes = solvers::helpers::FindYAxisTopNodes(pos_matrix);
 
     // Since it's a cube, we can assume top nodes are all the same y.
-    const Real fifty_percent_compression_threshold = pos_matrix(top_nodes.at(0)) / 2;
+    const Real fifty_percent_compression_threshold = pos_matrix.row(top_nodes.at(0)).y() / 2;
 
     std::vector<unsigned int> ignored_nodes;
     std::set_union(bottom_nodes.begin(), bottom_nodes.end(), top_nodes.begin(), top_nodes.end(),
                    std::back_inserter(ignored_nodes));
     const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, pos_matrix);
 
-    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, y_axis_force_);
+    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, force);
     const auto intermediate_nodes_boundary_conditions =
-            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
+            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, force);
 
     auto all_boundary_conditions = top_boundary_conditions;
-    all_boundary_conditions.insert(all_boundary_conditions.begin(), top_boundary_conditions.begin(),
-                                   top_boundary_conditions.end());
+    all_boundary_conditions.insert(all_boundary_conditions.end(), intermediate_nodes_boundary_conditions.begin(),
+                                   intermediate_nodes_boundary_conditions.end());
+
+    NEON_LOG_INFO("Boundary Conditions (active dofs): ", all_boundary_conditions.size());
     fem_solver_ = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, E, v, mesh_);
-    fem_solver_->SolveStatic();
+
+    try {
+        fem_solver_->SolveStatic();
+    } catch (const std::string &ex) { NEON_LOG_ERROR(ex); }
     return fifty_percent_compression_threshold;
 }
 
@@ -145,7 +153,20 @@ auto visualizer::Visualizer::GeometryMenu() -> void {
             const std::string f_name = igl::file_dialog_open();
             NEON_ASSERT_WARN(f_name.length() > 0, "File name empty.");
             const auto file_type = meshing::ReadFileExtension(f_name);
-            mesh_->ReloadMesh(f_name, file_type);
+
+            if (mesh_ == nullptr) {
+                if (tetrahedralize_) {
+                    mesh_ = std::make_shared<meshing::Mesh>(f_name, tetgen_flags_, file_type);
+                } else {
+                    mesh_ = std::make_shared<meshing::Mesh>(f_name, file_type);
+                }
+            } else {
+                if (tetrahedralize_) {
+                    mesh_->ReloadMesh(f_name, tetgen_flags_, file_type);
+                } else {
+                    mesh_->ReloadMesh(f_name, file_type);
+                }
+            }
             Refresh();
         }
         ImGui::SameLine(0, p);
@@ -306,6 +327,19 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
     if (ImGui::CollapsingHeader("FEM Solver", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
         float p = ImGui::GetStyle().FramePadding.x;
+
+        ImGui::InputDouble("Y-Axis Force", &y_axis_force_);
+
+        if (ImGui::Button("Solve##FEM Solver", ImVec2((w - p) / 2.f, 0))) {
+            if (mesh_ == nullptr) {
+                NEON_LOG_ERROR("No mesh found.");
+            } else {
+                const Real halfway = SolveFEM(youngs_modulus_, poissons_ratio_);
+                NEON_LOG_INFO("Halfway computation: ", halfway);
+                mesh_->Update(fem_solver_->U);
+                Refresh();
+            }
+        }
     }
 }
 auto visualizer::Visualizer::SetupMenus() -> void {

@@ -50,7 +50,7 @@ namespace visualizer {
         Real youngs_modulus_ = 1000;
         Real poissons_ratio_ = 0.3;
 
-        Vector3r y_axis_force_ = Vector3r(0, 10, 0);
+        Real y_axis_force_ = 100;
         const Vector3r initial_force = Vector3r::Zero();
 
         // Homogenization Coefficients =============================

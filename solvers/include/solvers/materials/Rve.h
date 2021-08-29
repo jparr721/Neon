@@ -27,7 +27,7 @@ namespace solvers::materials {
         auto Homogenize() -> void;
         auto ComputeUniformMesh() -> void;
         auto ComputeUniformMesh(MatrixXr &V, MatrixXi &F) -> void;
-        auto ComputeCompositeMesh(const meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion, bool is_isotropic,
+        auto ComputeCompositeMesh(meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion, bool is_isotropic,
                                   MatrixXr &V, MatrixXi &F) -> void;
 
         auto Height() const noexcept -> unsigned int { return height_; }
