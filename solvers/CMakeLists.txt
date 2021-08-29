@@ -53,3 +53,15 @@ target_link_libraries(
         utilities
         meshing
 )
+
+add_executable(
+        ${PROJECT_NAME}CentralDifferenceMethodTest
+        tests/CentralDifferenceMethodTest.cpp
+)
+
+target_link_libraries(
+        ${PROJECT_NAME}CentralDifferenceMethodTest
+        LINK_PUBLIC ${Boost_LIBRARIES}
+        ${PROJECT_NAME}
+        utilities
+)
