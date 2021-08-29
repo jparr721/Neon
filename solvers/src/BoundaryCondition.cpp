@@ -8,15 +8,15 @@
 //
 #include <solvers/helpers/BoundaryCondition.h>
 
-auto solvers::helpers::ApplyForceToBoundaryConditions(const std::vector<unsigned int> &indices, const Vector3r &force)
+auto solvers::helpers::ApplyForceToBoundaryConditions(const std::set<unsigned int> &indices, const Vector3r &force)
         -> BoundaryConditions {
     BoundaryConditions conditions;
     for (const auto &index : indices) { conditions.emplace_back(BoundaryCondition{index, force}); }
     return conditions;
 }
-auto solvers::helpers::FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<unsigned int> {
+auto solvers::helpers::FindYAxisBottomNodes(const MatrixXr &V) -> std::set<unsigned int> {
     Real min_y = 1e10;
-    std::vector<unsigned int> indices;
+    std::set<unsigned int> indices;
     for (int row = 0; row < V.rows(); ++row) {
         const Vector3r triplet = V.row(row);
         min_y = std::fmin(triplet.y(), min_y);
@@ -24,8 +24,31 @@ auto solvers::helpers::FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<un
 
     for (int row = 0; row < V.rows(); ++row) {
         const Vector3r triplet = V.row(row);
+        if (triplet.y() <= min_y) { indices.insert(row); }
+    }
 
-        if (triplet.y() >= min_y) { indices.push_back(row); }
+    return indices;
+}
+auto solvers::helpers::FindYAxisTopNodes(const MatrixXr &V) -> std::set<unsigned int> {
+    Real max_y = -1e10;
+    std::set<unsigned int> indices;
+    for (int row = 0; row < V.rows(); ++row) {
+        const Vector3r triplet = V.row(row);
+        max_y = std::fmax(triplet.y(), max_y);
+    }
+
+    for (int row = 0; row < V.rows(); ++row) {
+        const Vector3r triplet = V.row(row);
+        if (triplet.y() >= max_y) { indices.insert(row); }
+    }
+
+    return indices;
+}
+auto solvers::helpers::SelectNodes(const std::set<unsigned int> &ignored, const MatrixXr &V) -> std::set<unsigned int> {
+    std::set<unsigned int> indices;
+    for (int row = 0; row < V.rows(); ++row) {
+        // If the value isn't found, add it to our indices.
+        if (ignored.find(row) == ignored.end()) { indices.insert(row); }
     }
 
     return indices;

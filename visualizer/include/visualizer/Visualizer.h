@@ -15,6 +15,7 @@
 #include <igl/opengl/glfw/imgui/ImGuiMenu.h>
 #include <imgui/imgui.h>
 #include <meshing/Mesh.h>
+#include <solvers/FEM/LinearElastic.h>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace visualizer {
@@ -35,6 +36,7 @@ namespace visualizer {
 
         auto GenerateShape() -> void;
         auto HomogenizeCurrentGeometry() -> void;
+        auto SolveFEM(Real E, Real v) -> void;
 
     private:
         bool tetrahedralize_ = false;
@@ -48,12 +50,22 @@ namespace visualizer {
         Real youngs_modulus_ = 1000;
         Real poissons_ratio_ = 0.3;
 
+        Vector3r y_axis_force_ = Vector3r(0, 10, 0);
+        const Vector3r initial_force = Vector3r::Zero();
+
+        // Homogenization Coefficients =============================
         Real E_x = 0;
         Real E_y = 0;
         Real E_z = 0;
         Real G_x = 0;
         Real G_y = 0;
         Real G_z = 0;
+        Real v_21 = 0;
+        Real v_31 = 0;
+        Real v_12 = 0;
+        Real v_32 = 0;
+        Real v_13 = 0;
+        Real v_23 = 0;
 
         std::string tetgen_flags_ = "Yzpq";
 
@@ -62,6 +74,7 @@ namespace visualizer {
 
         std::shared_ptr<meshing::Mesh> mesh_;
         std::unique_ptr<solvers::materials::Rve> rve_;
+        std::unique_ptr<solvers::fem::LinearElastic> fem_solver_;
 
         auto GeneratorMenu() -> void;
     };

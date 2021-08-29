@@ -10,6 +10,7 @@
 #ifndef NEON_BOUNDARYCONDITION_H
 #define NEON_BOUNDARYCONDITION_H
 
+#include <set>
 #include <utilities/math/LinearAlgebra.h>
 #include <vector>
 
@@ -21,8 +22,10 @@ namespace solvers::helpers {
 
     using BoundaryConditions = std::vector<BoundaryCondition>;
 
-    auto FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<unsigned int>;
-    auto ApplyForceToBoundaryConditions(const std::vector<unsigned int> &indices, const Vector3r &force)
+    auto FindYAxisBottomNodes(const MatrixXr &V) -> std::set<unsigned int>;
+    auto FindYAxisTopNodes(const MatrixXr &V) -> std::set<unsigned int>;
+    auto SelectNodes(const std::set<unsigned int> &ignored, const MatrixXr &V) -> std::set<unsigned int>;
+    auto ApplyForceToBoundaryConditions(const std::set<unsigned int> &indices, const Vector3r &force)
             -> BoundaryConditions;
 }// namespace solvers::helpers
 #endif//NEON_BOUNDARYCONDITION_H

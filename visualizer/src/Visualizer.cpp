@@ -157,6 +157,12 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
         ImGui::LabelText("G_x", "%.0e", G_x);
         ImGui::LabelText("G_y", "%.0e", G_y);
         ImGui::LabelText("G_z", "%.0e", G_z);
+        ImGui::LabelText("v_21", "%.0e", v_21);
+        ImGui::LabelText("v_31", "%.0e", v_31);
+        ImGui::LabelText("v_12", "%.0e", v_12);
+        ImGui::LabelText("v_32", "%.0e", v_32);
+        ImGui::LabelText("v_13", "%.0e", v_13);
+        ImGui::LabelText("v_23", "%.0e", v_23);
 
         if (ImGui::Button("Homogenize##Homogenization", ImVec2((w - p) / 2.f, 0))) { HomogenizeCurrentGeometry(); }
     }
@@ -237,6 +243,36 @@ auto visualizer::Visualizer::HomogenizeCurrentGeometry() -> void {
         G_x = coeffs.G_23;
         G_y = coeffs.G_31;
         G_z = coeffs.G_12;
+        v_21 = coeffs.v_21;
+        v_31 = coeffs.v_31;
+        v_12 = coeffs.v_12;
+        v_32 = coeffs.v_32;
+        v_13 = coeffs.v_13;
+        v_23 = coeffs.v_23;
         NEON_LOG_INFO("Homogenization complete");
     }
+}
+
+auto visualizer::Visualizer::SolveFEM(Real E, Real v) -> void {
+    // Apply uni-axial y-axis force
+    // Bottom nodes are fixed
+    const auto bottom_nodes = solvers::helpers::FindYAxisBottomNodes(mesh_->RenderablePositions());
+
+    // Top nodes have unit force
+    const auto top_nodes = solvers::helpers::FindYAxisTopNodes(mesh_->RenderablePositions());
+
+    std::set<unsigned int> ignored_nodes;
+    std::set_union(bottom_nodes.begin(), bottom_nodes.end(), top_nodes.begin(), top_nodes.end(),
+                   std::inserter(ignored_nodes, ignored_nodes.begin()));
+    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, mesh_->RenderablePositions());
+
+    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, y_axis_force_);
+    const auto intermediate_nodes_boundary_conditions =
+            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
+
+    auto all_boundary_conditions = top_boundary_conditions;
+    all_boundary_conditions.insert(all_boundary_conditions.begin(), top_boundary_conditions.begin(),
+                                   top_boundary_conditions.end());
+    fem_solver_ = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, E, v, mesh_);
+    fem_solver_->SolveStatic();
 }
