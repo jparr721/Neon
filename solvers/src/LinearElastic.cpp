@@ -36,9 +36,14 @@ auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
     U.setZero();
     // Iterate the boundary conditions, assigning only where active nodes exist.
     int i = 0;
+    for (const auto &[node, _] : boundary_conditions) {
+        NEON_LOG_INFO("Node: ", node, " ", node * 3);
+        U.segment(node * 3, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
+        i += 3;
+    }
 
-    const auto nodes = solvers::helpers::Nodes(boundary_conditions);
-    mesh_->Update(nodes, U_e);
+    const MatrixXr update = utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose();
+    mesh_->Update(update);
 
     return ComputeElementStress();
 }

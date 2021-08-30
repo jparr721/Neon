@@ -33,16 +33,8 @@ meshing::Mesh::Mesh(const MatrixXr &V, const MatrixXi &F, const std::string &tet
     ReloadMesh(V, F, tetgen_flags);
 }
 
-auto meshing::Mesh::Update(const std::vector<unsigned int> &nodes, const VectorXr &change) -> void {
-    MatrixXr new_positions = rest_positions;
-    int i = 0;
-    for (const auto &node : nodes) {
-        const Vector3r row = change.segment(i, 3);
-        new_positions.row(node) += row;
-        i += 3;
-    }
-
-    positions = utilities::math::MatrixToVector(new_positions);
+auto meshing::Mesh::Update(const MatrixXr &change) -> void {
+    positions = utilities::math::MatrixToVector((rest_positions + change).eval());
 }
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void {

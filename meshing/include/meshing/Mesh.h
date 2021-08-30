@@ -33,7 +33,7 @@ namespace meshing {
         Mesh(const MatrixXr &V, const MatrixXi &F);
         Mesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags);
 
-        auto Update(const std::vector<unsigned int> &nodes, const VectorXr &change) -> void;
+        auto Update(const MatrixXr &change) -> void;
 
         auto ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void;
         auto ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags) -> void;
