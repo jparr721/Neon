@@ -65,7 +65,7 @@ namespace visualizer {
         Real v_13 = 0;
         Real v_23 = 0;
 
-        std::string tetgen_flags_ = "Yzpq";
+        std::string tetgen_flags_ = "zpq";
 
         igl::opengl::glfw::Viewer viewer_;
         igl::opengl::glfw::imgui::ImGuiMenu menu_;

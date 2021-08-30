@@ -33,14 +33,24 @@ meshing::Mesh::Mesh(const MatrixXr &V, const MatrixXi &F, const std::string &tet
     ReloadMesh(V, F, tetgen_flags);
 }
 
-auto meshing::Mesh::Update(const VectorXr &displacements) -> void { positions = rest_positions + displacements; }
+auto meshing::Mesh::Update(const std::vector<unsigned int> &nodes, const VectorXr &change) -> void {
+    MatrixXr new_positions = rest_positions;
+    int i = 0;
+    for (const auto &node : nodes) {
+        const Vector3r row = change.segment(i, 3);
+        new_positions.row(node) += row;
+        i += 3;
+    }
+
+    positions = utilities::math::MatrixToVector(new_positions);
+}
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void {
     tetgen_succeeded = true;
     igl::boundary_facets(F, faces);
     tetrahedra = F;
     positions = utilities::math::MatrixToVector(V);
-    rest_positions = utilities::math::MatrixToVector(V);
+    rest_positions = V;
 }
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags) -> void {
@@ -63,7 +73,7 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::
     // if it properly includes face elements. We should check here first if we experience weirdness.
     tetrahedra = TT;
     positions = utilities::math::MatrixToVector(TV);
-    rest_positions = utilities::math::MatrixToVector(TV);
+    rest_positions = TV;
 }
 
 auto meshing::Mesh::ReloadMesh(const std::string &file_path, MeshFileType file_type) -> void {

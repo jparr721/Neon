@@ -21,6 +21,10 @@ visualizer::Visualizer::Visualizer() { SetupMenus(); }
 visualizer::Visualizer::Visualizer(std::shared_ptr<meshing::Mesh> mesh) : mesh_(std::move(mesh)) {
     SetupMenus();
     viewer_.data().set_mesh(mesh_->RenderablePositions(), mesh_->faces);
+    viewer_.callback_post_draw = [&](igl::opengl::glfw::Viewer &v) -> bool {
+        Refresh();
+        return false;
+    };
 }
 
 auto visualizer::Visualizer::Launch() -> void { viewer_.launch(); }
@@ -317,7 +321,7 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
                 SetupSimulator(solvers::fem::LinearElastic::Type::kStatic);
                 SolveStaticFEM();
                 NEON_LOG_INFO("Halfway computation: ", solver_force_distance_threshold_);
-                mesh_->Update(fem_solver_->U);
+                //                mesh_->Update(fem_solver_->U);
                 Refresh();
             }
         }
@@ -342,7 +346,7 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
                     for (; simulating_;) {
                         fem_integrator_->Solve(fem_solver_->F_e, fem_solver_->U_e);
                         fem_solver_->SolveWithIntegrator();
-                        mesh_->Update(fem_solver_->U);
+                        //                        mesh_->Update(fem_solver_->U);
                         Refresh();
                     }
                     return;
@@ -406,7 +410,7 @@ auto visualizer::Visualizer::SetupIntegrator() -> void {
     }
 
     fem_integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(
-            0.0001, 5, fem_solver_->K_e, fem_solver_->U_e, fem_solver_->F_e);
+            0.001, 5, fem_solver_->K_e, fem_solver_->U_e, fem_solver_->F_e);
 }
 
 auto visualizer::Visualizer::SetActiveDofColors() -> void {

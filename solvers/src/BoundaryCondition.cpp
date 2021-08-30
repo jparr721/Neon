@@ -55,3 +55,9 @@ auto solvers::helpers::SelectNodes(const std::vector<unsigned int> &ignored, con
 
     return indices;
 }
+
+auto solvers::helpers::Nodes(const BoundaryConditions &bcs) -> std::vector<unsigned int> {
+    std::vector<unsigned int> out;
+    for (const auto &[node, _] : bcs) { out.push_back(node); }
+    return out;
+}

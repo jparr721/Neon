@@ -22,6 +22,7 @@ namespace solvers::helpers {
 
     using BoundaryConditions = std::vector<BoundaryCondition>;
 
+    auto Nodes(const BoundaryConditions &bcs) -> std::vector<unsigned int>;
     auto FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<unsigned int>;
     auto FindYAxisTopNodes(const MatrixXr &V) -> std::vector<unsigned int>;
     auto SelectNodes(const std::vector<unsigned int> &ignored, const MatrixXr &V) -> std::vector<unsigned int>;

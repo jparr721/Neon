@@ -23,8 +23,8 @@ namespace meshing {
         bool tetgen_succeeded = false;
 
         VectorXr positions;
-        VectorXr rest_positions;
 
+        MatrixXr rest_positions;
         MatrixXi faces;
         MatrixXi tetrahedra;
 
@@ -33,7 +33,7 @@ namespace meshing {
         Mesh(const MatrixXr &V, const MatrixXi &F);
         Mesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags);
 
-        auto Update(const VectorXr &displacements) -> void;
+        auto Update(const std::vector<unsigned int> &nodes, const VectorXr &change) -> void;
 
         auto ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void;
         auto ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags) -> void;

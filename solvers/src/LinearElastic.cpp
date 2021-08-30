@@ -36,10 +36,10 @@ auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
     U.setZero();
     // Iterate the boundary conditions, assigning only where active nodes exist.
     int i = 0;
-    for (const auto &[node, _] : boundary_conditions) {
-        U.segment(node * 3, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
-        i += 3;
-    }
+
+    const auto nodes = solvers::helpers::Nodes(boundary_conditions);
+    mesh_->Update(nodes, U_e);
+
     return ComputeElementStress();
 }
 auto solvers::fem::LinearElastic::SolveStatic() -> MatrixXr {
@@ -64,7 +64,7 @@ auto solvers::fem::LinearElastic::SolveStatic() -> MatrixXr {
 auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {
     using triple = Eigen::Triplet<Real>;
     // Because it's nxn in matrix form, the vector form is 3n
-    const unsigned int size = mesh_->rest_positions.rows();
+    const unsigned int size = mesh_->positions.rows();
     K.resize(size, size);
 
     std::vector<triple> triplets;
@@ -240,7 +240,7 @@ auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {
 auto solvers::fem::LinearElastic::AssembleElementStiffness() -> void {
     // Convert the positions vector to a matrix for easier indexing.
     // Note: for large geometry this could cause performance issues.
-    const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
+    const MatrixXr pm = mesh_->RenderablePositions();
     for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
         const Vector4i tetrahedral = mesh_->tetrahedra.row(row);
 
