@@ -16,6 +16,7 @@
 #include <imgui/imgui.h>
 #include <meshing/Mesh.h>
 #include <solvers/FEM/LinearElastic.h>
+#include <solvers/integrators/CentralDifferenceMethod.h>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace visualizer {
@@ -36,9 +37,11 @@ namespace visualizer {
 
         auto GenerateShape() -> void;
         auto HomogenizeCurrentGeometry() -> void;
-        auto SolveFEM(Real E, Real v) -> Real;
+        auto SolveStaticFEM() -> Real;
+        auto SolveDynamicFEM() -> void;
 
     private:
+        bool simulating_ = false;
         bool tetrahedralize_ = false;
         bool isotropic_ = true;
 
@@ -47,7 +50,7 @@ namespace visualizer {
         int n_voids_ = 10;
         int n_samples_ = 100;
 
-        Real youngs_modulus_ = 1000;
+        Real youngs_modulus_ = 10000;
         Real poissons_ratio_ = 0.3;
 
         Real y_axis_force_ = 100;
@@ -75,9 +78,17 @@ namespace visualizer {
         std::shared_ptr<meshing::Mesh> mesh_;
         std::unique_ptr<solvers::materials::Rve> rve_;
         std::unique_ptr<solvers::fem::LinearElastic> fem_solver_;
+        std::unique_ptr<solvers::integrators::CentralDifferenceMethod> fem_integrator_;
 
         const float geometry_menu_width_ = 160.f * menu_.menu_scaling();
         const float generator_menu_width_ = 200.f * menu_.menu_scaling();
+
+        // This doesn't belong, but for the sake of time shall remain
+        std::vector<unsigned int> fixed_nodes_;
+        std::vector<unsigned int> dynamic_nodes_;
+        Real solver_force_distance_threshold_;
+
+        // ==========================================================
 
         auto GeometryMenu() -> void;
         auto GeometryMenuWindow() -> void;
@@ -86,6 +97,9 @@ namespace visualizer {
         auto GeneratorMenuWindow() -> void;
 
         auto SetupMenus() -> void;
+
+        auto SetupSimulator(solvers::fem::LinearElastic::Type sim_type) -> void;
+        auto SetupIntegrator() -> void;
     };
 }// namespace visualizer
 

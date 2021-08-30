@@ -50,22 +50,22 @@ BOOST_AUTO_TEST_CASE(TestSolveStatic) {
     const Real E = 210e6;
     const Real v = 0.3;
     const auto bc_1 = solvers::helpers::BoundaryCondition{
-            2 * 3,
+            2,
             Vector3r(0.f, 3.125f, 0.f),
     };
 
     const auto bc_2 = solvers::helpers::BoundaryCondition{
-            3 * 3,
+            3,
             Vector3r(0.f, 6.25f, 0.f),
     };
 
     const auto bc_3 = solvers::helpers::BoundaryCondition{
-            6 * 3,
+            6,
             Vector3r(0.f, 6.25f, 0.f),
     };
 
     const auto bc_4 = solvers::helpers::BoundaryCondition{
-            7 * 3,
+            7,
             Vector3r(0.f, 3.125f, 0.f),
     };
     solvers::helpers::BoundaryConditions bcs{bc_1, bc_2, bc_3, bc_4};

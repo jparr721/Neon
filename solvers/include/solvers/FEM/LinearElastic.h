@@ -31,10 +31,10 @@ namespace solvers::fem {
         SparseMatrixXr K;
 
         /// \brief Per-node element stiffness matrices for integrated solution.
-        std::vector<ElementStiffness> K_e;
+        std::vector<ElementStiffness> K_e_storage;
 
         /// \brief Per-node element stiffness matrix for static solution.
-        SparseMatrixXr K_e_static;
+        SparseMatrixXr K_e;
 
         /// \brief Global displacement vector.
         VectorXr U;
@@ -61,7 +61,7 @@ namespace solvers::fem {
         /// element stiffness matrices.
         auto AssembleGlobalStiffness() -> void;
 
-        /// \brief Assemble the element stiffness matrix by solving K_e = V * B^T * D * B.
+        /// \brief Assemble the element stiffness matrix by solving K_e_storage = V * B^T * D * B.
         auto AssembleElementStiffness() -> void;
 
         auto AssembleBoundaryForces() -> void;

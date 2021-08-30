@@ -37,7 +37,7 @@ auto meshing::Mesh::Update(const VectorXr &displacements) -> void { positions = 
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void {
     tetgen_succeeded = true;
-    faces = F;
+    igl::boundary_facets(F, faces);
     tetrahedra = F;
     positions = utilities::math::MatrixToVector(V);
     rest_positions = utilities::math::MatrixToVector(V);

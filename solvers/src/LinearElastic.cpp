@@ -22,11 +22,10 @@ solvers::fem::LinearElastic::LinearElastic(helpers::BoundaryConditions boundary_
     AssembleConstitutiveMatrix();
     AssembleElementStiffness();
     AssembleGlobalStiffness();
-    if (type == Type::kStatic) {
-        AssembleBoundaryForces();
-    } else {
+    AssembleBoundaryForces();
+    if (type == Type::kDynamic) {
         // Element nodes for the dynamic case so we only use active dofs.
-        U_e = VectorXr::Zero(boundary_conditions.size() * 3);
+        U_e = VectorXr::Zero(this->boundary_conditions.size() * 3);
     }
 
     // Global displacement is always for all nodes.
@@ -34,10 +33,11 @@ solvers::fem::LinearElastic::LinearElastic(helpers::BoundaryConditions boundary_
 }
 
 auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
+    U.setZero();
     // Iterate the boundary conditions, assigning only where active nodes exist.
     int i = 0;
     for (const auto &[node, _] : boundary_conditions) {
-        U.segment(node, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
+        U.segment(node * 3, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
         i += 3;
     }
     return ComputeElementStress();
@@ -45,14 +45,14 @@ auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
 auto solvers::fem::LinearElastic::SolveStatic() -> MatrixXr {
     NEON_LOG_INFO("Firing up static solver");
     Eigen::SparseQR<SparseMatrixXr, Eigen::COLAMDOrdering<int>> solver;
-    solver.compute(K_e_static);
+    solver.compute(K_e);
     NEON_ASSERT_ERROR(solver.info() == Eigen::Success, "Solver failed to compute factorization");
     U_e = solver.solve(F_e);
     NEON_LOG_INFO("Displacement computation complete");
 
     int i = 0;
     for (const auto &[node, _] : boundary_conditions) {
-        U.segment(node, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
+        U.segment(node * 3, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
         i += 3;
     }
 
@@ -68,7 +68,7 @@ auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {
     K.resize(size, size);
 
     std::vector<triple> triplets;
-    for (const auto &element_stiffness : K_e) {
+    for (const auto &element_stiffness : K_e_storage) {
         const Matrix12r k = element_stiffness.stiffness;
         const auto i = element_stiffness.tetrahedral(0);
         const auto j = element_stiffness.tetrahedral(1);
@@ -255,7 +255,9 @@ auto solvers::fem::LinearElastic::AssembleElementStiffness() -> void {
         const MatrixXr B = AssembleStrainRelationshipMatrix(shape_one, shape_two, shape_three, shape_four);
         const Real V = ComputeTetrahedralElementVolume(shape_one, shape_two, shape_three, shape_four);
         const Matrix12r stiffness = V * B.transpose() * constitutive_matrix_ * B;
-        K_e.emplace_back(ElementStiffness{stiffness, tetrahedral});
+
+
+        K_e_storage.emplace_back(ElementStiffness{stiffness, tetrahedral});
     }
 }
 
@@ -267,12 +269,13 @@ auto solvers::fem::LinearElastic::AssembleBoundaryForces() -> void {
 
     int segment = 0;
     for (const auto &[node, force] : boundary_conditions) {
+        const auto _node = node * 3;
         F_e.segment(segment, 3) << force;
-        boundary_force_indices.segment(segment, 3) << node, node + 1, node + 2;
+        boundary_force_indices.segment(segment, 3) << _node, _node + 1, _node + 2;
         segment += 3;
     }
 
-    igl::slice(K, boundary_force_indices, boundary_force_indices, K_e_static);
+    igl::slice(K, boundary_force_indices, boundary_force_indices, K_e);
 }
 
 auto solvers::fem::LinearElastic::AssemblePlaneStresses(const MatrixXr &sigmas) -> MatrixXr {
@@ -425,12 +428,15 @@ auto solvers::fem::LinearElastic::ComputeTetrahedralElementVolume(const Vector3r
     const Real x1 = shape_one.x();
     const Real y1 = shape_one.y();
     const Real z1 = shape_one.z();
+
     const Real x2 = shape_two.x();
     const Real y2 = shape_two.y();
     const Real z2 = shape_two.z();
+
     const Real x3 = shape_three.x();
     const Real y3 = shape_three.y();
     const Real z3 = shape_three.z();
+
     const Real x4 = shape_four.x();
     const Real y4 = shape_four.y();
     const Real z4 = shape_four.z();

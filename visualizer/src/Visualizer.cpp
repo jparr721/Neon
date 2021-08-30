@@ -26,9 +26,12 @@ visualizer::Visualizer::Visualizer(std::shared_ptr<meshing::Mesh> mesh) : mesh_(
 auto visualizer::Visualizer::Launch() -> void { viewer_.launch(); }
 auto visualizer::Visualizer::AddObjectToViewer() -> void {}
 auto visualizer::Visualizer::Refresh() -> void {
-    if (!(viewer_.data().F.rows() == 0 && viewer_.data().V.rows() == 0)) { viewer_.data().clear(); }
-
-    viewer_.data().set_mesh(mesh_->RenderablePositions(), mesh_->faces);
+    if (!(viewer_.data().F.rows() == 0 && viewer_.data().V.rows() == 0)) {
+        viewer_.data_list.at(0).V = mesh_->RenderablePositions();
+        viewer_.data_list.at(0).dirty |= igl::opengl::MeshGL::DIRTY_POSITION;
+    } else {
+        viewer_.data().set_mesh(mesh_->RenderablePositions(), mesh_->faces);
+    }
 }
 auto visualizer::Visualizer::UpdateVertexPositions(const VectorXr &displacements) -> void {}
 
@@ -95,42 +98,12 @@ auto visualizer::Visualizer::HomogenizeCurrentGeometry() -> void {
     }
 }
 
-auto visualizer::Visualizer::SolveFEM(Real E, Real v) -> Real {
-    const Vector3r force = Vector3r(0, y_axis_force_, 0);
-    const MatrixXr pos_matrix = mesh_->RenderablePositions();
-    NEON_LOG_INFO("Total nodes: ", pos_matrix.rows());
-    // Apply uni-axial y-axis force
-    // Bottom nodes are fixed
-    const auto bottom_nodes = solvers::helpers::FindYAxisBottomNodes(pos_matrix);
-    NEON_LOG_INFO("Bottom Nodes: ", bottom_nodes.size());
-
-    // Top nodes have unit force
-    const auto top_nodes = solvers::helpers::FindYAxisTopNodes(pos_matrix);
-
-    // Since it's a cube, we can assume top nodes are all the same y.
-    const Real fifty_percent_compression_threshold = pos_matrix.row(top_nodes.at(0)).y() / 2;
-
-    std::vector<unsigned int> ignored_nodes;
-    std::set_union(bottom_nodes.begin(), bottom_nodes.end(), top_nodes.begin(), top_nodes.end(),
-                   std::back_inserter(ignored_nodes));
-    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, pos_matrix);
-
-    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, force);
-    const auto intermediate_nodes_boundary_conditions =
-            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, force);
-
-    auto all_boundary_conditions = top_boundary_conditions;
-    all_boundary_conditions.insert(all_boundary_conditions.end(), intermediate_nodes_boundary_conditions.begin(),
-                                   intermediate_nodes_boundary_conditions.end());
-
-    NEON_LOG_INFO("Boundary Conditions (active dofs): ", all_boundary_conditions.size());
-    fem_solver_ = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, E, v, mesh_);
-
-    try {
-        fem_solver_->SolveStatic();
-    } catch (const std::string &ex) { NEON_LOG_ERROR(ex); }
-    return fifty_percent_compression_threshold;
+auto visualizer::Visualizer::SolveStaticFEM() -> Real {
+    fem_solver_->SolveStatic();
+    return 0;
 }
+
+auto visualizer::Visualizer::SolveDynamicFEM() -> void { fem_solver_->SolveWithIntegrator(); }
 
 auto visualizer::Visualizer::GeometryMenuWindow() -> void {
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
@@ -168,6 +141,26 @@ auto visualizer::Visualizer::GeometryMenu() -> void {
                 }
             }
             Refresh();
+
+            //            MatrixXr V(8, 3);
+            //            V.row(0) << 0, 0, 0;
+            //            V.row(1) << 0.025, 0, 0;
+            //            V.row(2) << 0, 0.5, 0;
+            //            V.row(3) << 0.025, 0.5, 0;
+            //            V.row(4) << 0, 0, 0.25;
+            //            V.row(5) << 0.025, 0, 0.25;
+            //            V.row(6) << 0, 0.5, 0.25;
+            //            V.row(7) << 0.025, 0.5, 0.25;
+            //
+            //            MatrixXi T(5, 4);
+            //            T.row(0) << 0, 1, 3, 5;
+            //            T.row(1) << 0, 3, 2, 6;
+            //            T.row(2) << 5, 4, 6, 0;
+            //            T.row(3) << 5, 6, 7, 3;
+            //            T.row(4) << 0, 5, 3, 6;
+            //
+            //            mesh_ = std::make_shared<meshing::Mesh>(V, T);
+            //            Refresh();
         }
         ImGui::SameLine(0, p);
         if (ImGui::Button("Save##Mesh", ImVec2((w - p) / 2.f, 0))) { viewer_.open_dialog_save_mesh(); }
@@ -255,6 +248,9 @@ auto visualizer::Visualizer::GeometryMenu() -> void {
         ImGui::InputInt("N Voids", &n_voids_);
 
         ImGui::Checkbox("Tetrahedralize", &tetrahedralize_);
+
+        if (tetrahedralize_) { ImGui::InputText("Flags", tetgen_flags_); }
+
         ImGui::Checkbox("Isotropic", &isotropic_);
 
         if (ImGui::Button("Generate##Shape Generator", ImVec2((w - p) / 2.f, 0))) { GenerateShape(); }
@@ -330,14 +326,46 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
 
         ImGui::InputDouble("Y-Axis Force", &y_axis_force_);
 
-        if (ImGui::Button("Solve##FEM Solver", ImVec2((w - p) / 2.f, 0))) {
+        if (ImGui::Button("Solve Static##FEM Solver", ImVec2((w - p) / 2.f, 0))) {
             if (mesh_ == nullptr) {
                 NEON_LOG_ERROR("No mesh found.");
             } else {
-                const Real halfway = SolveFEM(youngs_modulus_, poissons_ratio_);
+                SetupSimulator(solvers::fem::LinearElastic::Type::kStatic);
+                const Real halfway = SolveStaticFEM();
                 NEON_LOG_INFO("Halfway computation: ", halfway);
                 mesh_->Update(fem_solver_->U);
                 Refresh();
+            }
+        }
+
+        if (ImGui::Button("Integrated Solver##FEM Solver", ImVec2((w - p) / 2.f, 0))) {
+            if (simulating_) {
+                simulating_ = false;
+                return;
+            }
+
+            if (mesh_ == nullptr) {
+                NEON_LOG_ERROR("No mesh found.");
+            } else {
+                simulating_ = true;
+                NEON_LOG_INFO("Loading sim");
+                SetupSimulator(solvers::fem::LinearElastic::Type::kDynamic);
+                NEON_LOG_INFO("Loading integrator");
+                SetupIntegrator();
+                NEON_LOG_INFO("Loading simulation thread");
+
+                const auto sim = [&]() -> void {
+                    for (; simulating_;) {
+                        fem_integrator_->Solve(fem_solver_->F_e, fem_solver_->U_e);
+                        fem_solver_->SolveWithIntegrator();
+                        mesh_->Update(fem_solver_->U);
+                        Refresh();
+                    }
+                    return;
+                };
+
+                std::thread simulation_thread(sim);
+                simulation_thread.detach();
             }
         }
     }
@@ -346,4 +374,50 @@ auto visualizer::Visualizer::SetupMenus() -> void {
     menu_.callback_draw_custom_window = [&]() { GeneratorMenuWindow(); };
     menu_.callback_draw_viewer_window = [&]() { GeometryMenuWindow(); };
     viewer_.plugins.push_back(&menu_);
+}
+
+auto visualizer::Visualizer::SetupSimulator(solvers::fem::LinearElastic::Type sim_type) -> void {
+    const Vector3r force = Vector3r(0, -1 * y_axis_force_, 0);
+    const MatrixXr pos_matrix = mesh_->RenderablePositions();
+    // Apply uni-axial y-axis force
+    // Bottom nodes are fixed
+    fixed_nodes_ = solvers::helpers::FindYAxisBottomNodes(pos_matrix);
+
+    // Top nodes have unit force
+    const auto top_nodes = solvers::helpers::FindYAxisTopNodes(pos_matrix);
+
+    // Since it's a cube, we can assume top nodes are all the same y.
+    solver_force_distance_threshold_ = pos_matrix.row(top_nodes.at(0)).y() / 2;
+
+    std::vector<unsigned int> ignored_nodes;
+    std::set_union(fixed_nodes_.begin(), fixed_nodes_.end(), top_nodes.begin(), top_nodes.end(),
+                   std::back_inserter(ignored_nodes));
+
+    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, pos_matrix);
+    std::set_union(top_nodes.begin(), top_nodes.end(), intermediate_nodes.begin(), intermediate_nodes.end(),
+                   std::back_inserter(dynamic_nodes_));
+
+    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, force);
+    const auto intermediate_nodes_boundary_conditions =
+            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
+
+    auto all_boundary_conditions = top_boundary_conditions;
+
+    if (!intermediate_nodes_boundary_conditions.empty()) {
+        all_boundary_conditions.insert(all_boundary_conditions.end(), intermediate_nodes_boundary_conditions.begin(),
+                                       intermediate_nodes_boundary_conditions.end());
+    }
+
+    fem_solver_ = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, youngs_modulus_,
+                                                                poissons_ratio_, mesh_, sim_type);
+}
+
+auto visualizer::Visualizer::SetupIntegrator() -> void {
+    if (fem_solver_ == nullptr) {
+        NEON_LOG_ERROR("Cannot start integrator, so solver found.");
+        return;
+    }
+
+    fem_integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(
+            0.001, 5, fem_solver_->K_e, fem_solver_->U_e, fem_solver_->F_e);
 }
