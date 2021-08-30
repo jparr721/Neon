@@ -29,16 +29,11 @@ namespace visualizer {
         [[nodiscard]] auto Menu() const -> const igl::opengl::glfw::imgui::ImGuiMenu & { return menu_; }
 
         auto Launch() -> void;
-
-        auto AddObjectToViewer() -> void;
-
         auto Refresh() -> void;
-        auto UpdateVertexPositions(const VectorXr &displacements) -> void;
 
         auto GenerateShape() -> void;
         auto HomogenizeCurrentGeometry() -> void;
-        auto SolveStaticFEM() -> Real;
-        auto SolveDynamicFEM() -> void;
+        auto SolveStaticFEM() -> void;
 
     private:
         bool simulating_ = false;
@@ -86,6 +81,7 @@ namespace visualizer {
         // This doesn't belong, but for the sake of time shall remain
         std::vector<unsigned int> fixed_nodes_;
         std::vector<unsigned int> dynamic_nodes_;
+        std::vector<unsigned int> force_applied_nodes_;
         Real solver_force_distance_threshold_;
 
         // ==========================================================
@@ -100,6 +96,8 @@ namespace visualizer {
 
         auto SetupSimulator(solvers::fem::LinearElastic::Type sim_type) -> void;
         auto SetupIntegrator() -> void;
+
+        auto SetActiveDofColors() -> void;
     };
 }// namespace visualizer
 

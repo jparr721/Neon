@@ -24,7 +24,6 @@ visualizer::Visualizer::Visualizer(std::shared_ptr<meshing::Mesh> mesh) : mesh_(
 }
 
 auto visualizer::Visualizer::Launch() -> void { viewer_.launch(); }
-auto visualizer::Visualizer::AddObjectToViewer() -> void {}
 auto visualizer::Visualizer::Refresh() -> void {
     if (!(viewer_.data().F.rows() == 0 && viewer_.data().V.rows() == 0)) {
         viewer_.data_list.at(0).V = mesh_->RenderablePositions();
@@ -33,7 +32,6 @@ auto visualizer::Visualizer::Refresh() -> void {
         viewer_.data().set_mesh(mesh_->RenderablePositions(), mesh_->faces);
     }
 }
-auto visualizer::Visualizer::UpdateVertexPositions(const VectorXr &displacements) -> void {}
 
 auto visualizer::Visualizer::GenerateShape() -> void {
     NEON_LOG_INFO("Generating Shape");
@@ -98,12 +96,14 @@ auto visualizer::Visualizer::HomogenizeCurrentGeometry() -> void {
     }
 }
 
-auto visualizer::Visualizer::SolveStaticFEM() -> Real {
+auto visualizer::Visualizer::SolveStaticFEM() -> void {
     fem_solver_->SolveStatic();
-    return 0;
-}
 
-auto visualizer::Visualizer::SolveDynamicFEM() -> void { fem_solver_->SolveWithIntegrator(); }
+    // Now, check the compressive force result
+    const MatrixXr pm = mesh_->RenderablePositions();
+    const Vector3r pos = pm.row(force_applied_nodes_.at(0));
+    NEON_LOG_INFO("Pos: ", pos.y(), " Threshold: ", solver_force_distance_threshold_);
+}
 
 auto visualizer::Visualizer::GeometryMenuWindow() -> void {
     ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
@@ -124,7 +124,11 @@ auto visualizer::Visualizer::GeometryMenu() -> void {
         float p = ImGui::GetStyle().FramePadding.x;
         if (ImGui::Button("Load##Mesh", ImVec2((w - p) / 2.f, 0))) {
             const std::string f_name = igl::file_dialog_open();
-            NEON_ASSERT_WARN(f_name.length() > 0, "File name empty.");
+            NEON_ASSERT_WARN(!f_name.empty(), "File name empty.");
+
+            // Don't crash if the file operation is cancelled.
+            if (f_name.empty()) { return; }
+
             const auto file_type = meshing::ReadFileExtension(f_name);
 
             if (mesh_ == nullptr) {
@@ -141,26 +145,6 @@ auto visualizer::Visualizer::GeometryMenu() -> void {
                 }
             }
             Refresh();
-
-            //            MatrixXr V(8, 3);
-            //            V.row(0) << 0, 0, 0;
-            //            V.row(1) << 0.025, 0, 0;
-            //            V.row(2) << 0, 0.5, 0;
-            //            V.row(3) << 0.025, 0.5, 0;
-            //            V.row(4) << 0, 0, 0.25;
-            //            V.row(5) << 0.025, 0, 0.25;
-            //            V.row(6) << 0, 0.5, 0.25;
-            //            V.row(7) << 0.025, 0.5, 0.25;
-            //
-            //            MatrixXi T(5, 4);
-            //            T.row(0) << 0, 1, 3, 5;
-            //            T.row(1) << 0, 3, 2, 6;
-            //            T.row(2) << 5, 4, 6, 0;
-            //            T.row(3) << 5, 6, 7, 3;
-            //            T.row(4) << 0, 5, 3, 6;
-            //
-            //            mesh_ = std::make_shared<meshing::Mesh>(V, T);
-            //            Refresh();
         }
         ImGui::SameLine(0, p);
         if (ImGui::Button("Save##Mesh", ImVec2((w - p) / 2.f, 0))) { viewer_.open_dialog_save_mesh(); }
@@ -331,8 +315,8 @@ auto visualizer::Visualizer::GeneratorMenu() -> void {
                 NEON_LOG_ERROR("No mesh found.");
             } else {
                 SetupSimulator(solvers::fem::LinearElastic::Type::kStatic);
-                const Real halfway = SolveStaticFEM();
-                NEON_LOG_INFO("Halfway computation: ", halfway);
+                SolveStaticFEM();
+                NEON_LOG_INFO("Halfway computation: ", solver_force_distance_threshold_);
                 mesh_->Update(fem_solver_->U);
                 Refresh();
             }
@@ -384,20 +368,20 @@ auto visualizer::Visualizer::SetupSimulator(solvers::fem::LinearElastic::Type si
     fixed_nodes_ = solvers::helpers::FindYAxisBottomNodes(pos_matrix);
 
     // Top nodes have unit force
-    const auto top_nodes = solvers::helpers::FindYAxisTopNodes(pos_matrix);
+    force_applied_nodes_ = solvers::helpers::FindYAxisTopNodes(pos_matrix);
 
     // Since it's a cube, we can assume top nodes are all the same y.
-    solver_force_distance_threshold_ = pos_matrix.row(top_nodes.at(0)).y() / 2;
+    solver_force_distance_threshold_ = pos_matrix.row(force_applied_nodes_.at(0)).y() / 2;
 
     std::vector<unsigned int> ignored_nodes;
-    std::set_union(fixed_nodes_.begin(), fixed_nodes_.end(), top_nodes.begin(), top_nodes.end(),
+    std::set_union(fixed_nodes_.begin(), fixed_nodes_.end(), force_applied_nodes_.begin(), force_applied_nodes_.end(),
                    std::back_inserter(ignored_nodes));
 
     const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, pos_matrix);
-    std::set_union(top_nodes.begin(), top_nodes.end(), intermediate_nodes.begin(), intermediate_nodes.end(),
-                   std::back_inserter(dynamic_nodes_));
+    std::set_union(force_applied_nodes_.begin(), force_applied_nodes_.end(), intermediate_nodes.begin(),
+                   intermediate_nodes.end(), std::back_inserter(dynamic_nodes_));
 
-    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(top_nodes, force);
+    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(force_applied_nodes_, force);
     const auto intermediate_nodes_boundary_conditions =
             solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
 
@@ -410,6 +394,9 @@ auto visualizer::Visualizer::SetupSimulator(solvers::fem::LinearElastic::Type si
 
     fem_solver_ = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, youngs_modulus_,
                                                                 poissons_ratio_, mesh_, sim_type);
+
+    // Set active dof colors
+    SetActiveDofColors();
 }
 
 auto visualizer::Visualizer::SetupIntegrator() -> void {
@@ -419,5 +406,16 @@ auto visualizer::Visualizer::SetupIntegrator() -> void {
     }
 
     fem_integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(
-            0.001, 5, fem_solver_->K_e, fem_solver_->U_e, fem_solver_->F_e);
+            0.0001, 5, fem_solver_->K_e, fem_solver_->U_e, fem_solver_->F_e);
+}
+
+auto visualizer::Visualizer::SetActiveDofColors() -> void {
+    Vector3r color(0, 1, 0);
+    MatrixXr colors = color.rowwise().replicate(mesh_->positions.rows() / 3).transpose();
+
+    for (const auto &node : dynamic_nodes_) { colors.row(node) = Vector3r(0, 0, 1); }
+
+    for (const auto &node : force_applied_nodes_) { colors.row(node) = Vector3r(1, 0, 0); }
+
+    viewer_.data().set_colors(colors);
 }
