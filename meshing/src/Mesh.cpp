@@ -33,15 +33,13 @@ meshing::Mesh::Mesh(const MatrixXr &V, const MatrixXi &F, const std::string &tet
     ReloadMesh(V, F, tetgen_flags);
 }
 
-auto meshing::Mesh::Update(const MatrixXr &change) -> void {
-    positions = utilities::math::MatrixToVector((rest_positions + change).eval());
-}
+auto meshing::Mesh::Update(const MatrixXr &change) -> void { positions = rest_positions + change; }
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void {
     tetgen_succeeded = true;
     igl::boundary_facets(F, faces);
     tetrahedra = F;
-    positions = utilities::math::MatrixToVector(V);
+    positions = V;
     rest_positions = V;
 }
 
@@ -64,7 +62,7 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::
     // NOTE(@jparr721) This _could_ be error-prone when calculating FEM solvers since I am not 100% sure
     // if it properly includes face elements. We should check here first if we experience weirdness.
     tetrahedra = TT;
-    positions = utilities::math::MatrixToVector(TV);
+    positions = TV;
     rest_positions = TV;
 }
 
@@ -83,9 +81,6 @@ auto meshing::Mesh::ReloadMesh(const std::string &file_path, const std::string &
     ReloadMesh(V, F, tetgen_flags);
 }
 
-auto meshing::Mesh::RenderablePositions() -> MatrixXr {
-    return utilities::math::VectorToMatrix(positions, positions.rows() / 3, 3);
-}
 auto meshing::Mesh::ReadFile(const std::string &file_path, MeshFileType file_type, MatrixXr &V, MatrixXi &F) -> void {
     switch (file_type) {
         case MeshFileType::kObj:

@@ -22,8 +22,7 @@ namespace meshing {
     public:
         bool tetgen_succeeded = false;
 
-        VectorXr positions;
-
+        MatrixXr positions;
         MatrixXr rest_positions;
         MatrixXi faces;
         MatrixXi tetrahedra;
@@ -39,8 +38,6 @@ namespace meshing {
         auto ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::string &tetgen_flags) -> void;
         auto ReloadMesh(const std::string &file_path, MeshFileType file_type) -> void;
         auto ReloadMesh(const std::string &file_path, const std::string &tetgen_flags, MeshFileType file_type) -> void;
-
-        auto RenderablePositions() -> MatrixXr;
 
     private:
         auto ReadFile(const std::string &file_path, MeshFileType file_type, MatrixXr &V, MatrixXi &F) -> void;

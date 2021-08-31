@@ -8,7 +8,11 @@ add_library(${PROJECT_NAME} SHARED
         src/Homogenization.cpp
         include/solvers/materials/Material.h src/Material.cpp
         src/Rve.cpp
-        include/solvers/materials/Rve.h include/solvers/helpers/BoundaryCondition.h src/BoundaryCondition.cpp src/CentralDifferenceMethod.cpp include/solvers/integrators/CentralDifferenceMethod.h)
+        include/solvers/materials/Rve.h
+        include/solvers/helpers/BoundaryCondition.h
+        src/BoundaryCondition.cpp
+        src/CentralDifferenceMethod.cpp
+        include/solvers/integrators/CentralDifferenceMethod.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

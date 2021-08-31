@@ -64,6 +64,12 @@ namespace meshing {
             int cols;
         };
 
+        static auto MakeInclusion(const int n, const int depth, const int rows, const int cols) -> Inclusion {
+            return Inclusion{n, depth, rows, cols};
+        }
+
+        static auto MakeInclusion(const int n, const int dim) -> Inclusion { return Inclusion{n, dim, dim, dim}; }
+
         enum class GeneratorInfo {
             kSuccess = 0,
             kFailure,

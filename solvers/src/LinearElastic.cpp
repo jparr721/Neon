@@ -29,7 +29,7 @@ solvers::fem::LinearElastic::LinearElastic(helpers::BoundaryConditions boundary_
     }
 
     // Global displacement is always for all nodes.
-    U = VectorXr::Zero(mesh_->positions.rows());
+    U = VectorXr::Zero(mesh_->positions.rows() * 3);
 }
 
 auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
@@ -37,13 +37,11 @@ auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
     // Iterate the boundary conditions, assigning only where active nodes exist.
     int i = 0;
     for (const auto &[node, _] : boundary_conditions) {
-        NEON_LOG_INFO("Node: ", node, " ", node * 3);
         U.segment(node * 3, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
         i += 3;
     }
 
-    const MatrixXr update = utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose();
-    mesh_->Update(update);
+    mesh_->Update((utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose()).eval());
 
     return ComputeElementStress();
 }
@@ -63,13 +61,14 @@ auto solvers::fem::LinearElastic::SolveStatic() -> MatrixXr {
 
     F = K * U;
     NEON_LOG_INFO("Solver done, computing nodal stresses");
+    mesh_->Update((utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose()).eval());
     return ComputeElementStress();
 }
 
 auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {
     using triple = Eigen::Triplet<Real>;
     // Because it's nxn in matrix form, the vector form is 3n
-    const unsigned int size = mesh_->positions.rows();
+    const unsigned int size = mesh_->positions.rows() * 3;
     K.resize(size, size);
 
     std::vector<triple> triplets;
@@ -239,21 +238,19 @@ auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {
         triplets.emplace_back(triple(3 * n + 2, 3 * n + 1, k(11, 10)));
         triplets.emplace_back(triple(3 * n + 2, 3 * n + 2, k(11, 11)));
     }
+
     K.setFromTriplets(triplets.begin(), triplets.end());
 }
 
 auto solvers::fem::LinearElastic::AssembleElementStiffness() -> void {
-    // Convert the positions vector to a matrix for easier indexing.
-    // Note: for large geometry this could cause performance issues.
-    const MatrixXr pm = mesh_->RenderablePositions();
     for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
         const Vector4i tetrahedral = mesh_->tetrahedra.row(row);
 
         // Get vertices corresponding to the tetrahedral node labels.
-        const Vector3r shape_one = pm.row(tetrahedral(0));
-        const Vector3r shape_two = pm.row(tetrahedral(1));
-        const Vector3r shape_three = pm.row(tetrahedral(2));
-        const Vector3r shape_four = pm.row(tetrahedral(3));
+        const Vector3r shape_one = mesh_->positions.row(tetrahedral(0));
+        const Vector3r shape_two = mesh_->positions.row(tetrahedral(1));
+        const Vector3r shape_three = mesh_->positions.row(tetrahedral(2));
+        const Vector3r shape_four = mesh_->positions.row(tetrahedral(3));
 
         // Prepare to compute the nodal stresses by transforming via the shape functions
         // and then computing the stress.
@@ -312,16 +309,15 @@ auto solvers::fem::LinearElastic::ComputeElementStress() -> MatrixXr {
 
     // Convert the positions vector to a matrix for easier indexing.
     // Note: for large geometry this could cause performance issues.
-    const MatrixXr pm = utilities::math::VectorToMatrix(mesh_->positions, mesh_->positions.rows() / 3, 3);
     const MatrixXr dsp = utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose();
     for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
         const Vector4i tetrahedral = mesh_->tetrahedra.row(row);
 
         // Get vertices corresponding to the tetrahedral node labels.
-        const Vector3r shape_one = pm.row(tetrahedral(0));
-        const Vector3r shape_two = pm.row(tetrahedral(1));
-        const Vector3r shape_three = pm.row(tetrahedral(2));
-        const Vector3r shape_four = pm.row(tetrahedral(3));
+        const Vector3r shape_one = mesh_->positions.row(tetrahedral(0));
+        const Vector3r shape_two = mesh_->positions.row(tetrahedral(1));
+        const Vector3r shape_three = mesh_->positions.row(tetrahedral(2));
+        const Vector3r shape_four = mesh_->positions.row(tetrahedral(3));
 
         // Get the corresponding node displacement values by tetrahedral index.
         const Vector3r displacement_one = dsp.row(tetrahedral(0));
