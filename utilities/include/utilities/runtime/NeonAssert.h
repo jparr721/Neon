@@ -10,6 +10,7 @@
 #ifndef NEON_NEONASSERT_H
 #define NEON_NEONASSERT_H
 
+#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>

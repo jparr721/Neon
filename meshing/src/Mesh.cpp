@@ -96,6 +96,9 @@ auto meshing::Mesh::ReadFile(const std::string &file_path, MeshFileType file_typ
             throw std::runtime_error("Unsupported file type.");
     }
 }
+
+auto meshing::Mesh::ResetMesh() -> void { positions = rest_positions; }
+
 auto meshing::ReadFileExtension(const std::string &filename) -> meshing::MeshFileType {
     const auto extension = std::filesystem::path(filename).extension().string();
     if (extension == ".obj") {

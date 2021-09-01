@@ -39,6 +39,8 @@ namespace meshing {
         auto ReloadMesh(const std::string &file_path, MeshFileType file_type) -> void;
         auto ReloadMesh(const std::string &file_path, const std::string &tetgen_flags, MeshFileType file_type) -> void;
 
+        auto ResetMesh() -> void;
+
     private:
         auto ReadFile(const std::string &file_path, MeshFileType file_type, MatrixXr &V, MatrixXi &F) -> void;
     };

@@ -20,15 +20,27 @@
 #include <utilities/math/LinearAlgebra.h>
 
 namespace visualizer {
+    auto RveDims() -> int &;
     auto Viewer() -> igl::opengl::glfw::Viewer &;
     auto Menu() -> igl::opengl::glfw::imgui::ImGuiMenu &;
+
+    //
     auto Mesh() -> std::shared_ptr<meshing::Mesh> &;
 
+    // Operations
+    auto Homogenize() -> void;
     auto GenerateShape() -> void;
+    auto SetupSolver() -> void;
+    auto DrawCallback(igl::opengl::glfw::Viewer &viewer) -> bool;
+    auto Refresh() -> void;
+
+    // UI
     auto GeometryMenu() -> void;
     auto SimulationMenu() -> void;
     auto SimulationMenuWindow() -> void;
-    auto SetupSolver() -> void;
-    auto DrawCallback(igl::opengl::glfw::Viewer &viewer) -> bool;
+
+    // Simulations
+    auto GenerateDisplacementDataset(const std::string &filename) -> void;
+    auto GenerateHomogenizationDataset(const std::string &filename) -> void;
 }// namespace visualizer
 #endif//NEON_VISUALIZER_H

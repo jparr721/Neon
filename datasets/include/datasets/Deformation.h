@@ -10,7 +10,6 @@
 #ifndef NEON_DEFORMATION_H
 #define NEON_DEFORMATION_H
 
-#include <datasets/Dataset.h>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace datasets {
@@ -38,13 +37,16 @@ namespace datasets {
             return 0;
         }
     };
-    class Deformation : private Dataset<RowType> {
+    class Deformation {
     public:
-        explicit Deformation(const std::string &path) : Dataset(path) {}
-        auto Read() -> void override;
-        auto Value(const std::string &key) -> RowType::ValueType override { return rows_.at(0).Value(key); }
+        explicit Deformation(const std::string &path) : path_(path) {}
+        auto Read() -> void;
+        auto Value(const std::string &key) -> RowType::ValueType { return rows_.at(0).Value(key); }
 
     private:
+        const std::string path_;
+        std::vector<std::string> keys_;
+        std::vector<RowType> rows_;
     };
 }// namespace datasets
 
