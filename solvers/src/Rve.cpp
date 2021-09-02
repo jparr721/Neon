@@ -48,4 +48,7 @@ auto solvers::materials::Rve::ComputeUniformMesh() -> void {
 auto solvers::materials::Rve::ComputeUniformMesh(MatrixXr &V, MatrixXi &F) -> void {
     generator_ = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(height_, width_, depth_);
     generator_->GenerateImplicitFunctionBasedMaterial(meshing::ImplicitSurfaceGenerator<Real>::kNoThickness, V, F);
+    surface_mesh_ = generator_->Surface();
+    NEON_LOG_INFO("Surface Mesh Dims: ", surface_mesh_.Dimensions().transpose());
+    contains_surface_mesh_ = true;
 }

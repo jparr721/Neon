@@ -7,13 +7,10 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 #include <future>
-#include <igl/file_dialog_open.h>
 #include <solvers/materials/Material.h>
-#include <solvers/materials/Rve.h>
 #include <thread>
 #include <utilities/filesystem/CsvFile.h>
 #include <utilities/math/Time.h>
-#include <utility>
 #include <visualizer/Visualizer.h>
 
 namespace visualizer {
@@ -47,6 +44,7 @@ namespace visualizer {
     igl::opengl::glfw::imgui::ImGuiMenu menu;
 
     std::shared_ptr<meshing::Mesh> mesh;
+    std::unique_ptr<solvers::materials::Rve> rve;
 
     std::unique_ptr<solvers::fem::LinearElastic> solver;
     std::unique_ptr<solvers::integrators::CentralDifferenceMethod> integrator;
@@ -59,10 +57,11 @@ auto visualizer::RveDims() -> int & { return rve_dims; }
 auto visualizer::Viewer() -> igl::opengl::glfw::Viewer & { return viewer; }
 auto visualizer::Menu() -> igl::opengl::glfw::imgui::ImGuiMenu & { return menu; }
 auto visualizer::Mesh() -> std::shared_ptr<meshing::Mesh> & { return mesh; }
+auto visualizer::Rve() -> std::unique_ptr<solvers::materials::Rve> & { return rve; }
 
 auto visualizer::GenerateShape() -> void {
-    const auto rve = std::make_unique<solvers::materials::Rve>(
-            Vector3i(rve_dims, rve_dims, rve_dims), solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
+    rve = std::make_unique<solvers::materials::Rve>(Vector3i(rve_dims, rve_dims, rve_dims),
+                                                    solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
     MatrixXr V;
     MatrixXi F;
     meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{n_voids, void_dims, void_dims, void_dims};
@@ -266,7 +265,21 @@ auto visualizer::Refresh() -> void {
     Viewer().data().set_mesh(mesh->positions, mesh->faces);
 }
 
-auto visualizer::Homogenize() -> void {}
+auto visualizer::Homogenize() -> void {
+    rve->Homogenize();
+    E_x = rve->Homogenized()->Coefficients().E_11;
+    E_y = rve->Homogenized()->Coefficients().E_22;
+    E_z = rve->Homogenized()->Coefficients().E_33;
+    G_x = rve->Homogenized()->Coefficients().G_23;
+    G_y = rve->Homogenized()->Coefficients().G_31;
+    G_z = rve->Homogenized()->Coefficients().G_12;
+    v_21 = rve->Homogenized()->Coefficients().v_21;
+    v_31 = rve->Homogenized()->Coefficients().v_31;
+    v_12 = rve->Homogenized()->Coefficients().v_12;
+    v_32 = rve->Homogenized()->Coefficients().v_32;
+    v_13 = rve->Homogenized()->Coefficients().v_13;
+    v_23 = rve->Homogenized()->Coefficients().v_23;
+}
 
 auto visualizer::GenerateDisplacementDataset(const std::string &filename) -> void {
     // Apply uni-axial y-axis force

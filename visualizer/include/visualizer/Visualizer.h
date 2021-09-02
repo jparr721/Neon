@@ -17,6 +17,7 @@
 #include <meshing/Mesh.h>
 #include <solvers/FEM/LinearElastic.h>
 #include <solvers/integrators/CentralDifferenceMethod.h>
+#include <solvers/materials/Rve.h>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace visualizer {
@@ -26,6 +27,7 @@ namespace visualizer {
 
     //
     auto Mesh() -> std::shared_ptr<meshing::Mesh> &;
+    auto Rve() -> std::unique_ptr<solvers::materials::Rve> &;
 
     // Operations
     auto Homogenize() -> void;
