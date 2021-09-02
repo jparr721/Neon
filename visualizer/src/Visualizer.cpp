@@ -24,6 +24,8 @@ namespace visualizer {
     Real youngs_modulus = 5000;
     Real poissons_ratio = 0.3;
 
+    Real min_displacement = 1e3;
+
     Real E_x = 0;
     Real E_y = 0;
     Real E_z = 0;
@@ -39,6 +41,10 @@ namespace visualizer {
 
     std::string tetgen_flags = "zpq";
     std::string displacement_dataset_name = "";
+
+    // DOF nodes
+    std::vector<unsigned int> fixed_nodes;
+    std::vector<unsigned int> force_applied_nodes;
 
     igl::opengl::glfw::Viewer viewer;
     igl::opengl::glfw::imgui::ImGuiMenu menu;
@@ -60,12 +66,13 @@ auto visualizer::Mesh() -> std::shared_ptr<meshing::Mesh> & { return mesh; }
 auto visualizer::Rve() -> std::unique_ptr<solvers::materials::Rve> & { return rve; }
 
 auto visualizer::GenerateShape() -> void {
-    rve = std::make_unique<solvers::materials::Rve>(Vector3i(rve_dims, rve_dims, rve_dims),
-                                                    solvers::materials::MaterialFromEandv(1, "m_1", 1000, 0.3));
+    rve = std::make_unique<solvers::materials::Rve>(
+            Vector3i(rve_dims, rve_dims, rve_dims),
+            solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
+    const auto inclusion = meshing::ImplicitSurfaceGenerator<Real>::MakeInclusion(n_voids, void_dims);
+
     MatrixXr V;
     MatrixXi F;
-    meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion{n_voids, void_dims, void_dims, void_dims};
-
     if (n_voids == 0) {
         rve->ComputeUniformMesh(V, F);
     } else {
@@ -87,8 +94,15 @@ auto visualizer::GenerateShape() -> void {
     }
 
     NEON_LOG_INFO("Mesh change detected, reloading solver");
-    SetupSolver();
-    NEON_LOG_INFO("Solver ready to go!");
+    NEON_ASSERT_WARN(mesh->tetgen_succeeded, "Tetgen failed to create volumetric mesh, cannot setup solver");
+    if (mesh->tetgen_succeeded) { SetupSolver(); }
+    NEON_LOG_INFO("Ready to simulate!");
+}
+
+auto visualizer::UpdateShapeEffectiveCoefficients() -> void {
+    rve = std::make_unique<solvers::materials::Rve>(
+            Vector3i(rve_dims, rve_dims, rve_dims),
+            solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
 }
 
 auto visualizer::GeometryMenu() -> void {
@@ -158,19 +172,25 @@ auto visualizer::GeometryMenu() -> void {
         if (ImGui::Button("Reset##Shape Generator", ImVec2(w, 0))) {
             Mesh()->ResetMesh();
             Refresh();
+            SetupSolver();
         }
     }
 }
 
 auto visualizer::SimulationMenu() -> void {
+    const float w = ImGui::GetContentRegionAvailWidth();
+    ImGui::InputDouble("Young's Modulus", &youngs_modulus);
+    ImGui::InputDouble("Poisson's Ratio", &poissons_ratio);
+
+    if (ImGui::Button("Reload Solver", ImVec2(w, 0))) {
+        SetupSolver();
+        UpdateShapeEffectiveCoefficients();
+    }
+
     if (ImGui::CollapsingHeader("Homogenization", ImGuiTreeNodeFlags_DefaultOpen)) {
         const float w = ImGui::GetContentRegionAvailWidth();
-
-        ImGui::InputDouble("Young's Modulus", &youngs_modulus);
-        ImGui::InputDouble("Poisson's Ratio", &poissons_ratio);
-
-        ImGui::LabelText("E", "%.0e", youngs_modulus);
-        ImGui::LabelText("v", "%.0e", poissons_ratio);
+        ImGui::LabelText("Source E", "%.0e", youngs_modulus);
+        ImGui::LabelText("Source v", "%.0e", poissons_ratio);
 
         ImGui::LabelText("E_x", "%.0e", E_x);
         ImGui::LabelText("E_y", "%.0e", E_y);
@@ -184,8 +204,13 @@ auto visualizer::SimulationMenu() -> void {
         ImGui::LabelText("v_32", "%.0e", v_32);
         ImGui::LabelText("v_13", "%.0e", v_13);
         ImGui::LabelText("v_23", "%.0e", v_23);
+        ImGui::LabelText("Min Displacement", "%.3f", min_displacement);
 
-        if (ImGui::Button("Homogenize##Homogenization", ImVec2(w, 0))) { Homogenize(); }
+        if (ImGui::Button("Homogenize##Homogenization", ImVec2(w, 0))) {
+            Homogenize();
+            youngs_modulus = E_x;
+            poissons_ratio = v_21;
+        }
     }
 
     if (ImGui::CollapsingHeader("Datasets", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -218,40 +243,25 @@ auto visualizer::SimulationMenuWindow() -> void {
 }
 
 auto visualizer::SetupSolver() -> void {
-    // Apply uni-axial y-axis force
-    // Bottom nodes are fixed
-    const auto fixed_nodes_ = solvers::helpers::FindYAxisBottomNodes(mesh->positions);
-
-    // Top nodes have unit force
-    const auto force_applied_nodes_ = solvers::helpers::FindYAxisTopNodes(mesh->positions);
-
-    std::vector<unsigned int> ignored_nodes;
-    std::set_union(fixed_nodes_.begin(), fixed_nodes_.end(), force_applied_nodes_.begin(), force_applied_nodes_.end(),
-                   std::back_inserter(ignored_nodes));
-
-    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, mesh->positions);
-
-    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(force_applied_nodes_, force);
-    const auto intermediate_nodes_boundary_conditions =
-            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
-
-    auto all_boundary_conditions = top_boundary_conditions;
-
-    if (!intermediate_nodes_boundary_conditions.empty()) {
-        all_boundary_conditions.insert(all_boundary_conditions.end(), intermediate_nodes_boundary_conditions.begin(),
-                                       intermediate_nodes_boundary_conditions.end());
-    }
+    min_displacement = 1e3;
+    const auto all_boundary_conditions = ComputeActiveDofs();
 
     solver = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, youngs_modulus, poissons_ratio,
                                                            mesh, solvers::fem::LinearElastic::Type::kDynamic);
+    NEON_LOG_INFO("Solver loaded");
     integrator = std::make_unique<solvers::integrators::CentralDifferenceMethod>(0.01, 5, solver->K_e, solver->U_e,
                                                                                  solver->F_e);
+    NEON_LOG_INFO("Integrator loaded");
 }
 
 auto visualizer::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {
     if (viewer.core().is_animating) {
         integrator->Solve(solver->F_e, solver->U_e);
         solver->SolveWithIntegrator();
+        Real sum = 0;
+        for (const auto &f : force_applied_nodes) { sum += mesh->positions.row(f).y(); }
+        sum /= force_applied_nodes.size();
+        min_displacement = std::fmin(sum, min_displacement);
         Refresh();
     }
     return false;
@@ -282,29 +292,7 @@ auto visualizer::Homogenize() -> void {
 }
 
 auto visualizer::GenerateDisplacementDataset(const std::string &filename) -> void {
-    // Apply uni-axial y-axis force
-    // Bottom nodes are fixed
-    const auto fixed_nodes_ = solvers::helpers::FindYAxisBottomNodes(mesh->positions);
-
-    // Top nodes have unit force
-    const auto force_applied_nodes_ = solvers::helpers::FindYAxisTopNodes(mesh->positions);
-
-    std::vector<unsigned int> ignored_nodes;
-    std::set_union(fixed_nodes_.begin(), fixed_nodes_.end(), force_applied_nodes_.begin(), force_applied_nodes_.end(),
-                   std::back_inserter(ignored_nodes));
-
-    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, mesh->positions);
-
-    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(force_applied_nodes_, force);
-    const auto intermediate_nodes_boundary_conditions =
-            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
-
-    auto all_boundary_conditions = top_boundary_conditions;
-
-    if (!intermediate_nodes_boundary_conditions.empty()) {
-        all_boundary_conditions.insert(all_boundary_conditions.end(), intermediate_nodes_boundary_conditions.begin(),
-                                       intermediate_nodes_boundary_conditions.end());
-    }
+    const auto all_boundary_conditions = ComputeActiveDofs();
 
     utilities::filesystem::CsvFile<std::string> csv(filename, {"E", "v", "Displacement"});
 #pragma omp parallel for
@@ -317,12 +305,66 @@ auto visualizer::GenerateDisplacementDataset(const std::string &filename) -> voi
             static_solver->SolveStatic();
 
             Real sum = 0;
-            for (const auto &f : force_applied_nodes_) { sum += mesh_clone->positions.row(f).y(); }
-            sum /= force_applied_nodes_.size();
+            for (const auto &f : force_applied_nodes) { sum += mesh_clone->positions.row(f).y(); }
+            sum /= force_applied_nodes.size();
 
             csv << std::vector<std::string>{std::to_string(E), std::to_string(v), std::to_string(sum)};
         }
     }
 }
 
-auto visualizer::GenerateHomogenizationDataset(const std::string &filename) -> void {}
+auto visualizer::GenerateHomogenizationDataset(const std::string &filename) -> void {
+    const auto all_boundary_conditions = ComputeActiveDofs();
+    const auto mesh_clone = std::make_shared<meshing::Mesh>(*mesh);
+    const auto static_solver =
+            std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, youngs_modulus, poissons_ratio,
+                                                          mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
+    const auto rve = std::make_unique<solvers::materials::Rve>(
+            Vector3i(rve_dims, rve_dims, rve_dims),
+            solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
+    const auto inclusion = meshing::ImplicitSurfaceGenerator<Real>::MakeInclusion(n_voids, void_dims);
+
+    MatrixXr V;
+    MatrixXi F;
+    if (n_voids == 0) {
+        rve->ComputeUniformMesh(V, F);
+    } else {
+        rve->ComputeCompositeMesh(inclusion, isotropic, V, F);
+    }
+
+    // Iterate the solution space
+    // Void dims are uniform, so the cube of it * n_voids must be half the total volume (to avoid degenerate cubes);
+    const int void_area = std::powf(void_dims, 3);
+    const int cuboid_area = std::powf(rve_dims, 3);
+    NEON_ASSERT_ERROR((void_area * n_voids) / 2 <= cuboid_area, "Voids could cause degenerate cube!");
+
+    // Figure out how many we can make per size.
+}
+
+auto visualizer::ComputeActiveDofs() -> solvers::helpers::BoundaryConditions {
+    // Apply uni-axial y-axis force
+    // Bottom nodes are fixed
+    fixed_nodes = solvers::helpers::FindYAxisBottomNodes(mesh->positions);
+
+    // Top nodes have unit force
+    force_applied_nodes = solvers::helpers::FindYAxisTopNodes(mesh->positions);
+
+    std::vector<unsigned int> ignored_nodes;
+    std::set_union(fixed_nodes.begin(), fixed_nodes.end(), force_applied_nodes.begin(), force_applied_nodes.end(),
+                   std::back_inserter(ignored_nodes));
+
+    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, mesh->positions);
+
+    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(force_applied_nodes, force);
+    const auto intermediate_nodes_boundary_conditions =
+            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
+
+    auto all_boundary_conditions = top_boundary_conditions;
+
+    if (!intermediate_nodes_boundary_conditions.empty()) {
+        all_boundary_conditions.insert(all_boundary_conditions.end(), intermediate_nodes_boundary_conditions.begin(),
+                                       intermediate_nodes_boundary_conditions.end());
+    }
+
+    return all_boundary_conditions;
+}

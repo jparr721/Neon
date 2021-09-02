@@ -102,20 +102,24 @@ namespace meshing {
         auto Surface() const -> Tensor3<T> { return implicit_surface_; }
 
         auto AddSquarePaddingLayers() -> Tensor3<T> {
-            const int rows = implicit_surface_.Dimension(0);
-            const int cols = implicit_surface_.Dimension(1);
-            const int layers = implicit_surface_.Dimension(2);
+            const int rows = implicit_surface_.Dimension(0) + 2;
+            const int cols = implicit_surface_.Dimension(1) + 2;
+            const int layers = implicit_surface_.Dimension(2) + 2;
 
             Tensor3<T> new_surface(rows, cols, layers);
+            new_surface.SetConstant(0);
 
             for (int layer = 0; layer < layers; ++layer) {
                 for (int row = 0; row < rows; ++row) {
                     for (int col = 0; col < cols; ++col) {
                         if (layer == 0 || layer == layers - 1 || row == 0 || row == rows - 1 || col == 0 ||
                             col == cols - 1) {
-                            new_surface(row, col, layer) = 0;
+                            continue;
                         } else {
-                            new_surface(row, col, layer) = implicit_surface_(row, col, layer);
+                            const int r = row > 1 ? row - 1 : row;
+                            const int l = layer > 1 ? layer - 1 : layer;
+                            const int c = col > 1 ? col - 1 : col;
+                            new_surface(row, col, layer) = implicit_surface_(r, c, l);
                         }
                     }
                 }
@@ -130,18 +134,14 @@ namespace meshing {
             const int cols = implicit_surface_.Dimension(1);
             const int layers = implicit_surface_.Dimension(2);
 
-            MatrixXr GV;
-            RowVector3i resolution(rows, cols, layers);
-            igl::grid(resolution, GV);
-
             if (behavior_ == Behavior::kIsotropic) {
                 if (microstructure_ == Microstructure::kUniform) {
-                    MakeRenderable(GV, V, F);
+                    MakeRenderable(V, F);
                 } else {
-                    GenerateIsotropicMaterial(thickness, GV, V, F);
+                    GenerateIsotropicMaterial(thickness, V, F);
                 }
             }
-            if (behavior_ == Behavior::kAnisotropic) { GenerateAnisotropicMaterial(1000, GV, V, F); }
+            if (behavior_ == Behavior::kAnisotropic) { GenerateAnisotropicMaterial(thickness, 1000, V, F); }
         }
 
 
@@ -159,7 +159,7 @@ namespace meshing {
 
         GeneratorInfo info_ = GeneratorInfo::kSuccess;
 
-        auto GenerateIsotropicMaterial(const int thickness, const MatrixXr &GV, MatrixXr &V, MatrixXi &F) -> void {
+        auto GenerateIsotropicMaterial(const int thickness, MatrixXr &V, MatrixXi &F) -> void {
             const int rows = implicit_surface_.Dimension(0);
             const int cols = implicit_surface_.Dimension(1);
             const int layers = implicit_surface_.Dimension(2);
@@ -204,17 +204,17 @@ namespace meshing {
             implicit_surface_.SetSidesBitmask(l);
             implicit_surface_.SetTopsBitmask(l.transpose());
 
-            MakeRenderable(GV, V, F);
+            MakeRenderable(V, F);
         }
 
-        auto GenerateAnisotropicMaterial(const unsigned int max_iter, const MatrixXr &GV, MatrixXr &V, MatrixXi &F)
-                -> void {
+        auto GenerateAnisotropicMaterial(const unsigned int thickness, const unsigned int max_iter, MatrixXr &V,
+                                         MatrixXi &F) -> void {
             constexpr unsigned int min = 0;
 
             // Ensure the cutoff conditions are met
-            const unsigned int max_rows = implicit_surface_.Dimension(0) - inclusion_.rows;
-            const unsigned int max_cols = implicit_surface_.Dimension(1) - inclusion_.cols;
-            const unsigned int max_layers = implicit_surface_.Dimension(2) - inclusion_.depth;
+            const unsigned int max_rows = implicit_surface_.Dimension(0) - (inclusion_.rows + thickness);
+            const unsigned int max_cols = implicit_surface_.Dimension(1) - (inclusion_.cols + thickness);
+            const unsigned int max_layers = implicit_surface_.Dimension(2) - (inclusion_.depth + thickness);
 
             // Iteration cutoff point for normalizing cubes
             int n_iterations = 0;
@@ -271,15 +271,20 @@ namespace meshing {
                 }
             }
 
-            MakeRenderable(GV, V, F);
+            MakeRenderable(V, F);
         }
 
-        auto MakeRenderable(const MatrixXr &GV, MatrixXr &V, MatrixXi &F) -> void {
-            const int rows = implicit_surface_.Dimension(0);
-            const int cols = implicit_surface_.Dimension(1);
-            const int layers = implicit_surface_.Dimension(2);
-
+        auto MakeRenderable(MatrixXr &V, MatrixXi &F) -> void {
             const Tensor3r mc_surface = AddSquarePaddingLayers();
+            const int rows = mc_surface.Dimension(0);
+            const int cols = mc_surface.Dimension(1);
+            const int layers = mc_surface.Dimension(2);
+
+
+            MatrixXr GV;
+            RowVector3i resolution(rows, cols, layers);
+            igl::grid(resolution, GV);
+
             const VectorXr Gf = mc_surface.Vector();
 
             try {

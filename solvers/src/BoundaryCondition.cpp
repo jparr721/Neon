@@ -6,6 +6,7 @@
 // If a copy of the GPL was not included with this file, you can
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
+#include <algorithm>
 #include <solvers/helpers/BoundaryCondition.h>
 
 auto solvers::helpers::ApplyForceToBoundaryConditions(const std::vector<unsigned int> &indices, const Vector3r &force)
@@ -46,11 +47,10 @@ auto solvers::helpers::FindYAxisTopNodes(const MatrixXr &V) -> std::vector<unsig
 }
 auto solvers::helpers::SelectNodes(const std::vector<unsigned int> &ignored, const MatrixXr &V)
         -> std::vector<unsigned int> {
-    std::set<unsigned int> _ignored(ignored.begin(), ignored.end());
     std::vector<unsigned int> indices;
     for (int row = 0; row < V.rows(); ++row) {
         // If the value isn't found, add it to our indices.
-        if (_ignored.find(row) == _ignored.end()) { indices.push_back(row); }
+        if (std::find(ignored.begin(), ignored.end(), row) == ignored.end()) { indices.push_back(row); }
     }
 
     return indices;

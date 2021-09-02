@@ -32,9 +32,11 @@ namespace visualizer {
     // Operations
     auto Homogenize() -> void;
     auto GenerateShape() -> void;
+    auto UpdateShapeEffectiveCoefficients() -> void;
     auto SetupSolver() -> void;
     auto DrawCallback(igl::opengl::glfw::Viewer &viewer) -> bool;
     auto Refresh() -> void;
+    auto ComputeActiveDofs() -> solvers::helpers::BoundaryConditions;
 
     // UI
     auto GeometryMenu() -> void;
@@ -42,7 +44,13 @@ namespace visualizer {
     auto SimulationMenuWindow() -> void;
 
     // Simulations
+    /// \brief Generates a dataset which solves the double integral of the signed volume of the unknown
+    /// continuous function S(E, v) where S is parameterized by E and v.
     auto GenerateDisplacementDataset(const std::string &filename) -> void;
+
+    /// \brief Generates a dataset of the homogenized version of a void-perforated mesh. By doing this
+    /// we are able to optimize the mesh ratio in the system to approximate the functionality of softer
+    /// materials as a result of strategically weakening harder materials.
     auto GenerateHomogenizationDataset(const std::string &filename) -> void;
 }// namespace visualizer
 #endif//NEON_VISUALIZER_H
