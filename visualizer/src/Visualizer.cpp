@@ -173,6 +173,12 @@ auto visualizer::GeometryMenu() -> void {
             Refresh();
             SetupSolver();
         }
+
+        if (ImGui::Button("Reset Static##Shape Generator", ImVec2(w, 0))) {
+            Mesh()->ResetMesh();
+            Refresh();
+            SetupStaticSolver();
+        }
     }
 }
 
@@ -184,6 +190,13 @@ auto visualizer::SimulationMenu() -> void {
     if (ImGui::Button("Reload Solver", ImVec2(w, 0))) {
         if (!Mesh()->tetgen_succeeded) { return; }
         SetupSolver();
+        UpdateShapeEffectiveCoefficients();
+        Mesh()->ResetMesh();
+    }
+
+    if (ImGui::Button("Reload Static Solver", ImVec2(w, 0))) {
+        if (!Mesh()->tetgen_succeeded) { return; }
+        SetupStaticSolver();
         UpdateShapeEffectiveCoefficients();
         Mesh()->ResetMesh();
     }
@@ -228,6 +241,20 @@ auto visualizer::SimulationMenu() -> void {
             }
         }
     }
+
+    if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
+        const float w = ImGui::GetContentRegionAvailWidth();
+
+        ImGui::InputText("Filename", displacement_dataset_name);
+        if (ImGui::Button("Compute Static##Simulation", ImVec2(w, 0))) {
+            solver->SolveStatic();
+            Real sum = 0;
+            for (const auto &f : force_applied_nodes) { sum += mesh->positions.row(f).y(); }
+            sum /= force_applied_nodes.size();
+            min_displacement = std::fmin(sum, min_displacement);
+            Refresh();
+        }
+    }
 }
 auto visualizer::SimulationMenuWindow() -> void {
     const float x = 160.f * Menu().menu_scaling();
@@ -253,6 +280,15 @@ auto visualizer::SetupSolver() -> void {
     integrator = std::make_unique<solvers::integrators::CentralDifferenceMethod>(0.01, 5, solver->K_e, solver->U_e,
                                                                                  solver->F_e);
     NEON_LOG_INFO("Integrator loaded");
+}
+
+auto visualizer::SetupStaticSolver() -> void {
+    min_displacement = 1e3;
+    const auto all_boundary_conditions = ComputeActiveDofs();
+
+    solver = std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, youngs_modulus, poissons_ratio,
+                                                           mesh, solvers::fem::LinearElastic::Type::kStatic);
+    NEON_LOG_INFO("Solver loaded");
 }
 
 auto visualizer::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {

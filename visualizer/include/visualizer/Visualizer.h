@@ -34,6 +34,7 @@ namespace visualizer {
     auto GenerateShape() -> void;
     auto UpdateShapeEffectiveCoefficients() -> void;
     auto SetupSolver() -> void;
+    auto SetupStaticSolver() -> void;
     auto DrawCallback(igl::opengl::glfw::Viewer &viewer) -> bool;
     auto Refresh() -> void;
     auto ComputeActiveDofs() -> solvers::helpers::BoundaryConditions;
