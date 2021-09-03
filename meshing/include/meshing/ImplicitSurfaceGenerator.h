@@ -109,18 +109,13 @@ namespace meshing {
             Tensor3<T> new_surface(rows, cols, layers);
             new_surface.SetConstant(0);
 
-            for (int layer = 0; layer < layers; ++layer) {
-                for (int row = 0; row < rows; ++row) {
-                    for (int col = 0; col < cols; ++col) {
-                        if (layer == 0 || layer == layers - 1 || row == 0 || row == rows - 1 || col == 0 ||
-                            col == cols - 1) {
-                            continue;
-                        } else {
-                            const int r = row > 1 ? row - 1 : row;
-                            const int l = layer > 1 ? layer - 1 : layer;
-                            const int c = col > 1 ? col - 1 : col;
-                            new_surface(row, col, layer) = implicit_surface_(r, c, l);
-                        }
+            for (int layer = 0; layer < layers - 2; ++layer) {
+                for (int row = 0; row < rows - 2; ++row) {
+                    for (int col = 0; col < cols - 2; ++col) {
+                        const int r = row + 1;
+                        const int c = col + 1;
+                        const int l = layer + 1;
+                        new_surface(r, c, l) = implicit_surface_(row, col, layer);
                     }
                 }
             }
@@ -130,10 +125,6 @@ namespace meshing {
 
         /// \brief Generate implicit function material.
         auto GenerateImplicitFunctionBasedMaterial(const int thickness, MatrixXr &V, MatrixXi &F) -> void {
-            const int rows = implicit_surface_.Dimension(0);
-            const int cols = implicit_surface_.Dimension(1);
-            const int layers = implicit_surface_.Dimension(2);
-
             if (behavior_ == Behavior::kIsotropic) {
                 if (microstructure_ == Microstructure::kUniform) {
                     MakeRenderable(V, F);
@@ -143,6 +134,8 @@ namespace meshing {
             }
             if (behavior_ == Behavior::kAnisotropic) { GenerateAnisotropicMaterial(thickness, 1000, V, F); }
         }
+
+        auto Info() -> GeneratorInfo { return info_; }
 
 
     private:
@@ -209,12 +202,17 @@ namespace meshing {
 
         auto GenerateAnisotropicMaterial(const unsigned int thickness, const unsigned int max_iter, MatrixXr &V,
                                          MatrixXi &F) -> void {
-            constexpr unsigned int min = 0;
-
             // Ensure the cutoff conditions are met
             const unsigned int max_rows = implicit_surface_.Dimension(0) - (inclusion_.rows + thickness);
             const unsigned int max_cols = implicit_surface_.Dimension(1) - (inclusion_.cols + thickness);
-            const unsigned int max_layers = implicit_surface_.Dimension(2) - (inclusion_.depth + thickness);
+            const unsigned int max_layers = implicit_surface_.Dimension(2) - inclusion_.depth;
+
+            if (max_rows < inclusion_.n_inclusions && max_cols < inclusion_.n_inclusions &&
+                max_layers < inclusion_.n_inclusions) {
+                NEON_ASSERT_ERROR("Provided anisotropic conditions cannot be met, the available cutoff with supplied ",
+                                  "thickness is over-constrained");
+                return;
+            }
 
             // Iteration cutoff point for normalizing cubes
             int n_iterations = 0;
@@ -222,9 +220,9 @@ namespace meshing {
             // RNG
             std::random_device rd;
             std::mt19937 generator(rd());
-            const std::uniform_int_distribution<int> rows_distribution(min, max_rows);
-            const std::uniform_int_distribution<int> cols_distribution(min, max_cols);
-            const std::uniform_int_distribution<int> layers_distribution(min, max_layers);
+            const std::uniform_int_distribution<int> rows_distribution(thickness, max_rows);
+            const std::uniform_int_distribution<int> cols_distribution(thickness, max_cols);
+            const std::uniform_int_distribution<int> layers_distribution(0, max_layers);
 
             for (unsigned int i = 0; i < inclusion_.n_inclusions; ++i) {
                 unsigned int rows = rows_distribution(generator);
@@ -280,7 +278,7 @@ namespace meshing {
             const int cols = mc_surface.Dimension(1);
             const int layers = mc_surface.Dimension(2);
 
-
+            NEON_LOG_INFO("\n", mc_surface);
             MatrixXr GV;
             RowVector3i resolution(rows, cols, layers);
             igl::grid(resolution, GV);

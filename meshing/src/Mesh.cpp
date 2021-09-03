@@ -13,6 +13,7 @@
 #include <igl/readOBJ.h>
 #include <igl/readOFF.h>
 #include <igl/readPLY.h>
+#include <igl/unique_simplices.h>
 #include <meshing/Mesh.h>
 #include <utilities/math/LinearAlgebra.h>
 #include <utilities/runtime/NeonLog.h>
@@ -47,11 +48,18 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::
     MatrixXr TV;
     MatrixXi TF;
     MatrixXi TT;
-    const int res = igl::copyleft::tetgen::tetrahedralize(V, F, tetgen_flags, TV, TT, TF);
+
+    MatrixXi FF;
+    igl::unique_simplices(F, FF);
+    const int res = igl::copyleft::tetgen::tetrahedralize(V, FF, tetgen_flags, TV, TT, TF);
 
     if (res != 0) {
-        NEON_LOG_ERROR("Tetgen failed to tetrahedralize mesh. Falling back to surface mesh.");
-        ReloadMesh(V, F);
+        if ((V.rows() > 0 && V.cols() == 3) && (F.rows() > 0 && F.cols() == 3)) {
+            NEON_LOG_ERROR("Tetgen failed to tetrahedralize mesh. Falling back to surface mesh.");
+            ReloadMesh(V, F);
+            return;
+        }
+        NEON_LOG_ERROR("New mesh was empty! Reverting overwrite and keeping old mesh. Check tetgen!");
         tetgen_succeeded = false;
         return;
     } else {

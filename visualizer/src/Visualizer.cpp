@@ -79,6 +79,8 @@ auto visualizer::GenerateShape() -> void {
         rve->ComputeCompositeMesh(inclusion, isotropic, V, F);
     }
 
+    NEON_ASSERT_WARN(rve->GeneratorInfo() == "success", "RVE Generator failed at max iterations");
+
     if (mesh == nullptr) {
         if (tetrahedralize) {
             mesh = std::make_shared<meshing::Mesh>(V, F, tetgen_flags);
@@ -92,11 +94,6 @@ auto visualizer::GenerateShape() -> void {
             mesh->ReloadMesh(V, F);
         }
     }
-
-    NEON_LOG_INFO("Mesh change detected, reloading solver");
-    NEON_ASSERT_WARN(mesh->tetgen_succeeded, "Tetgen failed to create volumetric mesh, cannot setup solver");
-    if (mesh->tetgen_succeeded) { SetupSolver(); }
-    NEON_LOG_INFO("Ready to simulate!");
 }
 
 auto visualizer::UpdateShapeEffectiveCoefficients() -> void {
@@ -183,8 +180,10 @@ auto visualizer::SimulationMenu() -> void {
     ImGui::InputDouble("Poisson's Ratio", &poissons_ratio);
 
     if (ImGui::Button("Reload Solver", ImVec2(w, 0))) {
+        if (!Mesh()->tetgen_succeeded) { return; }
         SetupSolver();
         UpdateShapeEffectiveCoefficients();
+        Mesh()->ResetMesh();
     }
 
     if (ImGui::CollapsingHeader("Homogenization", ImGuiTreeNodeFlags_DefaultOpen)) {

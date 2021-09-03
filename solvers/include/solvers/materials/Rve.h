@@ -37,6 +37,14 @@ namespace solvers::materials {
         auto SurfaceMesh() const -> Tensor3r { return surface_mesh_; }
         auto PrimaryMaterial() const -> Material { return material_; }
         auto Homogenized() const noexcept -> const std::unique_ptr<Homogenization> & { return homogenization_; }
+        auto GeneratorInfo() const noexcept -> std::string {
+            switch (generator_->Info()) {
+                case meshing::ImplicitSurfaceGenerator<Real>::GeneratorInfo::kFailure:
+                    return "failed";
+                default:
+                    return "success";
+            }
+        }
 
     private:
         bool contains_surface_mesh_ = false;
