@@ -49,6 +49,7 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::
     MatrixXi TF;
     MatrixXi TT;
 
+    // Sometimes with voids tetgen gets overlapping faces which causes all kinds of meltdowns, this aovids that outcome.
     MatrixXi FF;
     igl::unique_simplices(F, FF);
     const int res = igl::copyleft::tetgen::tetrahedralize(V, FF, tetgen_flags, TV, TT, TF);

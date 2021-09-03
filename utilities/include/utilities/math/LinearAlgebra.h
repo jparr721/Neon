@@ -151,6 +151,11 @@ namespace utilities::math {
         auto Instance() const noexcept -> Eigen::Tensor<T, 3> { return instance_; }
 
         auto SetConstant(T value) -> void { instance_.setConstant(value); }
+        static auto SetConstant(T value, const Vector3<int> &dims) -> Tensor3<T> {
+            Tensor3<T> v(dims);
+            v.SetConstant(value);
+            return v;
+        }
 
         auto Resize(int rows, int cols, int layers) -> void { instance_.resize(rows, cols, layers); }
 

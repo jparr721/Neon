@@ -8,7 +8,9 @@
 //
 #include <future>
 #include <solvers/materials/Material.h>
+#include <sstream>
 #include <thread>
+#include <unordered_map>
 #include <utilities/filesystem/CsvFile.h>
 #include <utilities/math/Time.h>
 #include <visualizer/Visualizer.h>
@@ -313,31 +315,38 @@ auto visualizer::GenerateDisplacementDataset(const std::string &filename) -> voi
 }
 
 auto visualizer::GenerateHomogenizationDataset(const std::string &filename) -> void {
-    const auto all_boundary_conditions = ComputeActiveDofs();
-    const auto mesh_clone = std::make_shared<meshing::Mesh>(*mesh);
-    const auto static_solver =
-            std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, youngs_modulus, poissons_ratio,
-                                                          mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
-    const auto rve = std::make_unique<solvers::materials::Rve>(
-            Vector3i(rve_dims, rve_dims, rve_dims),
-            solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
-    const auto inclusion = meshing::ImplicitSurfaceGenerator<Real>::MakeInclusion(n_voids, void_dims);
+    // Size is fixed so we can reliably iterate the same group of things
+    const std::unordered_map<int, int> sizes = {{1, 5}, {2, 3}, {3, 2}, {4, 1}, {5, 1}};
 
-    MatrixXr V;
-    MatrixXi F;
-    if (n_voids == 0) {
-        rve->ComputeUniformMesh(V, F);
-    } else {
-        rve->ComputeCompositeMesh(inclusion, isotropic, V, F);
+    utilities::filesystem::CsvFile<std::string> csv(filename,
+                                                    std::vector<std::string>{"Effective Coefficients", "volume%"});
+    for (const auto &[size, dims] : sizes) {
+        const auto all_boundary_conditions = ComputeActiveDofs();
+        const auto mesh_clone = std::make_shared<meshing::Mesh>(*mesh);
+        const auto static_solver =
+                std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, youngs_modulus, poissons_ratio,
+                                                              mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
+        const auto rve = std::make_unique<solvers::materials::Rve>(
+                Vector3i(rve_dims, rve_dims, rve_dims),
+                solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
+        const auto inclusion = meshing::ImplicitSurfaceGenerator<Real>::MakeInclusion(size, dims);
+
+        MatrixXr V;
+        MatrixXi F;
+        if (n_voids == 0) {
+            rve->ComputeUniformMesh(V, F);
+        } else {
+            rve->ComputeCompositeMesh(inclusion, isotropic, V, F);
+        }
+
+        rve->Homogenize();
+        std::stringstream ss;
+        ss << rve->Homogenized()->CoefficientVector();
+        const Real volume_pct =
+                Tensor3r::SetConstant(1, rve->SurfaceMesh().Dimensions()).Sum() / rve->SurfaceMesh().Sum();
+
+        csv << std::vector<std::string>{ss.str(), std::to_string(volume_pct)};
     }
-
-    // Iterate the solution space
-    // Void dims are uniform, so the cube of it * n_voids must be half the total volume (to avoid degenerate cubes);
-    const int void_area = std::powf(void_dims, 3);
-    const int cuboid_area = std::powf(rve_dims, 3);
-    NEON_ASSERT_ERROR((void_area * n_voids) / 2 <= cuboid_area, "Voids could cause degenerate cube!");
-
-    // Figure out how many we can make per size.
 }
 
 auto visualizer::ComputeActiveDofs() -> solvers::helpers::BoundaryConditions {
