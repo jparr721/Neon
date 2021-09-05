@@ -1,5 +1,9 @@
 project(visualizer)
 
+if (CMAKE_BUILD_TYPE EQUAL "Release")
+    add_compile_options(/O2)
+endif ()
+
 add_executable(${PROJECT_NAME} src/main.cpp include/visualizer/Visualizer.h src/Visualizer.cpp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC

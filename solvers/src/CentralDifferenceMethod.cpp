@@ -68,7 +68,7 @@ void solvers::integrators::CentralDifferenceMethod::Solve(const VectorXr &forces
 
 void solvers::integrators::CentralDifferenceMethod::SetEffectiveMassMatrix() {
     effective_mass_matrix_ = a0 * mass_matrix_ + a1 * damping_;
-    Eigen::SparseLU<SparseMatrixXr> solver;
+    Eigen::SimplicialLDLT<SparseMatrixXr> solver;
     solver.compute(effective_mass_matrix_);
     SparseMatrixXr I(effective_mass_matrix_.rows(), effective_mass_matrix_.cols());
     I.setIdentity();

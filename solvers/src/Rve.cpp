@@ -26,7 +26,8 @@ auto solvers::materials::Rve::Homogenize() -> void {
 
 
 auto solvers::materials::Rve::ComputeCompositeMesh(const meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion,
-                                                   bool is_isotropic, MatrixXr &V, MatrixXi &F) -> void {
+                                                   const int thickness, bool is_isotropic, MatrixXr &V, MatrixXi &F)
+        -> void {
     const meshing::ImplicitSurfaceGenerator<Real>::Behavior behavior =
             is_isotropic ? meshing::ImplicitSurfaceGenerator<Real>::Behavior::kIsotropic
                          : meshing::ImplicitSurfaceGenerator<Real>::Behavior::kAnisotropic;
@@ -34,7 +35,7 @@ auto solvers::materials::Rve::ComputeCompositeMesh(const meshing::ImplicitSurfac
     generator_ =
             std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(height_, width_, depth_, behavior, inclusion);
 
-    generator_->GenerateImplicitFunctionBasedMaterial(1, V, F);
+    generator_->GenerateImplicitFunctionBasedMaterial(thickness, V, F);
     surface_mesh_ = generator_->Surface();
 
     contains_surface_mesh_ = true;

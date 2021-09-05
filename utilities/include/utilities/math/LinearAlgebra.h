@@ -183,6 +183,25 @@ namespace utilities::math {
             return m;
         }
 
+        auto SetLayerBitmask(const int layer, const MatrixX<T> &data) -> void {
+            const int rows = Dimension(0);
+            const int cols = Dimension(1);
+
+            NEON_ASSERT_ERROR(data.rows() == rows, "Layer rows must match tensor row dimensions");
+            NEON_ASSERT_ERROR(data.cols() == cols, "Layer cols must match tensor column dimensions");
+
+            for (int row = 0; row < rows; ++row) {
+                for (int col = 0; col < cols; ++col) {
+                    if (data(row, col) == 0) { instance_(row, col, layer) = data(row, col); }
+                }
+            }
+        }
+
+        auto SetLayersBitmask(const MatrixX<T> &data) -> void {
+            const int layers = Dimension(2);
+            for (int layer = 0; layer < layers; ++layer) { SetLayerBitmask(layer, data); }
+        }
+
         auto Top(const int layer) const -> MatrixX<T> {
             const int rows = Dimension(1);
             const int cols = Dimension(2);

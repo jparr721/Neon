@@ -129,7 +129,7 @@ namespace meshing {
                 if (microstructure_ == Microstructure::kUniform) {
                     MakeRenderable(V, F);
                 } else {
-                    GenerateIsotropicMaterial(thickness, V, F);
+                    GenerateIsotropicMaterial(thickness, 0, V, F);
                 }
             }
             if (behavior_ == Behavior::kAnisotropic) { GenerateAnisotropicMaterial(thickness, 1000, V, F); }
@@ -152,51 +152,77 @@ namespace meshing {
 
         GeneratorInfo info_ = GeneratorInfo::kSuccess;
 
-        auto GenerateIsotropicMaterial(const int thickness, MatrixXr &V, MatrixXi &F) -> void {
-            const int rows = implicit_surface_.Dimension(0);
-            const int cols = implicit_surface_.Dimension(1);
-            const int layers = implicit_surface_.Dimension(2);
+        auto GenerateIsotropicMaterial(const int thickness, const bool auto_compute_area, MatrixXr &V, MatrixXi &F)
+                -> void {
+            const unsigned int dim = implicit_surface_.Dimension(0);
+            MatrixXr mask = MatrixXr::Ones(dim, dim);
 
-            const int n_rows = inclusion_.n_inclusions / inclusion_.rows;
-            const int n_cols = inclusion_.n_inclusions / n_rows;
-
-            const int x_interval_pad = (cols - (inclusion_.cols + thickness) * n_cols) / 2;
-            const int y_interval_pad = (rows - (inclusion_.rows + thickness) * n_rows) / 2;
-
-            // Pre-calculate the starting zones for x
-            VectorXi x_starting_positions =
-                    VectorXi::LinSpaced(n_cols, x_interval_pad, cols - x_interval_pad - inclusion_.cols);
-
-            if (cols - x_starting_positions(x_starting_positions.rows() - 1) != x_starting_positions.x()) {
-                NEON_LOG_WARN("Uneven surface found! No longer isotropic. Attempting fix");
-                FixStartingPositions(cols, x_starting_positions);
-            }
-
-            VectorXi y_starting_positions =
-                    VectorXi::LinSpaced(n_rows, y_interval_pad, rows - y_interval_pad - inclusion_.rows);
-
-            if (rows - y_starting_positions(y_starting_positions.rows() - 1) != y_starting_positions.x()) {
-                NEON_LOG_WARN("Uneven y-axis surface found! Attempting to fix");
-                FixStartingPositions(rows, y_starting_positions);
-            }
-
-            implicit_surface_.SetConstant(1);
-            for (int layer = 1; layer < layers - 1; ++layer) {
-                for (int y_i = 0; y_i < n_rows; ++y_i) {
-                    const int y = y_starting_positions(y_i);
-                    for (int j = y; j < y + inclusion_.rows; ++j) {
-                        for (int x_i = 0; x_i < n_cols; ++x_i) {
-                            const int x = x_starting_positions(x_i);
-                            for (int i = x; i < x + inclusion_.cols; ++i) { implicit_surface_(j, i, layer) = 0; }
-                        }
+            const unsigned int t_dim = dim - (2 * thickness);
+            unsigned int v_dim = 0;
+            if (auto_compute_area) {
+                for (int i = 2; i < t_dim; ++i) {
+                    if (t_dim % i == 0) {
+                        v_dim = i;
+                        break;
                     }
                 }
+
+                NEON_ASSERT_ERROR(v_dim > 0, "Failed to compute optimum area.");
+            } else {
+                v_dim = inclusion_.rows;
             }
 
-            const MatrixXr l = implicit_surface_.Layer(2);
-            implicit_surface_.SetSidesBitmask(l);
-            implicit_surface_.SetTopsBitmask(l.transpose());
+            int material_rows = 0;
+            for (int row = thickness; row < t_dim + thickness; ++row) {
+                int material_cols = 0;
+                int col = thickness;
+                while (col < t_dim + thickness) {
+                    // We need to increment the rows so we don't draw voids in thickness regions
+                    if (material_rows == v_dim) {
+                        // Add the spacing of size thickness
+                        row += thickness;
 
+                        // Reset the amount of material since we're back in a draw-able range
+                        material_rows = 0;
+                    }
+
+                    // We need to increment the cols so we don't draw voids in thickness regions
+                    if (material_cols == v_dim) {
+                        // Add the spacing of size thickness
+                        col += thickness;
+
+                        // Reset the amount of material since we're back in a draw-able range
+                        material_cols = 0;
+                    } else {// Otherwise, increment as usual and draw the void.
+                        mask(row, col) = 0;
+
+                        // Since we drew material, increment material counts.
+                        ++material_cols;
+
+                        // Move to the next col since this one is drawn.
+                        ++col;
+                    }
+                }
+
+                // Material was drawn for this row, so we increment only here.
+                ++material_rows;
+            }
+
+            for (int t = 0; t < thickness; ++t) {
+                mask.row(t) = VectorXr::Ones(mask.rows());
+                mask.col(t) = VectorXr::Ones(mask.cols());
+
+                mask.row((mask.rows() - 1) - t) = VectorXr::Ones(mask.rows());
+                mask.col((mask.cols() - 1) - t) = VectorXr::Ones(mask.cols());
+            }
+
+            // TODO(@jparr721) - Add checks for mesh even-ness
+
+            // Set implicit surface to the bitmask
+            implicit_surface_.SetConstant(1);
+            implicit_surface_.SetLayersBitmask(mask);
+            implicit_surface_.SetSidesBitmask(mask);
+            implicit_surface_.SetTopsBitmask(mask);
             MakeRenderable(V, F);
         }
 
@@ -278,7 +304,6 @@ namespace meshing {
             const int cols = mc_surface.Dimension(1);
             const int layers = mc_surface.Dimension(2);
 
-            NEON_LOG_INFO("\n", mc_surface);
             MatrixXr GV;
             RowVector3i resolution(rows, cols, layers);
             igl::grid(resolution, GV);
@@ -307,6 +332,5 @@ namespace meshing {
         }
     };
 }// namespace meshing
-
 
 #endif//NEON_IMPLICITSURFACEGENERATOR_H

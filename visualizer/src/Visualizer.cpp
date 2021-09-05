@@ -22,6 +22,7 @@ namespace visualizer {
     int rve_dims = 5;
     int n_voids = 0;
     int void_dims = 0;
+    int thickness = 1;
 
     Real youngs_modulus = 5000;
     Real poissons_ratio = 0.3;
@@ -41,7 +42,7 @@ namespace visualizer {
     Real v_13 = 0;
     Real v_23 = 0;
 
-    std::string tetgen_flags = "zpq";
+    std::string tetgen_flags = "Yzpq";
     std::string displacement_dataset_name = "";
 
     // DOF nodes
@@ -78,7 +79,7 @@ auto visualizer::GenerateShape() -> void {
     if (n_voids == 0) {
         rve->ComputeUniformMesh(V, F);
     } else {
-        rve->ComputeCompositeMesh(inclusion, isotropic, V, F);
+        rve->ComputeCompositeMesh(inclusion, thickness, isotropic, V, F);
     }
 
     NEON_ASSERT_WARN(rve->GeneratorInfo() == "success", "RVE Generator failed at max iterations");
@@ -157,6 +158,7 @@ auto visualizer::GeometryMenu() -> void {
         ImGui::InputInt("Rve Dim", &rve_dims);
         ImGui::InputInt("Void Dim", &void_dims);
         ImGui::InputInt("N Voids", &n_voids);
+        ImGui::InputInt("Thickness", &thickness);
 
         ImGui::Checkbox("Tetrahedralize", &tetrahedralize);
 
@@ -372,7 +374,7 @@ auto visualizer::GenerateHomogenizationDataset(const std::string &filename) -> v
         if (n_voids == 0) {
             rve->ComputeUniformMesh(V, F);
         } else {
-            rve->ComputeCompositeMesh(inclusion, isotropic, V, F);
+            rve->ComputeCompositeMesh(inclusion, 0, isotropic, V, F);
         }
 
         rve->Homogenize();
