@@ -8,7 +8,7 @@
 #include <Eigen/Dense>
 #include <memory>
 #include <meshing/Mesh.h>
-#include <solvers/helpers/BoundaryCondition.h>
+#include <solvers/utilities/BoundaryCondition.h>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace solvers::fem {
@@ -49,10 +49,10 @@ namespace solvers::fem {
         VectorXr F_e;
 
         /// \brief Nodal boundary conditions.
-        helpers::BoundaryConditions boundary_conditions;
+        boundary_conditions::BoundaryConditions boundary_conditions;
 
-        LinearElastic(helpers::BoundaryConditions boundary_conditions, Real youngs_modulus, Real poissons_ratio,
-                      std::shared_ptr<meshing::Mesh> mesh, Type type = Type::kStatic);
+        LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions, Real youngs_modulus,
+                      Real poissons_ratio, std::shared_ptr<meshing::Mesh> mesh, Type type = Type::kStatic);
 
         auto SolveWithIntegrator() -> MatrixXr;
         auto SolveStatic() -> MatrixXr;

@@ -10,43 +10,37 @@
 #ifndef NEON_DEFORMATION_H
 #define NEON_DEFORMATION_H
 
+#include <meshing/Mesh.h>
+#include <solvers/utilities/BoundaryCondition.h>
+#include <unordered_map>
+#include <utilities/algorithms/Algorithms.h>
+#include <utilities/filesystem/CsvFile.h>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace datasets {
-    struct RowType {
-        Real force;
-        Real E;
-        Real v;
-        Real start;
-        Real displacement;
-
-        using ValueType = Real;
-
-        auto Value(const std::string &key) const -> ValueType {
-            if (key == "Force") {
-                return force;
-            } else if (key == "E") {
-                return E;
-            } else if (key == "v") {
-                return v;
-            } else if (key == "Start") {
-                return start;
-            } else if (key == "Displacement") {
-                return displacement;
-            }
-            return 0;
-        }
-    };
     class Deformation {
+        struct _ReturnType : public utilities::algorithms::FnBinarySearchAbstractReturnType {
+            Real displacement = -1;
+            Real target = -1;
+            Real E = -1;
+            auto TooLarge() const -> bool override;
+            auto TooSmall() const -> bool override;
+            auto Ok() const -> bool override;
+        };
+
     public:
-        explicit Deformation(const std::string &path) : path_(path) {}
-        auto Read() -> void;
-        auto Value(const std::string &key) -> RowType::ValueType { return rows_.at(0).Value(key); }
+        explicit Deformation(const std::string &path);
+        auto Generate(const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
+                      const std::shared_ptr<meshing::Mesh> &mesh_, Real min_E = 1000, Real max_E = 40000,
+                      Real min_v = 0.0, Real max_v = 0.5, Real E_incr = 1000, Real v_incr = 0.1) -> void;
 
     private:
+        static constexpr Real epsilon = 0.01;
+
         const std::string path_;
+        utilities::filesystem::CsvFile<std::string> csv_;
         std::vector<std::string> keys_;
-        std::vector<RowType> rows_;
+        std::unordered_map<std::string, std::vector<Real>> rows_;
     };
 }// namespace datasets
 

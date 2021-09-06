@@ -14,7 +14,7 @@
 #include <utilities/math/LinearAlgebra.h>
 #include <vector>
 
-namespace solvers::helpers {
+namespace solvers::boundary_conditions {
     struct BoundaryCondition {
         unsigned int node;
         Vector3r force;
@@ -28,5 +28,5 @@ namespace solvers::helpers {
     auto SelectNodes(const std::vector<unsigned int> &ignored, const MatrixXr &V) -> std::vector<unsigned int>;
     auto ApplyForceToBoundaryConditions(const std::vector<unsigned int> &indices, const Vector3r &force)
             -> BoundaryConditions;
-}// namespace solvers::helpers
+}// namespace solvers::boundary_conditions
 #endif//NEON_BOUNDARYCONDITION_H

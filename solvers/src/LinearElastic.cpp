@@ -14,8 +14,9 @@
 #include <utilities/runtime/NeonLog.h>
 #include <utility>
 
-solvers::fem::LinearElastic::LinearElastic(helpers::BoundaryConditions boundary_conditions, Real youngs_modulus,
-                                           Real poissons_ratio, std::shared_ptr<meshing::Mesh> mesh, Type type)
+solvers::fem::LinearElastic::LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions,
+                                           Real youngs_modulus, Real poissons_ratio,
+                                           std::shared_ptr<meshing::Mesh> mesh, Type type)
     : boundary_conditions(std::move(boundary_conditions)), youngs_modulus_(youngs_modulus),
       poissons_ratio_(poissons_ratio), mesh_(std::move(mesh)) {
     // Since this is a linear solver, we can formulate all of our starting assets right away.

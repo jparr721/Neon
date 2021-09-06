@@ -387,23 +387,24 @@ auto visualizer::GenerateHomogenizationDataset(const std::string &filename) -> v
     }
 }
 
-auto visualizer::ComputeActiveDofs() -> solvers::helpers::BoundaryConditions {
+auto visualizer::ComputeActiveDofs() -> solvers::boundary_conditions::BoundaryConditions {
     // Apply uni-axial y-axis force
     // Bottom nodes are fixed
-    fixed_nodes = solvers::helpers::FindYAxisBottomNodes(mesh->positions);
+    fixed_nodes = solvers::boundary_conditions::FindYAxisBottomNodes(mesh->positions);
 
     // Top nodes have unit force
-    force_applied_nodes = solvers::helpers::FindYAxisTopNodes(mesh->positions);
+    force_applied_nodes = solvers::boundary_conditions::FindYAxisTopNodes(mesh->positions);
 
     std::vector<unsigned int> ignored_nodes;
     std::set_union(fixed_nodes.begin(), fixed_nodes.end(), force_applied_nodes.begin(), force_applied_nodes.end(),
                    std::back_inserter(ignored_nodes));
 
-    const auto intermediate_nodes = solvers::helpers::SelectNodes(ignored_nodes, mesh->positions);
+    const auto intermediate_nodes = solvers::boundary_conditions::SelectNodes(ignored_nodes, mesh->positions);
 
-    const auto top_boundary_conditions = solvers::helpers::ApplyForceToBoundaryConditions(force_applied_nodes, force);
+    const auto top_boundary_conditions =
+            solvers::boundary_conditions::ApplyForceToBoundaryConditions(force_applied_nodes, force);
     const auto intermediate_nodes_boundary_conditions =
-            solvers::helpers::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
+            solvers::boundary_conditions::ApplyForceToBoundaryConditions(intermediate_nodes, initial_force);
 
     auto all_boundary_conditions = top_boundary_conditions;
 

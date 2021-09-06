@@ -12,7 +12,6 @@
 #define BOOST_TEST_MAIN
 
 #include <Eigen/SparseLU>
-#include <iostream>
 #include <memory>
 
 #include <boost/test/unit_test.hpp>

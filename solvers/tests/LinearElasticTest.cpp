@@ -40,8 +40,8 @@ BOOST_AUTO_TEST_CASE(TestConstructor) {
     const auto mesh = MakeBasicMesh();
     const Real E = 210e6;
     const Real v = 0.3;
-    const auto solver =
-            std::make_unique<solvers::fem::LinearElastic>(solvers::helpers::BoundaryConditions{}, E, v, mesh);
+    const auto solver = std::make_unique<solvers::fem::LinearElastic>(
+            solvers::boundary_conditions::BoundaryConditions{}, E, v, mesh);
     BOOST_REQUIRE(solver.get() != nullptr);
 }
 
@@ -49,26 +49,26 @@ BOOST_AUTO_TEST_CASE(TestSolveStatic) {
     const auto mesh = MakeBasicMesh();
     const Real E = 210e6;
     const Real v = 0.3;
-    const auto bc_1 = solvers::helpers::BoundaryCondition{
+    const auto bc_1 = solvers::boundary_conditions::BoundaryCondition{
             2,
             Vector3r(0.f, 3.125f, 0.f),
     };
 
-    const auto bc_2 = solvers::helpers::BoundaryCondition{
+    const auto bc_2 = solvers::boundary_conditions::BoundaryCondition{
             3,
             Vector3r(0.f, 6.25f, 0.f),
     };
 
-    const auto bc_3 = solvers::helpers::BoundaryCondition{
+    const auto bc_3 = solvers::boundary_conditions::BoundaryCondition{
             6,
             Vector3r(0.f, 6.25f, 0.f),
     };
 
-    const auto bc_4 = solvers::helpers::BoundaryCondition{
+    const auto bc_4 = solvers::boundary_conditions::BoundaryCondition{
             7,
             Vector3r(0.f, 3.125f, 0.f),
     };
-    solvers::helpers::BoundaryConditions bcs{bc_1, bc_2, bc_3, bc_4};
+    solvers::boundary_conditions::BoundaryConditions bcs{bc_1, bc_2, bc_3, bc_4};
     const auto solver = std::make_unique<solvers::fem::LinearElastic>(bcs, E, v, mesh);
     BOOST_REQUIRE(solver.get() != nullptr);
 

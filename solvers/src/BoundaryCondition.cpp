@@ -7,15 +7,15 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 #include <algorithm>
-#include <solvers/helpers/BoundaryCondition.h>
+#include <solvers/utilities/BoundaryCondition.h>
 
-auto solvers::helpers::ApplyForceToBoundaryConditions(const std::vector<unsigned int> &indices, const Vector3r &force)
-        -> BoundaryConditions {
+auto solvers::boundary_conditions::ApplyForceToBoundaryConditions(const std::vector<unsigned int> &indices,
+                                                                  const Vector3r &force) -> BoundaryConditions {
     BoundaryConditions conditions;
     for (const auto &index : indices) { conditions.emplace_back(BoundaryCondition{index, force}); }
     return conditions;
 }
-auto solvers::helpers::FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<unsigned int> {
+auto solvers::boundary_conditions::FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<unsigned int> {
     Real min_y = 1e10;
     std::vector<unsigned int> indices;
     for (int row = 0; row < V.rows(); ++row) {
@@ -30,7 +30,7 @@ auto solvers::helpers::FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<un
 
     return indices;
 }
-auto solvers::helpers::FindYAxisTopNodes(const MatrixXr &V) -> std::vector<unsigned int> {
+auto solvers::boundary_conditions::FindYAxisTopNodes(const MatrixXr &V) -> std::vector<unsigned int> {
     Real max_y = -1e10;
     std::vector<unsigned int> indices;
     for (int row = 0; row < V.rows(); ++row) {
@@ -45,7 +45,7 @@ auto solvers::helpers::FindYAxisTopNodes(const MatrixXr &V) -> std::vector<unsig
 
     return indices;
 }
-auto solvers::helpers::SelectNodes(const std::vector<unsigned int> &ignored, const MatrixXr &V)
+auto solvers::boundary_conditions::SelectNodes(const std::vector<unsigned int> &ignored, const MatrixXr &V)
         -> std::vector<unsigned int> {
     std::vector<unsigned int> indices;
     for (int row = 0; row < V.rows(); ++row) {
@@ -56,7 +56,7 @@ auto solvers::helpers::SelectNodes(const std::vector<unsigned int> &ignored, con
     return indices;
 }
 
-auto solvers::helpers::Nodes(const BoundaryConditions &bcs) -> std::vector<unsigned int> {
+auto solvers::boundary_conditions::Nodes(const BoundaryConditions &bcs) -> std::vector<unsigned int> {
     std::vector<unsigned int> out;
     for (const auto &[node, _] : bcs) { out.push_back(node); }
     return out;

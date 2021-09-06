@@ -1,7 +1,7 @@
 project(datasets)
 
 add_library(${PROJECT_NAME} SHARED
-        include/datasets/Dataset.h src/Deformation.cpp include/datasets/Deformation.h)
+        src/Deformation.cpp include/datasets/Deformation.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -15,8 +15,22 @@ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Config
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen utilities)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen utilities solvers meshing)
 
 install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
 install(EXPORT ${PROJECT_NAME}Config DESTINATION share/${PROJECT_NAME}/cmake)
 export(TARGETS ${PROJECT_NAME} FILE ${PROJECT_NAME}Config.cmake)
+
+add_executable(
+        ${PROJECT_NAME}DeformationDatasetTest
+        tests/DeformationTest.cpp
+)
+
+target_link_libraries(
+        ${PROJECT_NAME}DeformationDatasetTest
+        LINK_PUBLIC ${Boost_LIBRARIES}
+        ${PROJECT_NAME}
+        solvers
+        meshing
+        utilities
+)
