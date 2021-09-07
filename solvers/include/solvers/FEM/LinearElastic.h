@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <memory>
 #include <meshing/Mesh.h>
+#include <solvers/materials/OrthotropicMaterial.h>
 #include <solvers/utilities/BoundaryCondition.h>
 #include <utilities/math/LinearAlgebra.h>
 
@@ -80,8 +81,7 @@ namespace solvers::fem {
                                               const Vector3r &shape_three, const Vector3r &shape_four) -> MatrixXr;
 
     private:
-        Real youngs_modulus_;
-        Real poissons_ratio_;
+        materials::OrthotropicMaterial material_coefficients_;
 
         std::shared_ptr<meshing::Mesh> mesh_;
 

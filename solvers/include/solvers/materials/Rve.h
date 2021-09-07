@@ -46,6 +46,8 @@ namespace solvers::materials {
             }
         }
 
+        auto SetMaterial(const Material &m) -> void { material_ = m; }
+
     private:
         bool contains_surface_mesh_ = false;
 

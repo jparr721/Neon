@@ -22,7 +22,7 @@ auto datasets::Deformation::Generate(const solvers::boundary_conditions::Boundar
     const VectorXr E_range = VectorXr::LinSpaced(range_size, 1000, 40000);
     std::vector<std::tuple<Real, Real, Real>> Ev;
     for (Real v = min_v; v <= max_v; v += v_incr) {
-        const auto is_max_E = [&](Real target, Real E) -> _ReturnType {
+        const auto is_max_E = [&](Real target, Real E) -> DeformationBinarySearchReturnType {
             const auto mesh_clone = std::make_shared<meshing::Mesh>(*mesh);
             const auto static_solver = std::make_unique<solvers::fem::LinearElastic>(
                     boundary_conditions, E, v, mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
@@ -39,7 +39,7 @@ auto datasets::Deformation::Generate(const solvers::boundary_conditions::Boundar
             }
             sum /= force_applied_nodes_count;
 
-            _ReturnType ret;
+            DeformationBinarySearchReturnType ret;
             ret.displacement = sum;
             ret.target = target;
             ret.E = E;
@@ -59,9 +59,36 @@ auto datasets::Deformation::Generate(const solvers::boundary_conditions::Boundar
                                          std::to_string(std::get<2>(c))};
     }
 }
+auto datasets::Deformation::GenerateSearchSpace(
+        const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
+        const std::shared_ptr<meshing::Mesh> &mesh, Real min_E, Real max_E, Real min_v, Real max_v, Real E_incr,
+        Real v_incr) -> void {
+#pragma omp parallel for
+    for (int E = static_cast<int>(min_E); E < static_cast<int>(max_E); E += static_cast<int>(E_incr)) {
+        for (Real v = min_v; v < max_v; v += v_incr) {
+            const auto mesh_clone = std::make_shared<meshing::Mesh>(*mesh);
+            const auto static_solver = std::make_unique<solvers::fem::LinearElastic>(
+                    boundary_conditions, E, v, mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
+            static_solver->SolveStatic();
 
-bool datasets::Deformation::_ReturnType::Ok() const {
+            Real sum = 0;
+            int force_applied_nodes_count = 0;
+            for (const auto &bc : boundary_conditions) {
+                if (bc.force.y() != 0) {
+                    sum += mesh_clone->positions.row(bc.node).y();
+                    ++force_applied_nodes_count;
+                }
+            }
+            sum /= force_applied_nodes_count;
+
+#pragma omp critical
+            { csv_ << std::vector<std::string>{std::to_string(E), std::to_string(v), std::to_string(sum)}; };
+        }
+    }
+}
+
+bool datasets::Deformation::DeformationBinarySearchReturnType::Ok() const {
     return utilities::numbers::IsApprox(displacement, target, epsilon);
 }
-bool datasets::Deformation::_ReturnType::TooLarge() const { return displacement > target; }
-bool datasets::Deformation::_ReturnType::TooSmall() const { return displacement < target; }
+bool datasets::Deformation::DeformationBinarySearchReturnType::TooLarge() const { return displacement > target; }
+bool datasets::Deformation::DeformationBinarySearchReturnType::TooSmall() const { return displacement < target; }

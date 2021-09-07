@@ -19,7 +19,7 @@
 
 namespace datasets {
     class Deformation {
-        struct _ReturnType : public utilities::algorithms::FnBinarySearchAbstractReturnType {
+        struct DeformationBinarySearchReturnType : public utilities::algorithms::FnBinarySearchAbstractReturnType {
             Real displacement = -1;
             Real target = -1;
             Real E = -1;
@@ -33,6 +33,9 @@ namespace datasets {
         auto Generate(const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
                       const std::shared_ptr<meshing::Mesh> &mesh_, Real min_E = 1000, Real max_E = 40000,
                       Real min_v = 0.0, Real max_v = 0.5, Real E_incr = 1000, Real v_incr = 0.1) -> void;
+        auto GenerateSearchSpace(const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
+                                 const std::shared_ptr<meshing::Mesh> &mesh, Real min_E = 1000, Real max_E = 40000,
+                                 Real min_v = 0.0, Real max_v = 0.5, Real E_incr = 1000, Real v_incr = 0.1) -> void;
 
     private:
         static constexpr Real epsilon = 0.01;

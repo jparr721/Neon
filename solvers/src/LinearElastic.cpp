@@ -17,8 +17,9 @@
 solvers::fem::LinearElastic::LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions,
                                            Real youngs_modulus, Real poissons_ratio,
                                            std::shared_ptr<meshing::Mesh> mesh, Type type)
-    : boundary_conditions(std::move(boundary_conditions)), youngs_modulus_(youngs_modulus),
-      poissons_ratio_(poissons_ratio), mesh_(std::move(mesh)) {
+    : boundary_conditions(std::move(boundary_conditions)), mesh_(std::move(mesh)) {
+    material_coefficients_ = materials::OrthotropicMaterial(youngs_modulus, poissons_ratio);
+
     // Since this is a linear solver, we can formulate all of our starting assets right away.
     AssembleConstitutiveMatrix();
     AssembleElementStiffness();
@@ -352,13 +353,7 @@ auto solvers::fem::LinearElastic::ComputeShapeFunctionFromPoints(const Vector6r 
 }
 
 auto solvers::fem::LinearElastic::AssembleConstitutiveMatrix() -> void {
-    constitutive_matrix_.row(0) << 1 - poissons_ratio_, poissons_ratio_, poissons_ratio_, 0, 0, 0;
-    constitutive_matrix_.row(1) << poissons_ratio_, 1 - poissons_ratio_, poissons_ratio_, 0, 0, 0;
-    constitutive_matrix_.row(2) << poissons_ratio_, poissons_ratio_, 1 - poissons_ratio_, 0, 0, 0;
-    constitutive_matrix_.row(3) << 0, 0, 0, (1 - 2 * poissons_ratio_) / 2, 0, 0;
-    constitutive_matrix_.row(4) << 0, 0, 0, 0, (1 - 2 * poissons_ratio_) / 2, 0;
-    constitutive_matrix_.row(5) << 0, 0, 0, 0, 0, (1 - 2 * poissons_ratio_) / 2;
-    constitutive_matrix_ *= youngs_modulus_ / ((1 + poissons_ratio_) * (1 - 2 * poissons_ratio_));
+    constitutive_matrix_ = material_coefficients_.ConstitutiveMatrix();
 }
 
 auto solvers::fem::LinearElastic::AssembleStrainRelationshipMatrix(const Vector3r &shape_one, const Vector3r &shape_two,

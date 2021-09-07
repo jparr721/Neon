@@ -100,9 +100,7 @@ auto visualizer::GenerateShape() -> void {
 }
 
 auto visualizer::UpdateShapeEffectiveCoefficients() -> void {
-    rve = std::make_unique<solvers::materials::Rve>(
-            Vector3i(rve_dims, rve_dims, rve_dims),
-            solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
+    rve->SetMaterial(solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
 }
 
 auto visualizer::GeometryMenu() -> void {

@@ -10,6 +10,10 @@
 #ifndef NEON_NEONLOG_H
 #define NEON_NEONLOG_H
 
+#include <iostream>
+#include <sstream>
+#include <string>
+
 enum class NeonLogLevel {
     kInfo = 0,
     kWarn,
