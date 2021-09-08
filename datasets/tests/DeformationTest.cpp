@@ -14,33 +14,19 @@
 #include <datasets/Deformation.h>
 #include <filesystem>
 #include <memory>
+#include <meshing/DofOptimizer.h>
 #include <solvers/materials/Rve.h>
 
 auto ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh) -> solvers::boundary_conditions::BoundaryConditions {
-    // Apply uni-axial y-axis force
-    // Bottom nodes are fixed
-    const auto fixed_nodes = solvers::boundary_conditions::FindYAxisBottomNodes(mesh->positions);
-
-    // Top nodes have unit force
-    const auto force_applied_nodes = solvers::boundary_conditions::FindYAxisTopNodes(mesh->positions);
-
-    std::vector<unsigned int> ignored_nodes;
-    std::set_union(fixed_nodes.begin(), fixed_nodes.end(), force_applied_nodes.begin(), force_applied_nodes.end(),
-                   std::back_inserter(ignored_nodes));
-
-    const auto intermediate_nodes = solvers::boundary_conditions::SelectNodes(ignored_nodes, mesh->positions);
-
-    const auto top_boundary_conditions =
-            solvers::boundary_conditions::ApplyForceToBoundaryConditions(force_applied_nodes, Vector3r(0, -100, 0));
-    const auto intermediate_nodes_boundary_conditions =
-            solvers::boundary_conditions::ApplyForceToBoundaryConditions(intermediate_nodes, Vector3r::Zero());
-
-    auto all_boundary_conditions = top_boundary_conditions;
-
-    if (!intermediate_nodes_boundary_conditions.empty()) {
-        all_boundary_conditions.insert(all_boundary_conditions.end(), intermediate_nodes_boundary_conditions.begin(),
-                                       intermediate_nodes_boundary_conditions.end());
-    }
+    const Vector3r force(0, -100, 0);
+    std::vector<unsigned int> fixed_nodes;
+    std::vector<unsigned int> force_applied_nodes;
+    std::vector<unsigned int> interior_nodes;
+    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, mesh, interior_nodes, force_applied_nodes,
+                                 fixed_nodes);
+    solvers::boundary_conditions::BoundaryConditions all_boundary_conditions;
+    solvers::boundary_conditions::LoadBoundaryConditions(force, mesh, force_applied_nodes, interior_nodes,
+                                                         all_boundary_conditions);
 
     return all_boundary_conditions;
 }
@@ -59,7 +45,7 @@ BOOST_AUTO_TEST_CASE(TestGenerator) {
     MatrixXr V;
     MatrixXi F;
     rve->ComputeUniformMesh(V, F);
-    // generate the mesh with tetrahedralized components.
+    // generate the uniform_mesh with tetrahedralized components.
     const auto mesh = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
 
     const auto boundary_conditions = ComputeActiveDofs(mesh);

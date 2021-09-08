@@ -16,8 +16,6 @@
 namespace meshing {
     enum class MeshFileType { kObj = 0, kPly, kOff, kUnsupported };
 
-    auto ReadFileExtension(const std::string &filename) -> MeshFileType;
-
     class Mesh {
     public:
         bool tetgen_succeeded = false;

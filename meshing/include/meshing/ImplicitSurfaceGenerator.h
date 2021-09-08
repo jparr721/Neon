@@ -216,7 +216,7 @@ namespace meshing {
                 mask.col((mask.cols() - 1) - t) = VectorXr::Ones(mask.cols());
             }
 
-            // TODO(@jparr721) - Add checks for mesh even-ness
+            // TODO(@jparr721) - Add checks for uniform_mesh even-ness
 
             // Set implicit surface to the bitmask
             implicit_surface_.SetConstant(1);

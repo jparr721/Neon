@@ -30,9 +30,6 @@ namespace solvers::materials {
         auto ComputeCompositeMesh(meshing::ImplicitSurfaceGenerator<Real>::Inclusion inclusion, int thickness,
                                   bool is_isotropic, MatrixXr &V, MatrixXi &F) -> void;
 
-        auto Height() const noexcept -> unsigned int { return height_; }
-        auto Width() const noexcept -> unsigned int { return width_; }
-        auto Depth() const noexcept -> unsigned int { return depth_; }
         auto ConsitutiveTensor() const -> Matrix6r { return C_; }
         auto SurfaceMesh() const -> Tensor3r { return surface_mesh_; }
         auto PrimaryMaterial() const -> Material { return material_; }

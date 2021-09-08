@@ -55,8 +55,10 @@ namespace solvers::fem {
         LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions, Real youngs_modulus,
                       Real poissons_ratio, std::shared_ptr<meshing::Mesh> mesh, Type type = Type::kStatic);
 
-        auto SolveWithIntegrator() -> MatrixXr;
-        auto SolveStatic() -> MatrixXr;
+        LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions, materials::OrthotropicMaterial m,
+                      std::shared_ptr<meshing::Mesh> mesh, Type type = Type::kStatic);
+
+        void Solve(MatrixXr &displacements, MatrixXr &Stress);
 
         /// \brief Assemble the global stiffness matrix by slicing together all of the
         /// element stiffness matrices.
@@ -86,6 +88,9 @@ namespace solvers::fem {
         std::shared_ptr<meshing::Mesh> mesh_;
 
         Matrix6r constitutive_matrix_;
+
+        void SolveWithIntegrator();
+        void SolveStatic();
 
         auto ComputeTetrahedralElementVolume(const Vector3r &shape_one, const Vector3r &shape_two,
                                              const Vector3r &shape_three, const Vector3r &shape_four) -> Real;

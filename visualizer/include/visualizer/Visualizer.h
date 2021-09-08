@@ -26,7 +26,8 @@ namespace visualizer {
     auto Menu() -> igl::opengl::glfw::imgui::ImGuiMenu &;
 
     //
-    auto Mesh() -> std::shared_ptr<meshing::Mesh> &;
+    auto UniformMesh() -> std::shared_ptr<meshing::Mesh> &;
+    auto PerforatedMesh() -> std::shared_ptr<meshing::Mesh> &;
     auto Rve() -> std::unique_ptr<solvers::materials::Rve> &;
 
     // Operations
@@ -49,8 +50,8 @@ namespace visualizer {
     /// continuous function S(E, v) where S is parameterized by E and v.
     auto GenerateDisplacementDataset(const std::string &filename) -> void;
 
-    /// \brief Generates a dataset of the homogenized version of a void-perforated mesh. By doing this
-    /// we are able to optimize the mesh ratio in the system to approximate the functionality of softer
+    /// \brief Generates a dataset of the homogenized version of a void-perforated uniform_mesh. By doing this
+    /// we are able to optimize the uniform_mesh ratio in the system to approximate the functionality of softer
     /// materials as a result of strategically weakening harder materials.
     auto GenerateHomogenizationDataset(const std::string &filename) -> void;
 }// namespace visualizer

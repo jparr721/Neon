@@ -8,7 +8,7 @@
 //
 
 #include <solvers/materials/OrthotropicMaterial.h>
-#include <utilities/runtime/NeonLog.h>
+
 solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const VectorXr &coefficients)
     : coefficients(coefficients) {
     E_x = coefficients(0);
@@ -43,6 +43,7 @@ solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const Real E, const
     coefficients.resize(12);
     coefficients << E_x, E_y, E_z, G_yz, G_zx, G_xy, v_yx, v_zx, v_zy, v_xy, v_xz, v_yz;
 }
+auto solvers::materials::OrthotropicMaterial::Vector() const -> VectorXr { return coefficients; }
 
 /// Returns the material coefficients for Hooke's Law in Stiffness Form.
 /// \return Constitutive Matrix in Stiffness Form (6x6)

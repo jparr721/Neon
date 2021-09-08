@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     visualizer::Viewer().plugins.push_back(&visualizer::Menu());
 
     visualizer::GenerateShape();
-    visualizer::Viewer().data().set_mesh(visualizer::Mesh()->positions, visualizer::Mesh()->faces);
+    visualizer::Viewer().data().set_mesh(visualizer::UniformMesh()->positions, visualizer::UniformMesh()->faces);
     visualizer::Viewer().callback_pre_draw = &visualizer::DrawCallback;
     visualizer::Viewer().core().is_animating = false;
     visualizer::Viewer().launch();

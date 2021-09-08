@@ -8,7 +8,7 @@ add_library(${PROJECT_NAME} SHARED
         include/meshing/ImplicitSurfaceGenerator.h
 
         src/Mesh.cpp
-        include/meshing/Mesh.h)
+        include/meshing/Mesh.h src/DofOptimizer.cpp include/meshing/DofOptimizer.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -27,3 +27,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen igl::core igl::tetge
 install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
 install(EXPORT ${PROJECT_NAME}Config DESTINATION share/${PROJECT_NAME}/cmake)
 export(TARGETS ${PROJECT_NAME} FILE ${PROJECT_NAME}Config.cmake)
+
+add_executable(
+        ${PROJECT_NAME}DofOptimizerTest
+        tests/DofOptimizerTest.cpp
+)
+
+target_link_libraries(
+        ${PROJECT_NAME}DofOptimizerTest
+        LINK_PUBLIC ${Boost_LIBRARIES}
+        ${PROJECT_NAME}
+        utilities
+)

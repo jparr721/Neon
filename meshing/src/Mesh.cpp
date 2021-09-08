@@ -56,11 +56,11 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::
 
     if (res != 0) {
         if ((V.rows() > 0 && V.cols() == 3) && (F.rows() > 0 && F.cols() == 3)) {
-            NEON_LOG_ERROR("Tetgen failed to tetrahedralize mesh. Falling back to surface mesh.");
+            NEON_LOG_ERROR("Tetgen failed to tetrahedralize uniform_mesh. Falling back to surface uniform_mesh.");
             ReloadMesh(V, F);
             return;
         }
-        NEON_LOG_ERROR("New mesh was empty! Reverting overwrite and keeping old mesh. Check tetgen!");
+        NEON_LOG_ERROR("New uniform_mesh was empty! Reverting overwrite and keeping old uniform_mesh. Check tetgen!");
         tetgen_succeeded = false;
         return;
     } else {
@@ -97,6 +97,7 @@ auto meshing::Mesh::ReadFile(const std::string &file_path, MeshFileType file_typ
             igl::readOBJ(file_path, V, F);
             break;
         case MeshFileType::kPly:
+            NEON_LOG_WARN("THIS IS PRONE TO LEAKING MEMORY. USE WITH CAUTION");
             igl::readPLY(file_path, V, F);
             break;
         case MeshFileType::kOff:
@@ -108,16 +109,3 @@ auto meshing::Mesh::ReadFile(const std::string &file_path, MeshFileType file_typ
 }
 
 auto meshing::Mesh::ResetMesh() -> void { positions = rest_positions; }
-
-auto meshing::ReadFileExtension(const std::string &filename) -> meshing::MeshFileType {
-    const auto extension = std::filesystem::path(filename).extension().string();
-    if (extension == ".obj") {
-        return meshing::MeshFileType::kObj;
-    } else if (extension == ".ply") {
-        return meshing::MeshFileType::kPly;
-    } else if (extension == ".off") {
-        return meshing::MeshFileType::kOff;
-    }
-
-    return meshing::MeshFileType::kUnsupported;
-}

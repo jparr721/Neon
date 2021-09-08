@@ -18,7 +18,7 @@ solvers::materials::Rve::Rve(const Vector3<int> &size, Material material) : mate
 }
 
 auto solvers::materials::Rve::Homogenize() -> void {
-    NEON_ASSERT_ERROR(contains_surface_mesh_, "No surface mesh found");
+    NEON_ASSERT_ERROR(contains_surface_mesh_, "No surface uniform_mesh found");
     homogenization_ = std::make_unique<Homogenization>(surface_mesh_, material_);
     homogenization_->Solve();
     C_ = homogenization_->Stiffness();

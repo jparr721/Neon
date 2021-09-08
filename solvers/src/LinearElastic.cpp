@@ -17,7 +17,7 @@
 solvers::fem::LinearElastic::LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions,
                                            Real youngs_modulus, Real poissons_ratio,
                                            std::shared_ptr<meshing::Mesh> mesh, Type type)
-    : boundary_conditions(std::move(boundary_conditions)), mesh_(std::move(mesh)) {
+    : boundary_conditions(std::move(boundary_conditions)), mesh_(std::move(mesh)), type(type) {
     material_coefficients_ = materials::OrthotropicMaterial(youngs_modulus, poissons_ratio);
 
     // Since this is a linear solver, we can formulate all of our starting assets right away.
@@ -34,7 +34,42 @@ solvers::fem::LinearElastic::LinearElastic(boundary_conditions::BoundaryConditio
     U = VectorXr::Zero(mesh_->positions.rows() * 3);
 }
 
-auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
+solvers::fem::LinearElastic::LinearElastic(solvers::boundary_conditions::BoundaryConditions boundary_conditions,
+                                           solvers::materials::OrthotropicMaterial m,
+                                           std::shared_ptr<meshing::Mesh> mesh, solvers::fem::LinearElastic::Type type)
+    : boundary_conditions(std::move(boundary_conditions)), mesh_(std::move(mesh)), type(type),
+      material_coefficients_(std::move(m)) {
+    // Since this is a linear solver, we can formulate all of our starting assets right away.
+    AssembleConstitutiveMatrix();
+    AssembleElementStiffness();
+    AssembleGlobalStiffness();
+    AssembleBoundaryForces();
+    if (type == Type::kDynamic) {
+        // Element nodes for the dynamic case so we only use active dofs.
+        U_e = VectorXr::Zero(this->boundary_conditions.size() * 3);
+    }
+
+    // Global displacement is always for all nodes.
+    U = VectorXr::Zero(mesh_->positions.rows() * 3);
+}
+
+void solvers::fem::LinearElastic::Solve(MatrixXr &displacements, MatrixXr &stress) {
+    switch (type) {
+        case Type::kStatic: {
+            SolveStatic();
+            break;
+        }
+        case Type::kDynamic: {
+            SolveWithIntegrator();
+            break;
+        }
+    }
+
+    displacements = (utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose()).eval();
+    stress = ComputeElementStress();
+}
+
+void solvers::fem::LinearElastic::SolveWithIntegrator() {
     U.setZero();
     // Iterate the boundary conditions, assigning only where active nodes exist.
     int i = 0;
@@ -42,18 +77,12 @@ auto solvers::fem::LinearElastic::SolveWithIntegrator() -> MatrixXr {
         U.segment(node * 3, 3) << U_e(i), U_e(i + 1), U_e(i + 2);
         i += 3;
     }
-
-    mesh_->Update((utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose()).eval());
-
-    return ComputeElementStress();
 }
-auto solvers::fem::LinearElastic::SolveStatic() -> MatrixXr {
-    NEON_LOG_INFO("Firing up static solver");
+void solvers::fem::LinearElastic::SolveStatic() {
     Eigen::SparseQR<SparseMatrixXr, Eigen::COLAMDOrdering<int>> solver;
     solver.compute(K_e);
     NEON_ASSERT_ERROR(solver.info() == Eigen::Success, "Solver failed to compute factorization");
     U_e = solver.solve(F_e);
-    NEON_LOG_INFO("Displacement computation complete");
 
     int i = 0;
     for (const auto &[node, _] : boundary_conditions) {
@@ -62,9 +91,6 @@ auto solvers::fem::LinearElastic::SolveStatic() -> MatrixXr {
     }
 
     F = K * U;
-    NEON_LOG_INFO("Solver done, computing nodal stresses");
-    mesh_->Update((utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose()).eval());
-    return ComputeElementStress();
 }
 
 auto solvers::fem::LinearElastic::AssembleGlobalStiffness() -> void {

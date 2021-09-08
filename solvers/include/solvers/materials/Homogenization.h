@@ -11,6 +11,7 @@
 #define NEON_HOMOGENIZATION_H
 
 #include <solvers/materials/Material.h>
+#include <solvers/materials/OrthotropicMaterial.h>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace solvers::materials {
@@ -19,35 +20,12 @@ namespace solvers::materials {
         using VectorXi = VectorX<int>;
 
     public:
-        struct MaterialCoefficients {
-            Real E_11 = 0;
-            Real E_22 = 0;
-            Real E_33 = 0;
-
-            Real G_23 = 0;
-            Real G_31 = 0;
-            Real G_12 = 0;
-
-            Real v_21 = 0;
-            Real v_31 = 0;
-            Real v_12 = 0;
-            Real v_32 = 0;
-            Real v_13 = 0;
-            Real v_23 = 0;
-
-            auto Vector() const -> VectorXr {
-                VectorXr v(12);
-                v << E_11, E_22, E_33, G_23, G_31, G_12, v_21, v_31, v_12, v_32, v_13, v_23;
-
-                return v;
-            }
-        };
         Homogenization(Tensor3r implicit_surface, const Material &material_1);
         Homogenization(Tensor3r implicit_surface, const Material &material_1, const Material &material_2);
         virtual ~Homogenization() = default;
 
         auto Stiffness() const -> Matrix6r { return constitutive_tensor_; }
-        auto Coefficients() const -> MaterialCoefficients { return coefficients_; }
+        auto Coefficients() const -> OrthotropicMaterial { return coefficients_; }
         auto CoefficientVector() const -> VectorXr { return coefficients_.Vector(); }
 
         /// \brief Solves the integral over the volume of the voxel for the difference of
@@ -90,18 +68,13 @@ namespace solvers::materials {
         auto ComputeUnitStrainParameters(unsigned int n_elements, const std::array<MatrixXr, 4> &hexahedron)
                 -> Tensor3r;
 
-        auto Voxel() const -> const Tensor3r & { return voxel_; }
 
     private:
         bool is_one_material_ = false;
-        bool is_homogenized_ = false;
 
         unsigned int cell_len_x_ = 0;
         unsigned int cell_len_y_ = 0;
         unsigned int cell_len_z_ = 0;
-
-        Real homogenized_E_ = 0;
-        Real homogenized_v_ = 0;
 
         Matrix6r constitutive_tensor_;
 
@@ -112,7 +85,7 @@ namespace solvers::materials {
 
         Material primary_material_;
 
-        MaterialCoefficients coefficients_;
+        OrthotropicMaterial coefficients_;
 
         // Constitutive Tensor Collection
         auto AssembleConstitutiveTensor(const MatrixXi &unique_degrees_of_freedom, const MatrixXr &ke_lambda,

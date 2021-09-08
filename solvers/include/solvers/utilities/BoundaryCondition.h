@@ -10,6 +10,8 @@
 #ifndef NEON_BOUNDARYCONDITION_H
 #define NEON_BOUNDARYCONDITION_H
 
+#include <memory>
+#include <meshing/Mesh.h>
 #include <set>
 #include <utilities/math/LinearAlgebra.h>
 #include <vector>
@@ -22,11 +24,9 @@ namespace solvers::boundary_conditions {
 
     using BoundaryConditions = std::vector<BoundaryCondition>;
 
-    auto Nodes(const BoundaryConditions &bcs) -> std::vector<unsigned int>;
-    auto FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<unsigned int>;
-    auto FindYAxisTopNodes(const MatrixXr &V) -> std::vector<unsigned int>;
-    auto SelectNodes(const std::vector<unsigned int> &ignored, const MatrixXr &V) -> std::vector<unsigned int>;
-    auto ApplyForceToBoundaryConditions(const std::vector<unsigned int> &indices, const Vector3r &force)
-            -> BoundaryConditions;
+    void LoadBoundaryConditions(const Vector3r &force, const std::shared_ptr<meshing::Mesh> &mesh,
+                                const std::vector<unsigned int> &force_nodes,
+                                const std::vector<unsigned int> &active_nodes, BoundaryConditions &boundary_conditions);
+
 }// namespace solvers::boundary_conditions
 #endif//NEON_BOUNDARYCONDITION_H

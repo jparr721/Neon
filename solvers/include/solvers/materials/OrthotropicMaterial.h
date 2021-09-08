@@ -32,6 +32,7 @@ namespace solvers::materials {
         explicit OrthotropicMaterial(const VectorXr &coefficients);
         OrthotropicMaterial(Real E, Real v);
 
+        auto Vector() const -> VectorXr;
         auto ConstitutiveMatrix() -> Matrix6r;
     };
 }// namespace solvers::materials

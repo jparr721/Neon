@@ -93,27 +93,29 @@ namespace solvers::materials {
         const Tensor3r X0 = ComputeUnitStrainParameters(n_elements, hexahedron);
         AssembleConstitutiveTensor(unique_degrees_of_freedom, ke_lambda, ke_mu, X, X0);
         ComputeMaterialCoefficients();
-
-        is_homogenized_ = true;
     }
 
     auto Homogenization::ComputeMaterialCoefficients() -> void {
         const Matrix6r S = constitutive_tensor_.inverse();
 
-        coefficients_.E_11 = std::powf(S(0, 0), -1);
-        coefficients_.E_22 = std::powf(S(1, 1), -1);
-        coefficients_.E_33 = std::powf(S(2, 2), -1);
+        coefficients_.E_x = std::powf(S(0, 0), -1);
+        coefficients_.E_y = std::powf(S(1, 1), -1);
+        coefficients_.E_z = std::powf(S(2, 2), -1);
 
-        coefficients_.G_23 = std::powf(S(3, 3), -1);
-        coefficients_.G_31 = std::powf(S(4, 4), -1);
-        coefficients_.G_12 = std::powf(S(5, 5), -1);
+        coefficients_.G_yz = std::powf(S(3, 3), -1);
+        coefficients_.G_zx = std::powf(S(4, 4), -1);
+        coefficients_.G_xy = std::powf(S(5, 5), -1);
 
-        coefficients_.v_21 = -1 * S(0, 1) * coefficients_.E_22;
-        coefficients_.v_31 = -1 * S(0, 2) * coefficients_.E_33;
-        coefficients_.v_12 = -1 * S(1, 0) * coefficients_.E_11;
-        coefficients_.v_32 = -1 * S(1, 2) * coefficients_.E_33;
-        coefficients_.v_13 = -1 * S(2, 0) * coefficients_.E_11;
-        coefficients_.v_23 = -1 * S(2, 1) * coefficients_.E_22;
+        coefficients_.v_yx = -1 * S(0, 1) * coefficients_.E_y;
+        coefficients_.v_zx = -1 * S(0, 2) * coefficients_.E_z;
+        coefficients_.v_zy = -1 * S(1, 2) * coefficients_.E_z;
+        coefficients_.v_xy = -1 * S(1, 0) * coefficients_.E_x;
+        coefficients_.v_xz = -1 * S(2, 0) * coefficients_.E_x;
+        coefficients_.v_yz = -1 * S(2, 1) * coefficients_.E_y;
+
+        coefficients_.coefficients << coefficients_.E_x, coefficients_.E_y, coefficients_.E_z, coefficients_.G_yz,
+                coefficients_.G_zx, coefficients_.G_xy, coefficients_.v_yx, coefficients_.v_zx, coefficients_.v_zy,
+                coefficients_.v_xy, coefficients_.v_xz, coefficients_.v_yz;
     }
 
     auto Homogenization::ComputeHexahedron(Real a, Real b, Real c) -> std::array<MatrixXr, 4> {

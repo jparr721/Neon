@@ -9,55 +9,13 @@
 #include <algorithm>
 #include <solvers/utilities/BoundaryCondition.h>
 
-auto solvers::boundary_conditions::ApplyForceToBoundaryConditions(const std::vector<unsigned int> &indices,
-                                                                  const Vector3r &force) -> BoundaryConditions {
-    BoundaryConditions conditions;
-    for (const auto &index : indices) { conditions.emplace_back(BoundaryCondition{index, force}); }
-    return conditions;
-}
-auto solvers::boundary_conditions::FindYAxisBottomNodes(const MatrixXr &V) -> std::vector<unsigned int> {
-    Real min_y = 1e10;
-    std::vector<unsigned int> indices;
-    for (int row = 0; row < V.rows(); ++row) {
-        const Vector3r triplet = V.row(row);
-        min_y = std::fmin(triplet.y(), min_y);
+void solvers::boundary_conditions::LoadBoundaryConditions(
+        const Vector3r &force, const std::shared_ptr<meshing::Mesh> &mesh, const std::vector<unsigned int> &force_nodes,
+        const std::vector<unsigned int> &active_nodes,
+        solvers::boundary_conditions::BoundaryConditions &boundary_conditions) {
+    for (const auto &index : force_nodes) { boundary_conditions.emplace_back(BoundaryCondition{index, force}); }
+
+    for (const auto &index : active_nodes) {
+        boundary_conditions.emplace_back(BoundaryCondition{index, Vector3r::Zero()});
     }
-
-    for (int row = 0; row < V.rows(); ++row) {
-        const Vector3r triplet = V.row(row);
-        if (triplet.y() <= min_y) { indices.push_back(row); }
-    }
-
-    return indices;
-}
-auto solvers::boundary_conditions::FindYAxisTopNodes(const MatrixXr &V) -> std::vector<unsigned int> {
-    Real max_y = -1e10;
-    std::vector<unsigned int> indices;
-    for (int row = 0; row < V.rows(); ++row) {
-        const Vector3r triplet = V.row(row);
-        max_y = std::fmax(triplet.y(), max_y);
-    }
-
-    for (int row = 0; row < V.rows(); ++row) {
-        const Vector3r triplet = V.row(row);
-        if (triplet.y() >= max_y) { indices.push_back(row); }
-    }
-
-    return indices;
-}
-auto solvers::boundary_conditions::SelectNodes(const std::vector<unsigned int> &ignored, const MatrixXr &V)
-        -> std::vector<unsigned int> {
-    std::vector<unsigned int> indices;
-    for (int row = 0; row < V.rows(); ++row) {
-        // If the value isn't found, add it to our indices.
-        if (std::find(ignored.begin(), ignored.end(), row) == ignored.end()) { indices.push_back(row); }
-    }
-
-    return indices;
-}
-
-auto solvers::boundary_conditions::Nodes(const BoundaryConditions &bcs) -> std::vector<unsigned int> {
-    std::vector<unsigned int> out;
-    for (const auto &[node, _] : bcs) { out.push_back(node); }
-    return out;
 }
