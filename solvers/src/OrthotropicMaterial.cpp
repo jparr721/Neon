@@ -24,9 +24,7 @@ solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const VectorXr &coe
     v_xz = coefficients(10);
     v_yz = coefficients(11);
 }
-solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const Real E, const Real v) {
-    const Real G = E / (2 * (1 + v));
-
+solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const Real E, const Real v, const Real G) {
     E_x = E;
     E_y = E;
     E_z = E;

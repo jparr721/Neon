@@ -10,6 +10,11 @@
 #include <solvers/materials/Homogenization.h>
 #include <visualizer/controllers/SolverController.h>
 
+visualizer::controllers::SolverController::SolverController(const int dim, const int void_dim, const int thickness) {
+    material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
+    ReloadMeshes(dim, void_dim, thickness);
+}
+
 void visualizer::controllers::SolverController::ReloadMeshes(const int dim, const int void_dim, const int thickness) {
     ComputeUniformMesh(dim);
     ComputeVoidMesh(dim, void_dim, thickness);
@@ -29,7 +34,9 @@ void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim
 
 void visualizer::controllers::SolverController::ComputeVoidMesh(int dim, int void_dim, int thickness) {
     NEON_LOG_INFO("Recomputing void mesh");
-    auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(dim, dim, dim);
+    auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(
+            dim, dim, dim, meshing::ImplicitSurfaceGenerator<Real>::Behavior::kIsotropic,
+            meshing::ImplicitSurfaceGenerator<Real>::MakeInclusion(1, void_dim));
 
     MatrixXr V;
     MatrixXi F;
@@ -46,11 +53,15 @@ void visualizer::controllers::SolverController::HomogenizeVoidMesh(const solvers
     homogenization->Solve();
     material_ = homogenization->Coefficients();
 }
-auto visualizer::controllers::SolverController::UniformSolver() const
-        -> const std::shared_ptr<solvers::fem::LinearElastic> & {
+auto visualizer::controllers::SolverController::UniformSolver() -> std::shared_ptr<solvers::fem::LinearElastic> & {
     return uniform_solver_;
 }
-auto visualizer::controllers::SolverController::PerforatedSolver() const
-        -> const std::shared_ptr<solvers::fem::LinearElastic> & {
+auto visualizer::controllers::SolverController::PerforatedSolver() -> std::shared_ptr<solvers::fem::LinearElastic> & {
     return perforated_solver_;
+}
+auto visualizer::controllers::SolverController::UniformMesh() -> std::shared_ptr<meshing::Mesh> & {
+    return uniform_mesh_;
+}
+auto visualizer::controllers::SolverController::PerforatedMesh() -> std::shared_ptr<meshing::Mesh> & {
+    return perforated_mesh_;
 }

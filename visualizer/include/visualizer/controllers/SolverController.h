@@ -24,18 +24,25 @@ namespace visualizer::controllers {
         MatrixXr displacements;
         MatrixXr stresses;
 
-        SolverController() = default;
+        SolverController(int dim, int void_dim, int thickness);
 
         void ReloadMeshes(int dim, int void_dim, int thickness);
         void HomogenizeVoidMesh(const solvers::materials::Material &material);
 
+        // TODO(@jparr721) Const reference
+        auto UniformMesh() -> std::shared_ptr<meshing::Mesh> &;
+        auto PerforatedMesh() -> std::shared_ptr<meshing::Mesh> &;
 
-        auto UniformSolver() const -> const std::shared_ptr<solvers::fem::LinearElastic> &;
-        auto PerforatedSolver() const -> const std::shared_ptr<solvers::fem::LinearElastic> &;
+        auto UniformSolver() -> std::shared_ptr<solvers::fem::LinearElastic> &;
+        auto PerforatedSolver() -> std::shared_ptr<solvers::fem::LinearElastic> &;
 
         void SetMaterial(const solvers::materials::OrthotropicMaterial &material) { material_ = material; }
 
     private:
+        Real E_baseline = 10000;
+        Real v_baseline = 0.3;
+        Real G_baseline = E_baseline / (2 * (1 + v_baseline));
+
         const std::string tetgen_flags = "Yzpq";
 
         Tensor3r perforated_surface_mesh_;

@@ -18,7 +18,8 @@ solvers::fem::LinearElastic::LinearElastic(boundary_conditions::BoundaryConditio
                                            Real youngs_modulus, Real poissons_ratio,
                                            std::shared_ptr<meshing::Mesh> mesh, Type type)
     : boundary_conditions(std::move(boundary_conditions)), mesh_(std::move(mesh)), type(type) {
-    material_coefficients_ = materials::OrthotropicMaterial(youngs_modulus, poissons_ratio);
+    material_coefficients_ =
+            materials::OrthotropicMaterial(youngs_modulus, poissons_ratio, youngs_modulus / (2 * (1 + poissons_ratio)));
 
     // Since this is a linear solver, we can formulate all of our starting assets right away.
     AssembleConstitutiveMatrix();
