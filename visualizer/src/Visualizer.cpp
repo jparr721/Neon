@@ -25,17 +25,7 @@ namespace visualizer {
     int void_dims = 0;
     int thickness = 1;
 
-    constexpr Real E_static = 10000;
-    constexpr Real v_static = 0.3;
-    constexpr Real G_static = E_static / (2 * (1 + v_static));
-
-    Real youngs_modulus = E_static;
-    Real poissons_ratio = v_static;
-
     Real min_displacement = 1e3;
-
-    solvers::materials::OrthotropicMaterial material =
-            solvers::materials::OrthotropicMaterial(E_static, v_static, G_static);
 
     std::string tetgen_flags = "Yzpq";
     std::string displacement_dataset_name = "";
@@ -65,10 +55,10 @@ auto visualizer::UniformMesh() -> std::shared_ptr<meshing::Mesh> & { return solv
 auto visualizer::PerforatedMesh() -> std::shared_ptr<meshing::Mesh> & { return solver_controller->PerforatedMesh(); }
 auto visualizer::Rve() -> std::unique_ptr<solvers::materials::Rve> & { return rve; }
 
-auto visualizer::GenerateShape() -> void { solver_controller->ReloadMeshes(rve_dims, void_dims, thickness); }
+auto visualizer::GenerateShape() -> void {
+    solver_controller->ReloadMeshes(rve_dims, void_dims, thickness);
 
-auto visualizer::UpdateShapeEffectiveCoefficients() -> void {
-    rve->SetMaterial(solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
+    if (Viewer().data_list.empty() || Viewer().data_list.size() == 1) { viewer.append_mesh(true); }
 }
 
 auto visualizer::GeometryMenu() -> void {
@@ -101,10 +91,12 @@ auto visualizer::GeometryMenu() -> void {
     // Draw options
     if (ImGui::CollapsingHeader("Draw Options", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Checkbox("Face-based", &(Viewer().data().face_based))) {
-            Viewer().data().dirty = igl::opengl::MeshGL::DIRTY_ALL;
+            Viewer().data(controllers::SolverController::kUniformMeshID).dirty |= igl::opengl::MeshGL::DIRTY_ALL;
+            Viewer().data(controllers::SolverController::kPerforatedMeshID).dirty |= igl::opengl::MeshGL::DIRTY_ALL;
         }
         if (ImGui::Checkbox("Invert normals", &(Viewer().data().invert_normals))) {
-            Viewer().data().dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
+            Viewer().data(controllers::SolverController::kUniformMeshID).dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
+            Viewer().data(controllers::SolverController::kPerforatedMeshID).dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
         }
         ImGui::Checkbox("Animate", &(Viewer().core().is_animating));
     }
@@ -138,14 +130,16 @@ auto visualizer::GeometryMenu() -> void {
         }
         if (ImGui::Button("Reset##Shape Generator", ImVec2(w, 0))) {
             solver_controller->UniformMesh()->ResetMesh();
+            solver_controller->PerforatedMesh()->ResetMesh();
             Refresh();
-            SetupSolver();
+            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kDynamic);
         }
 
         if (ImGui::Button("Reset Static##Shape Generator", ImVec2(w, 0))) {
             solver_controller->UniformMesh()->ResetMesh();
+            solver_controller->PerforatedMesh()->ResetMesh();
             Refresh();
-            SetupStaticSolver();
+            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kStatic);
         }
     }
 }
@@ -154,33 +148,30 @@ auto visualizer::SimulationMenu() -> void {
     const float w = ImGui::GetContentRegionAvailWidth();
     if (ImGui::Button("Reload Solver", ImVec2(w, 0))) {
         if (!UniformMesh()->tetgen_succeeded) { return; }
-        SetupSolver();
+        solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kDynamic);
         solver_controller->ResetMeshPositions();
     }
 
     if (ImGui::Button("Reload Static Solver", ImVec2(w, 0))) {
         if (!UniformMesh()->tetgen_succeeded) { return; }
-        SetupStaticSolver();
+        solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kStatic);
         solver_controller->ResetMeshPositions();
     }
 
     if (ImGui::CollapsingHeader("Homogenization", ImGuiTreeNodeFlags_DefaultOpen)) {
         const float w = ImGui::GetContentRegionAvailWidth();
-        ImGui::LabelText("Source E", "%.0e", youngs_modulus);
-        ImGui::LabelText("Source v", "%.0e", poissons_ratio);
-
-        ImGui::LabelText("E_x", "%.0e", material.E_x);
-        ImGui::LabelText("E_y", "%.0e", material.E_y);
-        ImGui::LabelText("E_z", "%.0e", material.E_z);
-        ImGui::LabelText("G_yz", "%.0e", material.G_yz);
-        ImGui::LabelText("G_zx", "%.0e", material.G_zx);
-        ImGui::LabelText("G_xy", "%.0e", material.G_xy);
-        ImGui::LabelText("v_yx", "%.0e", material.v_yx);
-        ImGui::LabelText("v_zx", "%.0e", material.v_zx);
-        ImGui::LabelText("v_xy", "%.0e", material.v_xy);
-        ImGui::LabelText("v_zy", "%.0e", material.v_zy);
-        ImGui::LabelText("v_xz", "%.0e", material.v_xz);
-        ImGui::LabelText("v_yz", "%.0e", material.v_yz);
+        ImGui::InputDouble("E_x", &solver_controller->Material().E_x);
+        ImGui::InputDouble("E_y", &solver_controller->Material().E_y);
+        ImGui::InputDouble("E_z", &solver_controller->Material().E_z);
+        ImGui::InputDouble("G_yz", &solver_controller->Material().G_yz);
+        ImGui::InputDouble("G_zx", &solver_controller->Material().G_zx);
+        ImGui::InputDouble("G_xy", &solver_controller->Material().G_xy);
+        ImGui::InputDouble("v_yx", &solver_controller->Material().v_yx);
+        ImGui::InputDouble("v_zx", &solver_controller->Material().v_zx);
+        ImGui::InputDouble("v_xy", &solver_controller->Material().v_xy);
+        ImGui::InputDouble("v_zy", &solver_controller->Material().v_zy);
+        ImGui::InputDouble("v_xz", &solver_controller->Material().v_xz);
+        ImGui::InputDouble("v_yz", &solver_controller->Material().v_yz);
         ImGui::LabelText("Min Displacement", "%.3f", min_displacement);
 
         if (ImGui::Button("Homogenize##Homogenization", ImVec2(w, 0))) { Homogenize(); }
@@ -204,10 +195,14 @@ auto visualizer::SimulationMenu() -> void {
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
         const float w = ImGui::GetContentRegionAvailWidth();
 
-        ImGui::InputText("Filename", displacement_dataset_name);
         if (ImGui::Button("Compute Static##Simulation", ImVec2(w, 0))) {
             solver_controller->UniformSolver()->Solve(displacements, stresses);
             solver_controller->UniformMesh()->Update(displacements);
+
+            MatrixXr d, s;
+            NEON_LOG_INFO(d);
+            solver_controller->PerforatedSolver()->Solve(d, s);
+            solver_controller->PerforatedMesh()->Update(d);
             Real sum = 0;
             for (const auto &f : force_applied_nodes) { sum += solver_controller->UniformMesh()->positions.row(f).y(); }
             sum /= force_applied_nodes.size();
@@ -230,26 +225,17 @@ auto visualizer::SimulationMenuWindow() -> void {
     ImGui::End();
 }
 
-// DELETE
-auto visualizer::SetupSolver() -> void {
-    min_displacement = 1e3;
-    solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kDynamic);
-    NEON_LOG_INFO("Solver Reloaded");
-}
-
-// DELETE
-auto visualizer::SetupStaticSolver() -> void {
-    min_displacement = 1e3;
-    solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kStatic);
-    NEON_LOG_INFO("Solver loaded");
-}
-
 auto visualizer::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {
     if (viewer.core().is_animating) {
         solver_controller->UniformIntegrator()->Solve(solver_controller->UniformSolver()->F_e,
                                                       solver_controller->UniformSolver()->U_e);
         solver_controller->UniformSolver()->Solve(displacements, stresses);
         solver_controller->UniformMesh()->Update(displacements);
+
+        solver_controller->PerforatedIntegrator()->Solve(solver_controller->PerforatedSolver()->F_e,
+                                                         solver_controller->PerforatedSolver()->U_e);
+        solver_controller->PerforatedSolver()->Solve(displacements, stresses);
+        solver_controller->PerforatedMesh()->Update(displacements);
         Real sum = 0;
         for (const auto &f : force_applied_nodes) { sum += solver_controller->UniformMesh()->positions.row(f).y(); }
         sum /= force_applied_nodes.size();
@@ -260,12 +246,25 @@ auto visualizer::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {
 }
 
 auto visualizer::Refresh() -> void {
-    if (!(Viewer().data().V.size() == solver_controller->UniformMesh()->positions.size() &&
-          Viewer().data().F.size() == solver_controller->UniformMesh()->faces.size())) {
-        Viewer().data().clear();
+    if (!(Viewer().data(controllers::SolverController::kUniformMeshID).V.size() ==
+                  solver_controller->UniformMesh()->positions.size() &&
+          Viewer().data(controllers::SolverController::kUniformMeshID).F.size() ==
+                  solver_controller->UniformMesh()->faces.size())) {
+        Viewer().data(controllers::SolverController::kUniformMeshID).clear();
     }
 
-    Viewer().data().set_mesh(solver_controller->UniformMesh()->positions, solver_controller->UniformMesh()->faces);
+    Viewer().data(controllers::SolverController::kUniformMeshID)
+            .set_mesh(solver_controller->UniformMesh()->positions, solver_controller->UniformMesh()->faces);
+
+    if (!(Viewer().data(controllers::SolverController::kPerforatedMeshID).V.size() ==
+                  solver_controller->PerforatedMesh()->positions.size() &&
+          Viewer().data(controllers::SolverController::kPerforatedMeshID).F.size() ==
+                  solver_controller->PerforatedMesh()->faces.size())) {
+        Viewer().data(controllers::SolverController::kPerforatedMeshID).clear();
+    }
+
+    Viewer().data(controllers::SolverController::kPerforatedMeshID)
+            .set_mesh(solver_controller->PerforatedMesh()->positions, solver_controller->PerforatedMesh()->faces);
 }
 
 auto visualizer::Homogenize() -> void { rve->Homogenize(); }
@@ -325,15 +324,4 @@ auto visualizer::GenerateHomogenizationDataset(const std::string &filename) -> v
     //
     //        csv << std::vector<std::string>{ss.str(), std::to_string(volume_pct)};
     //    }
-}
-
-auto visualizer::ComputeActiveDofs() -> solvers::boundary_conditions::BoundaryConditions {
-    std::vector<unsigned int> interior_nodes;
-    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, solver_controller->UniformMesh(), interior_nodes,
-                                 force_applied_nodes, fixed_nodes);
-    solvers::boundary_conditions::BoundaryConditions all_boundary_conditions;
-    solvers::boundary_conditions::LoadBoundaryConditions(force, solver_controller->UniformMesh(), force_applied_nodes,
-                                                         interior_nodes, all_boundary_conditions);
-
-    return all_boundary_conditions;
 }

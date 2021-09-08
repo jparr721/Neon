@@ -21,6 +21,9 @@
 namespace visualizer::controllers {
     class SolverController {
     public:
+        static constexpr unsigned int kUniformMeshID = 0;
+        static constexpr unsigned int kPerforatedMeshID = 1;
+
         MatrixXr displacements;
         MatrixXr stresses;
 
@@ -43,25 +46,21 @@ namespace visualizer::controllers {
         auto UniformSolver() -> std::shared_ptr<solvers::fem::LinearElastic> &;
         auto PerforatedSolver() -> std::shared_ptr<solvers::fem::LinearElastic> &;
 
+        auto Material() -> solvers::materials::OrthotropicMaterial & { return material_; }
+
         // Setters ========================================
-        void SetMaterial(const solvers::materials::OrthotropicMaterial &material) { material_ = material; }
+        void SetMaterial(const solvers::materials::OrthotropicMaterial &material);
 
     private:
         // TODO(@jparr721) Make this tunable.
         constexpr static Real dt_ = 0.01;
 
+        // TODO(@jparr721) Make this tunable.
         constexpr static Real mass_ = 5;
 
         Real force_ = -100;
-        Real E_baseline = 10000;
-        Real v_baseline = 0.3;
-        Real G_baseline = E_baseline / (2 * (1 + v_baseline));
 
         const std::string tetgen_flags = "Yzpq";
-
-        std::vector<unsigned int> interior_nodes_;
-        std::vector<unsigned int> force_nodes_;
-        std::vector<unsigned int> fixed_nodes_;
 
         Tensor3r perforated_surface_mesh_;
 
@@ -79,7 +78,8 @@ namespace visualizer::controllers {
         void ComputeUniformMesh(int dim);
         void ComputeVoidMesh(int dim, int void_dim, int thickness);
 
-        auto ComputeActiveDofs() -> solvers::boundary_conditions::BoundaryConditions;
+        auto ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh)
+                -> solvers::boundary_conditions::BoundaryConditions;
     };
 }// namespace visualizer::controllers
 

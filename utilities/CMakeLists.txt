@@ -4,7 +4,7 @@ add_library(${PROJECT_NAME} SHARED
         src/LinearAlgebra.cpp
 
         include/utilities/math/LinearAlgebra.h
-        include/utilities/runtime/NeonAssert.h include/utilities/runtime/NeonLog.h include/utilities/filesystem/CsvFile.h include/utilities/math/Time.h src/Time.cpp include/utilities/algorithms/Algorithms.h include/utilities/math/Numbers.h src/Numbers.cpp)
+        include/utilities/runtime/NeonAssert.h include/utilities/runtime/NeonLog.h include/utilities/filesystem/CsvFile.h include/utilities/math/Time.h src/Time.cpp include/utilities/algorithms/Algorithms.h include/utilities/math/Numbers.h src/Numbers.cpp include/utilities/math/Geometry.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
