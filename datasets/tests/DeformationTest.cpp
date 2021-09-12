@@ -14,8 +14,8 @@
 #include <datasets/Deformation.h>
 #include <filesystem>
 #include <memory>
-#include <meshing/DofOptimizer.h>
-#include <solvers/materials/Rve.h>
+#include <meshing/ImplicitSurfaceGenerator.h>
+#include <solvers/materials/Material.h>
 
 auto ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh) -> solvers::boundary_conditions::BoundaryConditions {
     const Vector3r force(0, -100, 0);
@@ -40,11 +40,12 @@ BOOST_AUTO_TEST_CASE(TestConstructor) {
 BOOST_AUTO_TEST_CASE(TestGenerator) {
     const Vector3i size(5, 5, 5);
     const auto material = solvers::materials::MaterialFromEandv(1, "m", 15000, 0.3);
-    const auto rve = std::make_unique<solvers::materials::Rve>(size, material);
 
     MatrixXr V;
     MatrixXi F;
-    rve->ComputeUniformMesh(V, F);
+    const auto generator = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(size.x(), size.y(), size.z());
+    generator->GenerateImplicitFunctionBasedMaterial(meshing::ImplicitSurfaceGenerator<Real>::kNoThickness, V, F);
+
     // generate the uniform_mesh with tetrahedralized components.
     const auto mesh = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
 

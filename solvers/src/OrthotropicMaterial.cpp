@@ -45,7 +45,7 @@ auto solvers::materials::OrthotropicMaterial::Vector() const -> Vector12r { retu
 
 /// Returns the material coefficients for Hooke's Law in Stiffness Form.
 /// \return Constitutive Matrix in Stiffness Form (6x6)
-auto solvers::materials::OrthotropicMaterial::ConstitutiveMatrix() -> Matrix6r {
+auto solvers::materials::OrthotropicMaterial::ConstitutiveMatrix() const -> Matrix6r {
     const Real delta = (1 - v_xy * v_yx - v_yz * v_zy - v_zx * v_xz - 2 * (v_xy * v_yz * v_zx)) / (E_x * E_y * E_z);
 
     Matrix6r constitutive_matrix;

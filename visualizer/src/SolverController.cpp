@@ -27,6 +27,7 @@ void visualizer::controllers::SolverController::ReloadMeshes(const int dim, cons
 }
 
 void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim) {
+    solvers_need_reload = true;
     NEON_LOG_INFO("Recomputing uniform mesh");
     auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(dim, dim, dim);
 
@@ -39,6 +40,7 @@ void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim
 }
 
 void visualizer::controllers::SolverController::ComputeVoidMesh(int dim, int void_dim, int thickness) {
+    solvers_need_reload = true;
     NEON_LOG_INFO("Recomputing void mesh");
     auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(
             dim, dim, dim, meshing::ImplicitSurfaceGenerator<Real>::Behavior::kIsotropic,
@@ -47,6 +49,8 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(int dim, int voi
     MatrixXr V;
     MatrixXi F;
     gen->GenerateImplicitFunctionBasedMaterial(thickness, V, F);
+    NEON_LOG_INFO(V.size());
+    NEON_LOG_INFO(F.size());
     perforated_surface_mesh_ = gen->Surface();
 
     // Now re-make the mesh object
@@ -58,6 +62,7 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(int dim, int voi
 }
 
 void visualizer::controllers::SolverController::HomogenizeVoidMesh() {
+    solvers_need_reload = true;
     NEON_LOG_INFO("Homogenizing void mesh");
     auto homogenization = std::make_unique<solvers::materials::Homogenization>(
             perforated_surface_mesh_,
@@ -79,8 +84,14 @@ void visualizer::controllers::SolverController::ResetMeshPositions() {
 }
 
 void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::LinearElastic::Type type) {
+    solvers_need_reload = false;
+
     const Vector3r force(0, force_, 0);
 
+    uniform_interior_nodes_.clear();
+    uniform_force_nodes_.clear();
+    uniform_fixed_nodes_.clear();
+    uniform_boundary_conditions_.clear();
     meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, uniform_mesh_, uniform_interior_nodes_,
                                  uniform_force_nodes_, uniform_fixed_nodes_);
     solvers::boundary_conditions::LoadBoundaryConditions(force, uniform_mesh_, uniform_force_nodes_,
@@ -88,6 +99,10 @@ void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::Line
     uniform_solver_ =
             std::make_unique<solvers::fem::LinearElastic>(uniform_boundary_conditions_, material_, uniform_mesh_, type);
 
+    perforated_interior_nodes_.clear();
+    perforated_force_nodes_.clear();
+    perforated_fixed_nodes_.clear();
+    perforated_boundary_conditions_.clear();
     meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, perforated_mesh_, perforated_interior_nodes_,
                                  perforated_force_nodes_, perforated_fixed_nodes_);
     solvers::boundary_conditions::LoadBoundaryConditions(force, perforated_mesh_, perforated_force_nodes_,
@@ -102,20 +117,6 @@ void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::Line
                 dt_, mass_, perforated_solver_->K_e, perforated_solver_->U_e, perforated_solver_->F_e);
     }
 }
-
-auto visualizer::controllers::SolverController::ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh) const
-        -> solvers::boundary_conditions::BoundaryConditions {
-    std::vector<unsigned int> interior_nodes;
-    std::vector<unsigned int> force_nodes;
-    std::vector<unsigned int> fixed_nodes;
-    const Vector3r force(0, force_, 0);
-    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, mesh, interior_nodes, force_nodes, fixed_nodes);
-    solvers::boundary_conditions::BoundaryConditions all_boundary_conditions;
-    solvers::boundary_conditions::LoadBoundaryConditions(force, mesh, force_nodes, interior_nodes,
-                                                         all_boundary_conditions);
-    return all_boundary_conditions;
-}
-
 
 void visualizer::controllers::SolverController::SolveUniform(const bool dynamic) {
     NEON_ASSERT_ERROR(uniform_solver_ != nullptr, "Uniform solver has not been initialized");

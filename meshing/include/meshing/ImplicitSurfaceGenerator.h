@@ -154,6 +154,7 @@ namespace meshing {
 
         auto GenerateIsotropicMaterial(const int thickness, const bool auto_compute_area, MatrixXr &V, MatrixXi &F)
                 -> void {
+            NEON_ASSERT_ERROR(thickness > 0, "Thickness cannot be set to zero, otherwise we get really weird shit");
             const unsigned int dim = implicit_surface_.Dimension(0);
             MatrixXr mask = MatrixXr::Ones(dim, dim);
 

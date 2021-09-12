@@ -33,7 +33,7 @@ namespace solvers::materials {
         OrthotropicMaterial(Real E, Real v, Real G);
 
         auto Vector() const -> Vector12r;
-        auto ConstitutiveMatrix() -> Matrix6r;
+        auto ConstitutiveMatrix() const -> Matrix6r;
     };
 }// namespace solvers::materials
 

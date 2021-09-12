@@ -8,13 +8,7 @@
 //
 #include <filesystem>
 #include <igl/opengl/glfw/Viewer.h>
-#include <iostream>
 #include <visualizer/Visualizer.h>
-
-#include <solvers/materials/Homogenization.h>
-#include <solvers/materials/Material.h>
-#include <solvers/materials/Rve.h>
-#include <utilities/include/utilities/math/LinearAlgebra.h>
 
 int main(int argc, char **argv) {
 #ifdef NEON_HEADLESS_DISPLACEMENT

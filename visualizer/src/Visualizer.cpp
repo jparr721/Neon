@@ -10,7 +10,6 @@
 #include <meshing/DofOptimizer.h>
 #include <solvers/materials/Material.h>
 #include <thread>
-#include <unordered_map>
 #include <utilities/filesystem/CsvFile.h>
 #include <utilities/math/Time.h>
 #include <visualizer/Visualizer.h>
@@ -24,6 +23,9 @@ namespace visualizer {
     int n_voids = 0;
     int void_dims = 0;
     int thickness = 1;
+
+    const ImVec4 kErrorText(1, 0, 0, 1);
+    const ImVec4 kOkayText(0, 1, 0, 1);
 
     std::string tetgen_flags = "Yzpq";
     std::string displacement_dataset_name = "";
@@ -42,8 +44,8 @@ auto visualizer::Menu() -> igl::opengl::glfw::imgui::ImGuiMenu & { return menu; 
 
 auto visualizer::GenerateShape() -> void {
     solver_controller->ReloadMeshes(rve_dims, void_dims, thickness);
-
     if (Viewer().data_list.empty() || Viewer().data_list.size() == 1) { viewer.append_mesh(true); }
+    solver_controller->solvers_need_reload = true;
 }
 
 auto visualizer::GeometryMenu() -> void {
@@ -75,12 +77,10 @@ auto visualizer::GeometryMenu() -> void {
 
     // Draw options
     if (ImGui::CollapsingHeader("Draw Options", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (ImGui::Checkbox("Face-based", &(Viewer().data().face_based))) {
-            Viewer().data(controllers::SolverController::kUniformMeshID).dirty |= igl::opengl::MeshGL::DIRTY_ALL;
-            Viewer().data(controllers::SolverController::kPerforatedMeshID).dirty |= igl::opengl::MeshGL::DIRTY_ALL;
-        }
         if (ImGui::Checkbox("Invert normals", &(Viewer().data().invert_normals))) {
             Viewer().data(controllers::SolverController::kUniformMeshID).dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
+            Viewer().data(controllers::SolverController::kPerforatedMeshID).invert_normals =
+                    Viewer().data().invert_normals;
             Viewer().data(controllers::SolverController::kPerforatedMeshID).dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
         }
         ImGui::Checkbox("Animate", &(Viewer().core().is_animating));
@@ -117,13 +117,13 @@ auto visualizer::GeometryMenu() -> void {
         if (ImGui::Button("Reset##Shape Generator", ImVec2(w, 0))) {
             solver_controller->ResetMeshPositions();
             Refresh();
-            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kDynamic);
+            //            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kDynamic);
         }
 
         if (ImGui::Button("Reset Static##Shape Generator", ImVec2(w, 0))) {
             solver_controller->ResetMeshPositions();
             Refresh();
-            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kStatic);
+            //            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kStatic);
         }
     }
 }
@@ -153,7 +153,8 @@ auto visualizer::SimulationMenu() -> void {
             solver_controller->ResetMeshPositions();
         }
 
-        // TODO(@jparr721) Add Solver Status (dirty check)
+        ImGui::TextColored(solver_controller->solvers_need_reload ? kErrorText : kOkayText,
+                           solver_controller->solvers_need_reload ? "Solvers Need Reload" : "Solvers Ready");
     }
 
     if (ImGui::CollapsingHeader("Homogenization", ImGuiTreeNodeFlags_None)) {

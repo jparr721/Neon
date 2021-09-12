@@ -26,6 +26,8 @@ namespace visualizer::controllers {
         static constexpr unsigned int kUniformMeshID = 0;
         static constexpr unsigned int kPerforatedMeshID = 1;
 
+        bool solvers_need_reload = true;
+
         MatrixXr uniform_displacements;
         MatrixXr uniform_stresses;
 
@@ -91,9 +93,6 @@ namespace visualizer::controllers {
 
         void ComputeUniformMesh(int dim);
         void ComputeVoidMesh(int dim, int void_dim, int thickness);
-
-        auto ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh) const
-                -> solvers::boundary_conditions::BoundaryConditions;
     };
 }// namespace visualizer::controllers
 

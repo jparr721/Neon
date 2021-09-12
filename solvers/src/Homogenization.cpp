@@ -12,7 +12,6 @@
 #include <future>
 #include <igl/slice.h>
 #include <solvers/materials/Homogenization.h>
-#include <thread>
 #include <unsupported/Eigen/KroneckerProduct>
 #include <utilities/runtime/NeonLog.h>
 #include <utility>

@@ -26,7 +26,9 @@ auto datasets::Deformation::Generate(const solvers::boundary_conditions::Boundar
             const auto mesh_clone = std::make_shared<meshing::Mesh>(*mesh);
             const auto static_solver = std::make_unique<solvers::fem::LinearElastic>(
                     boundary_conditions, E, v, mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
-            static_solver->SolveStatic();
+            MatrixXr displacements;
+            MatrixXr _;
+            static_solver->Solve(displacements, _);
 
             // NOTE: This is error-prone for non-uniform uni-axial loads!!
             Real sum = 0.0;
@@ -69,7 +71,9 @@ auto datasets::Deformation::GenerateSearchSpace(
             const auto mesh_clone = std::make_shared<meshing::Mesh>(*mesh);
             const auto static_solver = std::make_unique<solvers::fem::LinearElastic>(
                     boundary_conditions, E, v, mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
-            static_solver->SolveStatic();
+            MatrixXr displacements;
+            MatrixXr _;
+            static_solver->Solve(displacements, _);
 
             Real sum = 0;
             int force_applied_nodes_count = 0;

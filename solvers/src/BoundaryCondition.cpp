@@ -6,7 +6,6 @@
 // If a copy of the GPL was not included with this file, you can
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
-#include <algorithm>
 #include <meshing/DofOptimizer.h>
 #include <solvers/utilities/BoundaryCondition.h>
 

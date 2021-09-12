@@ -7,8 +7,6 @@ add_library(${PROJECT_NAME} SHARED
         src/LinearElastic.cpp
         src/Homogenization.cpp
         include/solvers/materials/Material.h src/Material.cpp
-        src/Rve.cpp
-        include/solvers/materials/Rve.h
         include/solvers/utilities/BoundaryCondition.h
         src/BoundaryCondition.cpp
         src/CentralDifferenceMethod.cpp
