@@ -118,13 +118,13 @@ auto visualizer::GeometryMenu() -> void {
         if (ImGui::Button("Reset##Shape Generator", ImVec2(w, 0))) {
             solver_controller->ResetMeshPositions();
             Refresh();
-            //            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kDynamic);
+            solver_controller->solvers_need_reload = true;
         }
 
         if (ImGui::Button("Reset Static##Shape Generator", ImVec2(w, 0))) {
             solver_controller->ResetMeshPositions();
             Refresh();
-            //            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kStatic);
+            solver_controller->solvers_need_reload = true;
         }
     }
 }
@@ -178,15 +178,11 @@ auto visualizer::SimulationMenu() -> void {
     }
 
     if (ImGui::CollapsingHeader("Datasets", ImGuiTreeNodeFlags_None)) {
-        if (ImGui::CollapsingHeader("Displacement", ImGuiTreeNodeFlags_None)) {
-            ImGui::InputText("Filename", displacement_dataset_name);
-            if (ImGui::Button("Compute##Displacement", ImVec2(w, 0))) {
-                if (!displacement_dataset_name.empty()) {
-                    GenerateDisplacementDataset(displacement_dataset_name);
-                } else {
-                    NEON_LOG_ERROR("No filename for dataset!");
-                }
-            }
+        ImGui::Text("Mask-Based Solver");
+        if (ImGui::Button("Compute", ImVec2(w / 2, 0))) {
+            NEON_LOG_INFO("Generating dataset in the background");
+            auto task = std::thread(GenerateSolverMaskDataset);
+            task.detach();
         }
     }
 
@@ -243,29 +239,6 @@ auto visualizer::Refresh() -> void {
 
     Viewer().data(controllers::SolverController::kPerforatedMeshID)
             .set_mesh(solver_controller->PerforatedMesh()->positions, solver_controller->PerforatedMesh()->faces);
-}
-
-// TODO(@jparr721) Copy this over and get rid of it.
-auto visualizer::GenerateDisplacementDataset(const std::string &filename) -> void {
-    //    const auto all_boundary_conditions = ComputeActiveDofs();
-    //
-    //    utilities::filesystem::CsvFile<std::string> csv(filename, {"E", "v", "Displacement"});
-    //#pragma omp parallel for
-    //    for (int E = 1000; E < 40000; E += 100) {
-    //        for (Real v = 0.0; v < 0.5; v += 0.01) {
-    //            // Copy the solver_controller->UniformMesh() object
-    //            const auto mesh_clone = std::make_shared<meshing::Mesh>(*solver_controller->UniformMesh());
-    //            const auto static_solver = std::make_unique<solvers::fem::LinearElastic>(
-    //                    all_boundary_conditions, E, v, mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
-    //            static_solver->SolveStatic();
-    //
-    //            Real sum = 0;
-    //            for (const auto &f : force_applied_nodes) { sum += mesh_clone->positions.row(f).y(); }
-    //            sum /= force_applied_nodes.size();
-    //
-    //            csv << std::vector<std::string>{std::to_string(E), std::to_string(v), std::to_string(sum)};
-    //        }
-    //    }
 }
 
 auto visualizer::GenerateSolverMaskDataset() -> void {

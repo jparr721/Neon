@@ -33,11 +33,6 @@ namespace visualizer {
     auto SimulationMenu() -> void;
     auto SimulationMenuWindow() -> void;
 
-    // Simulations
-    /// \brief Generates a dataset which solves the double integral of the signed volume of the unknown
-    /// continuous function S(E, v) where S is parameterized by E and v.
-    auto GenerateDisplacementDataset(const std::string &filename) -> void;
-
     auto GenerateSolverMaskDataset() -> void;
 }// namespace visualizer
 #endif//NEON_VISUALIZER_H

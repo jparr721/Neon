@@ -10,8 +10,6 @@
 #include <datasets/SolverMask.h>
 #include <filesystem>
 #include <meshing/ImplicitSurfaceGenerator.h>
-#include <solvers/utilities/BoundaryCondition.h>
-#include <utilities/runtime/NeonLog.h>
 
 datasets::DynamicSolverDataset::DynamicSolverDataset(const unsigned int shape, int entries) {
     input = Eigen::Tensor<Real, 5>(shape, shape, 6, shape, entries);
@@ -47,6 +45,7 @@ void datasets::DynamicSolverDataset::AddTargetEntry(const int layer, const int f
 }
 
 auto datasets::DynamicSolverDataset::Shape() const -> const unsigned int { return input.dimension(0); }
+auto datasets::DynamicSolverDataset::Entries() const -> const unsigned int { return input.dimension(4); }
 
 
 datasets::DynamicSolverMask::DynamicSolverMask(const unsigned int shape, int entries) : dataset_(shape, entries) {
@@ -103,7 +102,10 @@ void datasets::DynamicSolverMask::GenerateDataset(const Vector3r &force, const R
                                                             solvers::fem::LinearElastic::Type::kDynamic);
 
     // Integrate for dynamic problems
-    //    integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(dt, mass, )
+    integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(dt, mass, solver_->K_e, solver_->U_e,
+                                                                                  solver_->F_e);
 
-    // Generate the dataset of the displacements for a given number of timesteps.
+    // Generate the dataset of the displacements for a given number of iterations.
+    NEON_LOG_INFO(dataset_.Entries());
+    for (int entry = 0; entry < dataset_.Entries(); ++entry) { NEON_LOG_INFO("Entry: ", entry); }
 }

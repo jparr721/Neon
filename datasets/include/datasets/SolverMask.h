@@ -33,6 +33,7 @@ namespace datasets {
         void AddTargetEntry(int layer, int feature, const MatrixXr &data);
 
         auto Shape() const -> const unsigned int;
+        auto Entries() const -> const unsigned int;
     };
 
     class DynamicSolverMask {
