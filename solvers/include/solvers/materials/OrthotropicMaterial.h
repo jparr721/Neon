@@ -14,7 +14,7 @@
 
 namespace solvers::materials {
     struct OrthotropicMaterial {
-        VectorXr coefficients;
+        Vector12r coefficients;
         Real E_x = 0.0;
         Real E_y = 0.0;
         Real E_z = 0.0;
@@ -29,10 +29,10 @@ namespace solvers::materials {
         Real v_yz = 0.0;
 
         OrthotropicMaterial() = default;
-        explicit OrthotropicMaterial(const VectorXr &coefficients);
+        explicit OrthotropicMaterial(const Vector12r &coefficients);
         OrthotropicMaterial(Real E, Real v, Real G);
 
-        auto Vector() const -> VectorXr;
+        auto Vector() const -> Vector12r;
         auto ConstitutiveMatrix() -> Matrix6r;
     };
 }// namespace solvers::materials
