@@ -25,7 +25,7 @@ auto ComputeSurfaceMesh() -> Tensor3r {
 }
 
 BOOST_AUTO_TEST_CASE(TestHexahedron) {
-    const auto material = solvers::materials::Material { 1 }
+    const auto material = solvers::materials::Material{1};
     const auto surface_mesh = ComputeSurfaceMesh();
 
     const auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
@@ -36,12 +36,10 @@ BOOST_AUTO_TEST_CASE(TestHexahedron) {
 }
 
 BOOST_AUTO_TEST_CASE(TestComputeDegreesOfFreedom) {
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(10, 10, 10), solvers::materials::Material{1});
-    rve->ComputeUniformMesh();
+    const auto material = solvers::materials::Material{1};
+    const auto surface_mesh = ComputeSurfaceMesh();
 
-    BOOST_REQUIRE(rve.get() != nullptr);
-
-    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(rve->SurfaceMesh(), material);
+    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
     BOOST_REQUIRE(homogenization.get() != nullptr);
 
     const MatrixX<int> edof = homogenization->ComputeElementDegreesOfFreedom(1000);
@@ -59,12 +57,10 @@ BOOST_AUTO_TEST_CASE(TestComputeDegreesOfFreedom) {
 }
 
 BOOST_AUTO_TEST_CASE(TestComputeUniqueNodes) {
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(10, 10, 10), solvers::materials::Material{1});
+    const auto material = solvers::materials::Material{1};
+    const auto surface_mesh = ComputeSurfaceMesh();
 
-    rve->ComputeUniformMesh();
-    BOOST_REQUIRE(rve.get() != nullptr);
-
-    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(rve->SurfaceMesh(), material);
+    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
     BOOST_REQUIRE(homogenization.get() != nullptr);
 
     const Tensor3i unique_nodes = homogenization->ComputeUniqueNodes(1000);
@@ -93,12 +89,10 @@ BOOST_AUTO_TEST_CASE(TestComputeUniqueNodes) {
 }
 
 BOOST_AUTO_TEST_CASE(TestComputeUniqueDegreesOfFreedom) {
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(10, 10, 10), solvers::materials::Material{1});
-    rve->ComputeUniformMesh();
+    const auto material = solvers::materials::Material{1};
+    const auto surface_mesh = ComputeSurfaceMesh();
 
-    BOOST_REQUIRE(rve.get() != nullptr);
-
-    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(rve->SurfaceMesh(), material);
+    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
     BOOST_REQUIRE(homogenization.get() != nullptr);
 
     constexpr unsigned int n_elements = 1000;
@@ -120,12 +114,9 @@ BOOST_AUTO_TEST_CASE(TestComputeUniqueDegreesOfFreedom) {
 
 BOOST_AUTO_TEST_CASE(TestAssembleStiffnessMatrix) {
     const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(10, 10, 10), material);
-    rve->ComputeUniformMesh();
+    const auto surface_mesh = ComputeSurfaceMesh();
 
-    BOOST_REQUIRE(rve.get() != nullptr);
-
-    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(rve->SurfaceMesh(), material);
+    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
     BOOST_REQUIRE(homogenization.get() != nullptr);
     const auto hexahedron = homogenization->ComputeHexahedron(0.5, 0.5, 0.5);
 
@@ -141,11 +132,9 @@ BOOST_AUTO_TEST_CASE(TestAssembleStiffnessMatrix) {
 
 BOOST_AUTO_TEST_CASE(TestAssembleLoadMatrix) {
     const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(10, 10, 10), material);
-    rve->ComputeUniformMesh();
-    BOOST_REQUIRE(rve.get() != nullptr);
+    const auto surface_mesh = ComputeSurfaceMesh();
 
-    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(rve->SurfaceMesh(), material);
+    const auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
     BOOST_REQUIRE(homogenization.get() != nullptr);
     const auto hexahedron = homogenization->ComputeHexahedron(0.5, 0.5, 0.5);
 
@@ -165,9 +154,6 @@ BOOST_AUTO_TEST_CASE(TestAssembleLoadMatrix) {
 
 BOOST_AUTO_TEST_CASE(TestAssembleLoadMatrixWithVoids) {
     const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(10, 10, 10), material);
-    rve->ComputeUniformMesh();
-    BOOST_REQUIRE(rve.get() != nullptr);
 
     MatrixXr surface(10, 10);
     surface.row(0) << 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
@@ -416,12 +402,11 @@ BOOST_AUTO_TEST_CASE(TestComputeUnitStrainParametersWithVoids) {
 
 BOOST_AUTO_TEST_CASE(TestSolverStep) {
     const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(10, 10, 10), material);
-    rve->ComputeUniformMesh();
-    BOOST_REQUIRE(rve.get() != nullptr);
+    const auto surface_mesh = ComputeSurfaceMesh();
+    auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
 
-    rve->Homogenize();
-    const MatrixXr constitutive_tensor = rve->ConsitutiveTensor();
+    homogenization->Solve();
+    const MatrixXr constitutive_tensor = homogenization->Stiffness();
 
     Matrix6r comp;
     comp.row(0) << 30, 10, 10, 0, 0, 0;
@@ -436,9 +421,6 @@ BOOST_AUTO_TEST_CASE(TestSolverStep) {
 
 BOOST_AUTO_TEST_CASE(TestSolverStepWithVoids) {
     const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(10, 10, 10), material);
-    rve->ComputeUniformMesh();
-    BOOST_REQUIRE(rve.get() != nullptr);
 
     MatrixXr surface(10, 10);
     surface.row(0) << 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
@@ -471,9 +453,6 @@ BOOST_AUTO_TEST_CASE(TestSolverStepWithVoids) {
 
 BOOST_AUTO_TEST_CASE(TestSolverOnLargerMatrix) {
     const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
-    auto rve = std::make_shared<solvers::materials::Rve>(Vector3i(2010, 10, 10), material);
-    rve->ComputeUniformMesh();
-    BOOST_REQUIRE(rve.get() != nullptr);
 
     MatrixXr surface(20, 20);
     surface.row(0) << 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1;
