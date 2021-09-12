@@ -57,24 +57,19 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(int dim, int voi
     perforated_mesh_->ResetMesh();
 }
 
-void visualizer::controllers::SolverController::HomogenizeVoidMesh(const solvers::materials::Material &material) {
+void visualizer::controllers::SolverController::HomogenizeVoidMesh() {
     NEON_LOG_INFO("Homogenizing void mesh");
-    auto homogenization = std::make_unique<solvers::materials::Homogenization>(perforated_surface_mesh_, material);
+    auto homogenization = std::make_unique<solvers::materials::Homogenization>(
+            perforated_surface_mesh_,
+            solvers::materials::MaterialFromLameCoefficients(1, "m", approximate_mu_, approximate_lambda_));
     homogenization->Solve();
     material_ = homogenization->Coefficients();
 }
-auto visualizer::controllers::SolverController::UniformSolver() -> std::shared_ptr<solvers::fem::LinearElastic> & {
-    return uniform_solver_;
-}
 
-auto visualizer::controllers::SolverController::PerforatedSolver() -> std::shared_ptr<solvers::fem::LinearElastic> & {
-    return perforated_solver_;
-}
-
-auto visualizer::controllers::SolverController::UniformMesh() -> std::shared_ptr<meshing::Mesh> & {
+auto visualizer::controllers::SolverController::UniformMesh() const -> const std::shared_ptr<meshing::Mesh> & {
     return uniform_mesh_;
 }
-auto visualizer::controllers::SolverController::PerforatedMesh() -> std::shared_ptr<meshing::Mesh> & {
+auto visualizer::controllers::SolverController::PerforatedMesh() const -> const std::shared_ptr<meshing::Mesh> & {
     return perforated_mesh_;
 }
 
@@ -84,12 +79,20 @@ void visualizer::controllers::SolverController::ResetMeshPositions() {
 }
 
 void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::LinearElastic::Type type) {
-    const auto uniform_mesh_boundary_conditions = ComputeActiveDofs(uniform_mesh_);
-    uniform_solver_ = std::make_unique<solvers::fem::LinearElastic>(uniform_mesh_boundary_conditions, material_,
-                                                                    uniform_mesh_, type);
+    const Vector3r force(0, force_, 0);
 
-    const auto perforated_mesh_boundary_conditions = ComputeActiveDofs(perforated_mesh_);
-    perforated_solver_ = std::make_unique<solvers::fem::LinearElastic>(perforated_mesh_boundary_conditions, material_,
+    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, uniform_mesh_, uniform_interior_nodes_,
+                                 uniform_force_nodes_, uniform_fixed_nodes_);
+    solvers::boundary_conditions::LoadBoundaryConditions(force, uniform_mesh_, uniform_force_nodes_,
+                                                         uniform_interior_nodes_, uniform_boundary_conditions_);
+    uniform_solver_ =
+            std::make_unique<solvers::fem::LinearElastic>(uniform_boundary_conditions_, material_, uniform_mesh_, type);
+
+    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, perforated_mesh_, perforated_interior_nodes_,
+                                 perforated_force_nodes_, perforated_fixed_nodes_);
+    solvers::boundary_conditions::LoadBoundaryConditions(force, perforated_mesh_, perforated_force_nodes_,
+                                                         perforated_interior_nodes_, perforated_boundary_conditions_);
+    perforated_solver_ = std::make_unique<solvers::fem::LinearElastic>(perforated_boundary_conditions_, material_,
                                                                        perforated_mesh_, type);
 
     if (type == solvers::fem::LinearElastic::Type::kDynamic) {
@@ -100,7 +103,7 @@ void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::Line
     }
 }
 
-auto visualizer::controllers::SolverController::ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh)
+auto visualizer::controllers::SolverController::ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh) const
         -> solvers::boundary_conditions::BoundaryConditions {
     std::vector<unsigned int> interior_nodes;
     std::vector<unsigned int> force_nodes;
@@ -112,13 +115,27 @@ auto visualizer::controllers::SolverController::ComputeActiveDofs(const std::sha
                                                          all_boundary_conditions);
     return all_boundary_conditions;
 }
-auto visualizer::controllers::SolverController::UniformIntegrator()
-        -> std::shared_ptr<solvers::integrators::CentralDifferenceMethod> & {
-    return uniform_integrator_;
-}
-auto visualizer::controllers::SolverController::PerforatedIntegrator()
-        -> std::shared_ptr<solvers::integrators::CentralDifferenceMethod> & {
-    return perforated_integrator_;
+
+
+void visualizer::controllers::SolverController::SolveUniform(const bool dynamic) {
+    NEON_ASSERT_ERROR(uniform_solver_ != nullptr, "Uniform solver has not been initialized");
+    if (dynamic) {
+        // Make sure the integrator has been initialized.
+        NEON_ASSERT_ERROR(uniform_integrator_ != nullptr, "Uniform integrator has not been initialized.");
+        uniform_integrator_->Solve(uniform_solver_->F_e, uniform_solver_->U_e);
+    }
+
+    uniform_solver_->Solve(uniform_displacements, uniform_stresses);
+    uniform_mesh_->Update(uniform_displacements);
 }
 
-void visualizer::controllers::SolverController::SetMaterial(const solvers::materials::OrthotropicMaterial &material) {}
+void visualizer::controllers::SolverController::SolvePerforated(const bool dynamic) {
+    NEON_ASSERT_ERROR(perforated_solver_ != nullptr, "Perforated solver has not been initialized");
+    if (dynamic) {
+        // Make sure the integrator has been initialized.
+        NEON_ASSERT_ERROR(perforated_integrator_ != nullptr, "Perforated integrator has not been initialized.");
+        perforated_integrator_->Solve(perforated_solver_->F_e, perforated_solver_->U_e);
+    }
+    perforated_solver_->Solve(perforated_displacements, perforated_stresses);
+    perforated_mesh_->Update(perforated_displacements);
+}

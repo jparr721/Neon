@@ -21,24 +21,13 @@
 #include <utilities/math/LinearAlgebra.h>
 
 namespace visualizer {
-    auto RveDims() -> int &;
     auto Viewer() -> igl::opengl::glfw::Viewer &;
     auto Menu() -> igl::opengl::glfw::imgui::ImGuiMenu &;
 
-    //
-    auto UniformMesh() -> std::shared_ptr<meshing::Mesh> &;
-    auto PerforatedMesh() -> std::shared_ptr<meshing::Mesh> &;
-    auto Rve() -> std::unique_ptr<solvers::materials::Rve> &;
-
     // Operations
-    auto Homogenize() -> void;
     auto GenerateShape() -> void;
-    auto UpdateShapeEffectiveCoefficients() -> void;
-    auto SetupSolver() -> void;
-    auto SetupStaticSolver() -> void;
     auto DrawCallback(igl::opengl::glfw::Viewer &viewer) -> bool;
     auto Refresh() -> void;
-    auto ComputeActiveDofs() -> solvers::boundary_conditions::BoundaryConditions;
 
     // UI
     auto GeometryMenu() -> void;

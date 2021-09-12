@@ -21,50 +21,64 @@
 namespace visualizer::controllers {
     class SolverController {
     public:
+        static constexpr bool kUseDynamicSolver = true;
+        static constexpr bool kUseStaticSolver = false;
         static constexpr unsigned int kUniformMeshID = 0;
         static constexpr unsigned int kPerforatedMeshID = 1;
 
-        MatrixXr displacements;
-        MatrixXr stresses;
+        MatrixXr uniform_displacements;
+        MatrixXr uniform_stresses;
+
+        MatrixXr perforated_displacements;
+        MatrixXr perforated_stresses;
 
         SolverController(int dim, int void_dim, int thickness);
 
         void ReloadMeshes(int dim, int void_dim, int thickness);
-        void HomogenizeVoidMesh(const solvers::materials::Material &material);
+        void HomogenizeVoidMesh();
 
         void ResetMeshPositions();
         void ReloadSolvers(solvers::fem::LinearElastic::Type type);
 
+        void SolveUniform(bool dynamic);
+        void SolvePerforated(bool dynamic);
+
         // Getters ========================================
-        // TODO(@jparr721) Const reference
-        auto UniformMesh() -> std::shared_ptr<meshing::Mesh> &;
-        auto UniformIntegrator() -> std::shared_ptr<solvers::integrators::CentralDifferenceMethod> &;
-
-        auto PerforatedMesh() -> std::shared_ptr<meshing::Mesh> &;
-        auto PerforatedIntegrator() -> std::shared_ptr<solvers::integrators::CentralDifferenceMethod> &;
-
-        auto UniformSolver() -> std::shared_ptr<solvers::fem::LinearElastic> &;
-        auto PerforatedSolver() -> std::shared_ptr<solvers::fem::LinearElastic> &;
+        auto UniformMesh() const -> const std::shared_ptr<meshing::Mesh> &;
+        auto PerforatedMesh() const -> const std::shared_ptr<meshing::Mesh> &;
 
         auto Material() -> solvers::materials::OrthotropicMaterial & { return material_; }
-
-        // Setters ========================================
-        void SetMaterial(const solvers::materials::OrthotropicMaterial &material);
+        auto Lambda() -> Real & { return approximate_lambda_; }
+        auto Mu() -> Real & { return approximate_mu_; }
+        auto Dt() -> Real & { return dt_; }
+        auto Mass() -> Real & { return mass_; }
+        auto Force() -> Real & { return force_; }
 
     private:
-        // TODO(@jparr721) Make this tunable.
-        constexpr static Real dt_ = 0.01;
-
-        // TODO(@jparr721) Make this tunable.
-        constexpr static Real mass_ = 5;
-
+        Real dt_ = 0.01;
+        Real mass_ = 5;
         Real force_ = -100;
+
+        Real approximate_lambda_ = 0;
+        Real approximate_mu_ = 0;
 
         const std::string tetgen_flags = "Yzpq";
 
         Tensor3r perforated_surface_mesh_;
 
         solvers::materials::OrthotropicMaterial material_;
+
+        // Node Arrangement
+        std::vector<unsigned int> uniform_interior_nodes_;
+        std::vector<unsigned int> uniform_force_nodes_;
+        std::vector<unsigned int> uniform_fixed_nodes_;
+        solvers::boundary_conditions::BoundaryConditions uniform_boundary_conditions_;
+
+        std::vector<unsigned int> perforated_interior_nodes_;
+        std::vector<unsigned int> perforated_force_nodes_;
+        std::vector<unsigned int> perforated_fixed_nodes_;
+        solvers::boundary_conditions::BoundaryConditions perforated_boundary_conditions_;
+        // ===
 
         std::shared_ptr<meshing::Mesh> uniform_mesh_;
         std::shared_ptr<meshing::Mesh> perforated_mesh_;
@@ -78,7 +92,7 @@ namespace visualizer::controllers {
         void ComputeUniformMesh(int dim);
         void ComputeVoidMesh(int dim, int void_dim, int thickness);
 
-        auto ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh)
+        auto ComputeActiveDofs(const std::shared_ptr<meshing::Mesh> &mesh) const
                 -> solvers::boundary_conditions::BoundaryConditions;
     };
 }// namespace visualizer::controllers

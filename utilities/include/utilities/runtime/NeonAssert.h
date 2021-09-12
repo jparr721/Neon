@@ -58,7 +58,7 @@ namespace utilities::assert {
                 std::ostringstream ss = formatter("ERROR");
                 LogAll(ss, context...);
                 std::cerr << ss.str() << std::endl;
-                assert(false);
+                assert(false && ss.str());
             }
             default:
                 throw std::runtime_error("CANNOT UNWIND ASSERTION");

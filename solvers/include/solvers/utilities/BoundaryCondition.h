@@ -11,6 +11,7 @@
 #define NEON_BOUNDARYCONDITION_H
 
 #include <memory>
+#include <meshing/DofOptimizer.h>
 #include <meshing/Mesh.h>
 #include <set>
 #include <utilities/math/LinearAlgebra.h>
