@@ -72,7 +72,9 @@ BOOST_AUTO_TEST_CASE(TestSolveStatic) {
     const auto solver = std::make_unique<solvers::fem::LinearElastic>(bcs, E, v, mesh);
     BOOST_REQUIRE(solver.get() != nullptr);
 
-    const MatrixXr stress = solver->SolveStatic();
+    MatrixXr displacement;
+    MatrixXr stress;
+    solver->Solve(displacement, stress);
     MatrixXr stress_compare;
     stress_compare.resize(5, 6);
     stress_compare.row(0) << 1.47278, 3.43648, 1.47278, -0.0205161, 0.00896624, 0;

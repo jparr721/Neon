@@ -86,27 +86,11 @@ void visualizer::controllers::SolverController::ResetMeshPositions() {
 void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::LinearElastic::Type type) {
     solvers_need_reload = false;
 
-    const Vector3r force(0, force_, 0);
+    ResetBoundaryConditions();
 
-    uniform_interior_nodes_.clear();
-    uniform_force_nodes_.clear();
-    uniform_fixed_nodes_.clear();
-    uniform_boundary_conditions_.clear();
-    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, uniform_mesh_, uniform_interior_nodes_,
-                                 uniform_force_nodes_, uniform_fixed_nodes_);
-    solvers::boundary_conditions::LoadBoundaryConditions(force, uniform_mesh_, uniform_force_nodes_,
-                                                         uniform_interior_nodes_, uniform_boundary_conditions_);
     uniform_solver_ =
             std::make_unique<solvers::fem::LinearElastic>(uniform_boundary_conditions_, material_, uniform_mesh_, type);
 
-    perforated_interior_nodes_.clear();
-    perforated_force_nodes_.clear();
-    perforated_fixed_nodes_.clear();
-    perforated_boundary_conditions_.clear();
-    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, perforated_mesh_, perforated_interior_nodes_,
-                                 perforated_force_nodes_, perforated_fixed_nodes_);
-    solvers::boundary_conditions::LoadBoundaryConditions(force, perforated_mesh_, perforated_force_nodes_,
-                                                         perforated_interior_nodes_, perforated_boundary_conditions_);
     perforated_solver_ = std::make_unique<solvers::fem::LinearElastic>(perforated_boundary_conditions_, material_,
                                                                        perforated_mesh_, type);
 
@@ -139,4 +123,25 @@ void visualizer::controllers::SolverController::SolvePerforated(const bool dynam
     }
     perforated_solver_->Solve(perforated_displacements, perforated_stresses);
     perforated_mesh_->Update(perforated_displacements);
+}
+
+void visualizer::controllers::SolverController::ResetBoundaryConditions() {
+    const Vector3r force(0, force_, 0);
+    uniform_interior_nodes_.clear();
+    uniform_force_nodes_.clear();
+    uniform_fixed_nodes_.clear();
+    uniform_boundary_conditions_.clear();
+    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, uniform_mesh_, uniform_interior_nodes_,
+                                 uniform_force_nodes_, uniform_fixed_nodes_);
+    solvers::boundary_conditions::LoadBoundaryConditions(force, uniform_mesh_, uniform_force_nodes_,
+                                                         uniform_interior_nodes_, uniform_boundary_conditions_);
+
+    perforated_interior_nodes_.clear();
+    perforated_force_nodes_.clear();
+    perforated_fixed_nodes_.clear();
+    perforated_boundary_conditions_.clear();
+    meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, perforated_mesh_, perforated_interior_nodes_,
+                                 perforated_force_nodes_, perforated_fixed_nodes_);
+    solvers::boundary_conditions::LoadBoundaryConditions(force, perforated_mesh_, perforated_force_nodes_,
+                                                         perforated_interior_nodes_, perforated_boundary_conditions_);
 }

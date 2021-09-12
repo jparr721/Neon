@@ -8,7 +8,7 @@ add_library(${PROJECT_NAME} SHARED
         include/meshing/ImplicitSurfaceGenerator.h
 
         src/Mesh.cpp
-        include/meshing/Mesh.h src/DofOptimizer.cpp include/meshing/DofOptimizer.h)
+        include/meshing/Mesh.h src/DofOptimizer.cpp include/meshing/DofOptimizer.h src/AdjacencyList.cpp include/meshing/graphs/AdjacencyList.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

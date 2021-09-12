@@ -332,6 +332,7 @@ auto solvers::fem::LinearElastic::AssemblePlaneStresses(const MatrixXr &sigmas) 
 
     return plane_stresses;
 }
+
 auto solvers::fem::LinearElastic::ComputeElementStress() -> MatrixXr {
     MatrixXr element_stresses;
     element_stresses.resize(mesh_->tetrahedra.rows(), 6);

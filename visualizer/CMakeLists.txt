@@ -19,6 +19,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         OpenMP::OpenMP_CXX
         meshing
         solvers
-        utilities)
+        utilities
+        datasets)
 
 file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})

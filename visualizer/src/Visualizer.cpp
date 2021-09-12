@@ -6,6 +6,7 @@
 // If a copy of the GPL was not included with this file, you can
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
+#include <datasets/SolverMask.h>
 #include <future>
 #include <meshing/DofOptimizer.h>
 #include <solvers/materials/Material.h>
@@ -78,9 +79,9 @@ auto visualizer::GeometryMenu() -> void {
     // Draw options
     if (ImGui::CollapsingHeader("Draw Options", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Checkbox("Invert normals", &(Viewer().data().invert_normals))) {
+            Viewer().data(controllers::SolverController::kUniformMeshID).invert_normals =
+                    !Viewer().data(controllers::SolverController::kUniformMeshID).invert_normals;
             Viewer().data(controllers::SolverController::kUniformMeshID).dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
-            Viewer().data(controllers::SolverController::kPerforatedMeshID).invert_normals =
-                    Viewer().data().invert_normals;
             Viewer().data(controllers::SolverController::kPerforatedMeshID).dirty |= igl::opengl::MeshGL::DIRTY_NORMAL;
         }
         ImGui::Checkbox("Animate", &(Viewer().core().is_animating));
@@ -135,6 +136,19 @@ auto visualizer::SimulationMenu() -> void {
         ImGui::InputDouble("Mass", &solver_controller->Mass());
         ImGui::InputDouble("Force", &solver_controller->Force());
 
+        ImGui::InputDouble("E_x", &solver_controller->Material().E_x);
+        ImGui::InputDouble("E_y", &solver_controller->Material().E_y);
+        ImGui::InputDouble("E_z", &solver_controller->Material().E_z);
+        ImGui::InputDouble("G_yz", &solver_controller->Material().G_yz);
+        ImGui::InputDouble("G_zx", &solver_controller->Material().G_zx);
+        ImGui::InputDouble("G_xy", &solver_controller->Material().G_xy);
+        ImGui::InputDouble("v_yx", &solver_controller->Material().v_yx);
+        ImGui::InputDouble("v_zx", &solver_controller->Material().v_zx);
+        ImGui::InputDouble("v_xy", &solver_controller->Material().v_xy);
+        ImGui::InputDouble("v_zy", &solver_controller->Material().v_zy);
+        ImGui::InputDouble("v_xz", &solver_controller->Material().v_xz);
+        ImGui::InputDouble("v_yz", &solver_controller->Material().v_yz);
+
         if (ImGui::Button("Reload Solver##Solvers", ImVec2(w, 0))) {
             if (!solver_controller->UniformMesh()->tetgen_succeeded) {
                 NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
@@ -158,20 +172,8 @@ auto visualizer::SimulationMenu() -> void {
     }
 
     if (ImGui::CollapsingHeader("Homogenization", ImGuiTreeNodeFlags_None)) {
-        ImGui::LabelText("Lambda", "%.3e", solver_controller->Lambda());
-        ImGui::LabelText("Mu", "%.3e", solver_controller->Mu());
-        ImGui::InputDouble("E_x", &solver_controller->Material().E_x);
-        ImGui::InputDouble("E_y", &solver_controller->Material().E_y);
-        ImGui::InputDouble("E_z", &solver_controller->Material().E_z);
-        ImGui::InputDouble("G_yz", &solver_controller->Material().G_yz);
-        ImGui::InputDouble("G_zx", &solver_controller->Material().G_zx);
-        ImGui::InputDouble("G_xy", &solver_controller->Material().G_xy);
-        ImGui::InputDouble("v_yx", &solver_controller->Material().v_yx);
-        ImGui::InputDouble("v_zx", &solver_controller->Material().v_zx);
-        ImGui::InputDouble("v_xy", &solver_controller->Material().v_xy);
-        ImGui::InputDouble("v_zy", &solver_controller->Material().v_zy);
-        ImGui::InputDouble("v_xz", &solver_controller->Material().v_xz);
-        ImGui::InputDouble("v_yz", &solver_controller->Material().v_yz);
+        ImGui::InputDouble("Lambda", &solver_controller->Lambda());
+        ImGui::InputDouble("Mu", &solver_controller->Mu());
         if (ImGui::Button("Homogenize##Homogenization", ImVec2(w, 0))) { solver_controller->HomogenizeVoidMesh(); }
     }
 
@@ -197,7 +199,7 @@ auto visualizer::SimulationMenu() -> void {
     }
 }
 auto visualizer::SimulationMenuWindow() -> void {
-    const float x = 160.f * Menu().menu_scaling();
+    const float x = 160.f * Menu().menu_scaling() + 20;
     ImGui::SetNextWindowPos(ImVec2(x, 0.0f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(x, 0.0f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSizeConstraints(ImVec2(x, -1.0f), ImVec2(x, -1.0f));
@@ -243,6 +245,7 @@ auto visualizer::Refresh() -> void {
             .set_mesh(solver_controller->PerforatedMesh()->positions, solver_controller->PerforatedMesh()->faces);
 }
 
+// TODO(@jparr721) Copy this over and get rid of it.
 auto visualizer::GenerateDisplacementDataset(const std::string &filename) -> void {
     //    const auto all_boundary_conditions = ComputeActiveDofs();
     //
@@ -265,37 +268,7 @@ auto visualizer::GenerateDisplacementDataset(const std::string &filename) -> voi
     //    }
 }
 
-auto visualizer::GenerateHomogenizationDataset(const std::string &filename) -> void {
-    //    // Size is fixed so we can reliably iterate the same group of things
-    //    const std::unordered_map<int, int> sizes = {{1, 5}, {2, 3}, {3, 2}, {4, 1}, {5, 1}};
-    //
-    //    utilities::filesystem::CsvFile<std::string> csv(filename,
-    //                                                    std::vector<std::string>{"Effective Coefficients", "volume%"});
-    //    for (const auto &[size, dims] : sizes) {
-    //        const auto all_boundary_conditions = ComputeActiveDofs();
-    //        const auto mesh_clone = std::make_shared<meshing::Mesh>(*solver_controller->UniformMesh());
-    //        const auto static_solver =
-    //                std::make_unique<solvers::fem::LinearElastic>(all_boundary_conditions, youngs_modulus, poissons_ratio,
-    //                                                              mesh_clone, solvers::fem::LinearElastic::Type::kStatic);
-    //        const auto rve = std::make_unique<solvers::materials::Rve>(
-    //                Vector3i(rve_dims, rve_dims, rve_dims),
-    //                solvers::materials::MaterialFromEandv(1, "m_1", youngs_modulus, poissons_ratio));
-    //        const auto inclusion = meshing::ImplicitSurfaceGenerator<Real>::MakeInclusion(size, dims);
-    //
-    //        MatrixXr V;
-    //        MatrixXi F;
-    //        if (n_voids == 0) {
-    //            rve->ComputeUniformMesh(V, F);
-    //        } else {
-    //            rve->ComputeCompositeMesh(inclusion, 0, isotropic, V, F);
-    //        }
-    //
-    //        rve->Homogenize();
-    //        std::stringstream ss;
-    //        ss << rve->Homogenized()->CoefficientVector();
-    //        const Real volume_pct =
-    //                Tensor3r::SetConstant(1, rve->SurfaceMesh().Dimensions()).Sum() / rve->SurfaceMesh().Sum();
-    //
-    //        csv << std::vector<std::string>{ss.str(), std::to_string(volume_pct)};
-    //    }
+auto visualizer::GenerateSolverMaskDataset() -> void {
+    auto mask_dataset_generator = std::make_unique<datasets::DynamicSolverMask>(10, 100);
+    mask_dataset_generator->GenerateDataset(Vector3r(0, -100, 0), 5, 0.01, 30000, 0.3, 11580);
 }

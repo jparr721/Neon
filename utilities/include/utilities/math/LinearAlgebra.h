@@ -166,9 +166,9 @@ namespace utilities::math {
 
         friend std::ostream &operator<<(std::ostream &out, const Tensor3 &t) { return out << t.instance_; }
 
-        T &operator()(int row, int col, int layer) { return instance_(row, col, layer); }
+        auto operator()(int row, int col, int layer) -> T & { return instance_(row, col, layer); }
 
-        T operator()(int row, int col, int layer) const { return instance_(row, col, layer); }
+        auto operator()(int row, int col, int layer) const -> T { return instance_(row, col, layer); }
 
         auto Layer(const int layer) const -> MatrixX<T> {
             MatrixX<T> m;

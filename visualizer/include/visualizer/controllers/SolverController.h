@@ -93,6 +93,7 @@ namespace visualizer::controllers {
 
         void ComputeUniformMesh(int dim);
         void ComputeVoidMesh(int dim, int void_dim, int thickness);
+        void ResetBoundaryConditions();
     };
 }// namespace visualizer::controllers
 
