@@ -47,6 +47,10 @@ void datasets::DynamicSolverDataset::AddTargetEntry(const int layer, const int f
 auto datasets::DynamicSolverDataset::Shape() const -> const unsigned int { return input.dimension(0); }
 auto datasets::DynamicSolverDataset::Entries() const -> const unsigned int { return input.dimension(4); }
 
+void datasets::DynamicSolverDataset::Sides(std::vector<MatrixXr> &bitmasks) {}
+void datasets::DynamicSolverDataset::Tops(std::vector<MatrixXr> &bitmasks) {}
+void datasets::DynamicSolverDataset::Fronts(std::vector<MatrixXr> &bitmasks) {}
+
 
 datasets::DynamicSolverMask::DynamicSolverMask(const unsigned int shape, int entries) : dataset_(shape, entries) {
     if (std::filesystem::exists("input")) {
@@ -107,5 +111,43 @@ void datasets::DynamicSolverMask::GenerateDataset(const Vector3r &force, const R
 
     // Generate the dataset of the displacements for a given number of iterations.
     NEON_LOG_INFO(dataset_.Entries());
-    for (int entry = 0; entry < dataset_.Entries(); ++entry) { NEON_LOG_INFO("Entry: ", entry); }
+    for (int entry = 0; entry < dataset_.Entries(); ++entry) {
+        NEON_LOG_INFO("Entry: ", entry);
+        MatrixXr displacements;
+        MatrixXr stresses;
+        MatrixXr velocity;
+
+        Solve(displacements, stresses);
+
+        // Input - Mask & Stresses
+        const auto mask = uniform_mesh_->ToScalarField(dim * 3);
+    }
+}
+
+void datasets::DynamicSolverMask::Save() {}
+
+void datasets::DynamicSolverMask::Solve(MatrixXr &displacements, MatrixXr &stresses) {
+    NEON_ASSERT_ERROR(mesh_ != nullptr, "No mesh found");
+    NEON_ASSERT_ERROR(solver_ != nullptr, "No solver found");
+    NEON_ASSERT_ERROR(integrator_ != nullptr, "No integrator found");
+
+    integrator_->Solve(solver_->F_e, solver_->U_e);
+    solver_->Solve(displacements, stresses);
+}
+
+void datasets::DynamicSolverMask::VectorToOrientedMatrix(const VectorXr &v, MatrixXr &m) {
+    m = (utilities::math::VectorToMatrix(v, 3, v.rows() / 3).transpose()).eval();
+}
+
+void datasets::DynamicSolverMask::SetZerosFromBoundaryConditions(
+        const VectorXr &v, const solvers::boundary_conditions::BoundaryConditions &boundary_conditions, MatrixXr &m) {
+    VectorXr V = VectorXr::Zero(mesh_->positions.rows() * 3);
+
+    int i = 0;
+    for (const auto &[node, _] : boundary_conditions) {
+        V.segment(node * 3, 3) << v(i), v(i + 1), v(i + 2);
+        i += 3;
+    }
+
+    VectorToOrientedMatrix(V, m);
 }

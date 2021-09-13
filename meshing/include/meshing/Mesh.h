@@ -39,6 +39,8 @@ namespace meshing {
 
         auto ResetMesh() -> void;
 
+        auto ToScalarField(int dim) -> Tensor3r;
+
     private:
         auto ReadFile(const std::string &file_path, MeshFileType file_type, MatrixXr &V, MatrixXi &F) -> void;
     };

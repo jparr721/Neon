@@ -32,6 +32,10 @@ namespace datasets {
         void AddInputEntry(int layer, int feature, const MatrixXr &data);
         void AddTargetEntry(int layer, int feature, const MatrixXr &data);
 
+        void Sides(std::vector<MatrixXr> &bitmasks);
+        void Tops(std::vector<MatrixXr> &bitmasks);
+        void Fronts(std::vector<MatrixXr> &bitmasks);
+
         auto Shape() const -> const unsigned int;
         auto Entries() const -> const unsigned int;
     };
@@ -53,6 +57,12 @@ namespace datasets {
         std::unique_ptr<solvers::integrators::CentralDifferenceMethod> integrator_;
 
         void Save();
+        void Solve(MatrixXr &displacements, MatrixXr &stresses);
+
+        void VectorToOrientedMatrix(const VectorXr &v, MatrixXr &m);
+        void SetZerosFromBoundaryConditions(const VectorXr &v,
+                                            const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
+                                            MatrixXr &m);
     };
 }// namespace datasets
 

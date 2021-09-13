@@ -10,10 +10,13 @@
 #include <filesystem>
 #include <igl/boundary_facets.h>
 #include <igl/copyleft/tetgen/tetrahedralize.h>
+#include <igl/for_each.h>
 #include <igl/readOBJ.h>
 #include <igl/readOFF.h>
 #include <igl/readPLY.h>
+#include <igl/signed_distance.h>
 #include <igl/unique_simplices.h>
+#include <igl/voxel_grid.h>
 #include <meshing/Mesh.h>
 #include <utilities/math/LinearAlgebra.h>
 #include <utilities/runtime/NeonLog.h>
@@ -109,3 +112,30 @@ auto meshing::Mesh::ReadFile(const std::string &file_path, MeshFileType file_typ
 }
 
 auto meshing::Mesh::ResetMesh() -> void { positions = rest_positions; }
+
+auto meshing::Mesh::ToScalarField(const int dim) -> Tensor3r {
+    MatrixXr GV;
+    RowVector3i dimensions;
+    constexpr int pad = 1;
+
+    RowVector3r min_ext = positions.colwise().minCoeff();
+    RowVector3r max_ext = positions.colwise().maxCoeff();
+    Eigen::AlignedBox<Real, 3> box;
+    box.extend(min_ext.transpose());
+    box.extend(max_ext.transpose());
+
+    igl::voxel_grid(box, dim, pad, GV, dimensions);
+
+    VectorXi indices;
+    VectorXr binary_field;
+    MatrixXr C, N;
+
+    NEON_LOG_INFO("Computing signed distances for mesh");
+    igl::signed_distance(GV, positions, faces, igl::SIGNED_DISTANCE_TYPE_PSEUDONORMAL, binary_field, indices, C, N);
+    for (int row = 0; row < binary_field.rows(); ++row) {
+        const Real b = binary_field(row);
+        binary_field.row(row) << (b > 0 ? 1 : 0);
+    }
+
+    return Tensor3r::Expand(binary_field, dimensions.x(), dimensions.y(), dimensions.z());
+}

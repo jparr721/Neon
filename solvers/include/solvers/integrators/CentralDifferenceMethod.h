@@ -80,8 +80,8 @@ namespace solvers::integrators {
         **/
         void Solve(const VectorXr &forces, VectorXr &displacements);
 
-        auto Velocity() const -> VectorXr { return velocity_; }
-        auto Acceleration() const -> VectorXr { return acceleration_; }
+        [[nodiscard]] auto Velocity() const -> VectorXr { return velocity_; }
+        [[nodiscard]] auto Acceleration() const -> VectorXr { return acceleration_; }
 
     private:
         const MatrixXr stiffness_;
@@ -93,10 +93,6 @@ namespace solvers::integrators {
 
         VectorXr velocity_;
         VectorXr acceleration_;
-
-        // Highly-specific for effective load calc
-        MatrixXr el_stiffness_mass_diff_;
-        MatrixXr el_mass_matrix_damping_diff_;
 
         void SetEffectiveMassMatrix();
         void SetLastPosition(const VectorXr &positions);

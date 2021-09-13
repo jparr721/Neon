@@ -499,7 +499,7 @@ namespace utilities::math {
             return Tensor3<T>(Eigen::TensorMap<Eigen::Tensor<const T, 3>>(in.data(), x_dim, y_dim, z_dim));
         }
 
-        static auto FromStack(const std::vector<MatrixX<T>> &stack) {
+        static auto FromStack(const std::vector<MatrixX<T>> &stack) -> Tensor3<T> {
             Tensor3<T> out(stack.at(0).rows(), stack.at(0).cols(), stack.size());
             for (int i = 0; i < stack.size(); ++i) { out.SetLayer(i, stack.at(i)); }
 
