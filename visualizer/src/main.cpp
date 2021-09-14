@@ -21,6 +21,7 @@ int main(int argc, char **argv) {
 #ifndef NEON_USE_DOUBLE
     throw std::runtime_exception("Please enable NEON_USE_DOUBLE to use igl viewer.");
 #endif
+
     visualizer::Menu().callback_draw_custom_window = &visualizer::SimulationMenuWindow;
     visualizer::Menu().callback_draw_viewer_menu = &visualizer::GeometryMenu;
     visualizer::Viewer().plugins.push_back(&visualizer::Menu());

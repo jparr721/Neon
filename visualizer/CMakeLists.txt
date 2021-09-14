@@ -20,6 +20,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         meshing
         solvers
         utilities
-        datasets)
+        datasets
+        "${TORCH_LIBRARIES}")
+
+if (MSVC)
+    # Pytorch - Copy DLLs to avoid memory errors
+    file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
+    add_custom_command(TARGET ${PROJECT_NAME}
+            POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${TORCH_DLLS}
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+endif (MSVC)
 
 file(COPY ${CMAKE_SOURCE_DIR}/Assets DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
