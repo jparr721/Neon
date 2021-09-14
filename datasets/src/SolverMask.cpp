@@ -11,61 +11,61 @@
 #include <filesystem>
 #include <meshing/ImplicitSurfaceGenerator.h>
 
-datasets::DynamicSolverDataset::DynamicSolverDataset(const unsigned int shape, int entries) {
-    input = Eigen::Tensor<Real, 5>(shape, shape, 6, shape, entries);
-    target = Eigen::Tensor<Real, 5>(shape, shape, 6, shape, entries);
+datasets::DynamicSolverDataset::DynamicSolverDataset(const unsigned int shape_x, const unsigned int shape_y,
+                                                     const unsigned int entries) {
+    input = Tensor(shape_x, shape_y, kDatasetFeatures, entries);
+    target = Tensor(shape_x, shape_y, kDatasetFeatures, entries);
 }
 
-void datasets::DynamicSolverDataset::AddInputEntry(const int layer, const int feature, const MatrixXr &data) {
+void datasets::DynamicSolverDataset::AddInputEntry(const int feature, const MatrixXr &data) {
+    if (current_input_entry == input.dimension(3)) { return; }
+
     const unsigned int rows = input.dimension(0);
     NEON_ASSERT_ERROR(data.rows() == rows, "Rows don't match data dimension, got: ", data.rows(), " want: ", rows);
     const unsigned int cols = input.dimension(1);
     NEON_ASSERT_ERROR(data.cols() == cols, "Cols don't match data dimension, got: ", data.cols(), " want: ", cols);
 
     for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < cols; ++col) { input(row, col, feature, layer, current_input_entry) = data(row, col); }
+        for (int col = 0; col < cols; ++col) { input(row, col, feature, current_input_entry) = data(row, col); }
     }
-
-    ++current_input_entry;
 }
 
-void datasets::DynamicSolverDataset::AddTargetEntry(const int layer, const int feature, const MatrixXr &data) {
+void datasets::DynamicSolverDataset::AddTargetEntry(const int feature, const MatrixXr &data) {
+    if (current_target_entry == target.dimension(3)) { return; }
+
     const unsigned int rows = target.dimension(0);
     NEON_ASSERT_ERROR(data.rows() == rows, "Rows don't match data dimension, got: ", data.rows(), " want: ", rows);
     const unsigned int cols = target.dimension(1);
     NEON_ASSERT_ERROR(data.cols() == cols, "Cols don't match data dimension, got: ", data.cols(), " want: ", cols);
 
     for (int row = 0; row < rows; ++row) {
-        for (int col = 0; col < cols; ++col) {
-            target(row, col, feature, layer, current_target_entry) = data(row, col);
-        }
+        for (int col = 0; col < cols; ++col) { target(row, col, feature, current_target_entry) = data(row, col); }
     }
-
-    ++current_target_entry;
 }
 
 auto datasets::DynamicSolverDataset::Shape() const -> const unsigned int { return input.dimension(0); }
-auto datasets::DynamicSolverDataset::Entries() const -> const unsigned int { return input.dimension(4); }
+auto datasets::DynamicSolverDataset::Entries() const -> const unsigned int { return input.dimension(kTensorRank - 1); }
 
 void datasets::DynamicSolverDataset::Sides(std::vector<MatrixXr> &bitmasks) {}
 void datasets::DynamicSolverDataset::Tops(std::vector<MatrixXr> &bitmasks) {}
 void datasets::DynamicSolverDataset::Fronts(std::vector<MatrixXr> &bitmasks) {}
 
 
-datasets::DynamicSolverMask::DynamicSolverMask(const unsigned int shape, int entries) : dataset_(shape, entries) {
-    if (std::filesystem::exists("input")) {
+datasets::DynamicSolverMask::DynamicSolverMask(const unsigned int shape, int entries)
+    : mesh_shape(shape), n_entries(entries) {
+    if (std::filesystem::exists(DynamicSolverDataset::kInputFileName)) {
         NEON_LOG_WARN("Input output file was found, over-writing");
-        std::filesystem::remove("input");
+        std::filesystem::remove(DynamicSolverDataset::kInputFileName);
     }
 
-    input_file_.open("input", std::fstream::in | std::fstream::out | std::fstream::app);
+    input_file_.open(DynamicSolverDataset::kInputFileName, std::fstream::in | std::fstream::out | std::fstream::app);
 
-    if (std::filesystem::exists("targets")) {
+    if (std::filesystem::exists(DynamicSolverDataset::kTargetFileName)) {
         NEON_LOG_WARN("Targets output file was found, over-writing");
-        std::filesystem::remove("targets");
+        std::filesystem::remove(DynamicSolverDataset::kTargetFileName);
     }
 
-    target_file_.open("target", std::fstream::in | std::fstream::out | std::fstream::app);
+    target_file_.open(DynamicSolverDataset::kTargetFileName, std::fstream::in | std::fstream::out | std::fstream::app);
 }
 
 datasets::DynamicSolverMask::~DynamicSolverMask() {
@@ -78,8 +78,7 @@ datasets::DynamicSolverMask::~DynamicSolverMask() {
 
 void datasets::DynamicSolverMask::GenerateDataset(const Vector3r &force, const Real mass, const Real dt, const Real E,
                                                   const Real v, const Real G) {
-    const auto shape = dataset_.Shape();
-    auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(shape, shape, shape);
+    auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(mesh_shape, mesh_shape, mesh_shape);
 
     MatrixXr V;
     MatrixXi F;
@@ -109,19 +108,49 @@ void datasets::DynamicSolverMask::GenerateDataset(const Vector3r &force, const R
     integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(dt, mass, solver_->K_e, solver_->U_e,
                                                                                   solver_->F_e);
 
+    auto dataset = DynamicSolverDataset(mesh_->positions.rows(), mesh_->positions.cols(), n_entries);
+
+    NEON_LOG_INFO("Solvers configured to run");
+
+    // Header
+    input_file_ << "Shape: " << dataset.input.dimension(0) << " " << dataset.input.dimension(1) << " "
+                << dataset.input.dimension(2) << " " << dataset.input.dimension(3) << "\n";
+    NEON_LOG_INFO("Input file setup");
+    target_file_ << "Shape: " << dataset.target.dimension(0) << " " << dataset.target.dimension(1) << " "
+                 << dataset.target.dimension(2) << " " << dataset.target.dimension(3) << "\n";
+    NEON_LOG_INFO("Target file setup");
+
     // Generate the dataset of the displacements for a given number of iterations.
-    NEON_LOG_INFO(dataset_.Entries());
-    for (int entry = 0; entry < dataset_.Entries(); ++entry) {
-        NEON_LOG_INFO("Entry: ", entry);
+    for (int entry = 0; entry < dataset.Entries(); ++entry) {
+        MatrixXr forces;
+        MatrixXr positions;
+
         MatrixXr displacements;
-        MatrixXr stresses;
         MatrixXr velocity;
 
-        Solve(displacements, stresses);
+        MatrixXr _;
+        Solve(displacements, _);
+        mesh_->Update(displacements);
+        positions = mesh_->positions;
 
-        // Input - Mask & Stresses
-        const auto mask = uniform_mesh_->ToScalarField(dim * 3);
+        // Input - Forces & Positions
+        SetZerosFromBoundaryConditions(solver_->F_e, boundary_conditions, forces);
+
+        // Target - Displacements & Velocity
+        SetZerosFromBoundaryConditions(integrator_->Velocity(), boundary_conditions, velocity);
+
+        dataset.AddInputEntry(DynamicSolverDataset::kFeatureForces, forces);
+        dataset.AddInputEntry(DynamicSolverDataset::kFeaturePositions, positions);
+        ++dataset.current_input_entry;
+
+        dataset.AddTargetEntry(DynamicSolverDataset::kDisplacements, displacements);
+        dataset.AddTargetEntry(DynamicSolverDataset::kVelocity, velocity);
+        ++dataset.current_target_entry;
     }
+
+    // Save our outputs and we're good to go!
+    input_file_ << dataset.input;
+    target_file_ << dataset.target;
 }
 
 void datasets::DynamicSolverMask::Save() {}

@@ -19,11 +19,15 @@
 namespace visualizer {
     bool isotropic = false;
     bool tetrahedralize = true;
+    bool dataset_generating = false;
 
     int rve_dims = 5;
     int n_voids = 0;
     int void_dims = 0;
     int thickness = 1;
+
+    int n_entries = 100;
+    int dataset_shape = 10;
 
     const ImVec4 kErrorText(1, 0, 0, 1);
     const ImVec4 kOkayText(0, 1, 0, 1);
@@ -179,11 +183,14 @@ auto visualizer::SimulationMenu() -> void {
 
     if (ImGui::CollapsingHeader("Datasets", ImGuiTreeNodeFlags_None)) {
         ImGui::Text("Mask-Based Solver");
+        ImGui::InputInt("Number of entries", &n_entries);
+        ImGui::InputInt("Shape", &dataset_shape);
         if (ImGui::Button("Compute", ImVec2(w / 2, 0))) {
             NEON_LOG_INFO("Generating dataset in the background");
             auto task = std::thread(GenerateSolverMaskDataset);
             task.detach();
         }
+        ImGui::TextColored(dataset_generating ? kOkayText : kErrorText, dataset_generating ? "Running" : "Stopped");
     }
 
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -209,6 +216,9 @@ auto visualizer::SimulationMenuWindow() -> void {
 }
 
 auto visualizer::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {
+    if (solver_controller->solvers_need_reload) {
+        viewer.core().is_animating = false;
+    }
     if (viewer.core().is_animating) {
         solver_controller->SolveUniform(controllers::SolverController::kUseDynamicSolver);
         solver_controller->SolvePerforated(controllers::SolverController::kUseDynamicSolver);
@@ -242,6 +252,8 @@ auto visualizer::Refresh() -> void {
 }
 
 auto visualizer::GenerateSolverMaskDataset() -> void {
-    auto mask_dataset_generator = std::make_unique<datasets::DynamicSolverMask>(10, 100);
-    mask_dataset_generator->GenerateDataset(Vector3r(0, -100, 0), 5, 0.01, 30000, 0.3, 11580);
+    dataset_generating = true;
+    auto mask_dataset_generator = std::make_unique<datasets::DynamicSolverMask>(dataset_shape, n_entries);
+    mask_dataset_generator->GenerateDataset(Vector3r(0, -100, 0), 5, 0.01, 30000, 0.3, 11538);
+    dataset_generating = false;
 }

@@ -20,28 +20,45 @@
 
 namespace datasets {
     struct DynamicSolverDataset {
+        static constexpr unsigned int kTensorRank = 4;
+        static constexpr unsigned int kDatasetFeatures = 2;
+
+        // Feature indices
+        static constexpr unsigned int kFeatureForces = 0;
+        static constexpr unsigned int kFeaturePositions = 1;
+
+        static constexpr unsigned int kDisplacements = 0;
+        static constexpr unsigned int kVelocity = 1;
+
+        static constexpr auto kInputFileName = "input";
+        static constexpr auto kTargetFileName = "target";
+
+        using Tensor = Eigen::Tensor<Real, kTensorRank>;
+
         // Track which entry we've filled.
         unsigned int current_input_entry = 0;
         unsigned int current_target_entry = 0;
 
-        // Rank-4 Tensor
-        Eigen::Tensor<Real, 5> input;
-        Eigen::Tensor<Real, 5> target;
+        Tensor input;
+        Tensor target;
 
-        DynamicSolverDataset(unsigned int shape, int entries);
-        void AddInputEntry(int layer, int feature, const MatrixXr &data);
-        void AddTargetEntry(int layer, int feature, const MatrixXr &data);
+        DynamicSolverDataset(unsigned int shape_x, unsigned int shape_y, unsigned int entries);
+        void AddInputEntry(int feature, const MatrixXr &data);
+        void AddTargetEntry(int feature, const MatrixXr &data);
 
         void Sides(std::vector<MatrixXr> &bitmasks);
         void Tops(std::vector<MatrixXr> &bitmasks);
         void Fronts(std::vector<MatrixXr> &bitmasks);
 
-        auto Shape() const -> const unsigned int;
-        auto Entries() const -> const unsigned int;
+        [[nodiscard]] auto Shape() const -> const unsigned int;
+        [[nodiscard]] auto Entries() const -> const unsigned int;
     };
 
     class DynamicSolverMask {
     public:
+        unsigned int mesh_shape;
+        unsigned int n_entries;
+
         DynamicSolverMask(unsigned int shape, int entries);
         ~DynamicSolverMask();
 
@@ -51,7 +68,6 @@ namespace datasets {
         std::fstream input_file_;
         std::fstream target_file_;
 
-        DynamicSolverDataset dataset_;
         std::shared_ptr<meshing::Mesh> mesh_;
         std::unique_ptr<solvers::fem::LinearElastic> solver_;
         std::unique_ptr<solvers::integrators::CentralDifferenceMethod> integrator_;
