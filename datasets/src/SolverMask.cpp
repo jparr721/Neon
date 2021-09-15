@@ -113,10 +113,9 @@ void datasets::DynamicSolverMask::GenerateDataset(const Vector3r &force, const R
     NEON_LOG_INFO("Solvers configured to run");
 
     // Header
-    input_file_ << "Shape: " << dataset.input.dimension(0) << " " << dataset.input.dimension(1) << " "
-                << dataset.input.dimension(2) << " " << dataset.input.dimension(3) << "\n";
+    input_file_ << dataset.input.dimension(0) << " " << dataset.input.dimension(1) << " " << dataset.input.dimension(2) << " " << dataset.input.dimension(3) << "\n";
     NEON_LOG_INFO("Input file setup");
-    target_file_ << "Shape: " << dataset.target.dimension(0) << " " << dataset.target.dimension(1) << " "
+    target_file_ << dataset.target.dimension(0) << " " << dataset.target.dimension(1) << " "
                  << dataset.target.dimension(2) << " " << dataset.target.dimension(3) << "\n";
     NEON_LOG_INFO("Target file setup");
 
