@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.utils.data
 
 
-def u_net_layer(input_channels: int, output_channels: int, name: str, kernel_size=4, padding=4, dropout_pct=0.,
+def u_net_layer(input_channels: int, output_channels: int, name: str, kernel_size=2, padding=1, dropout_pct=0.,
                 transposed=False, use_batchnorm=True, use_relu=True) -> nn.Sequential:
     """
     U_Network layer with modifications as described in:
@@ -36,7 +36,7 @@ def u_net_layer(input_channels: int, output_channels: int, name: str, kernel_siz
 
         # Reduce the kernel size for the upsampling part (decoding back into outputs)
         block.add_module(f"{name}_t_conv",
-                         nn.Conv2d(input_channels, output_channels, kernel_size=(kernel_size - 1), stride=1,
+                         nn.Conv2d(input_channels, output_channels, kernel_size=(kernel_size - 1), stride=2,
                                    padding=padding, bias=True))
     else:
         # Do a regular convolution operation when feature extracting (pre upscaling)
@@ -84,7 +84,7 @@ class UNet(nn.Module):
         self.layer_1.add_module("layer_1", nn.Conv2d(
             in_channels=dataset_features,
             out_channels=channels,
-            kernel_size=4,
+            kernel_size=2,
             stride=2,
             padding=1,
             bias=True
@@ -99,16 +99,16 @@ class UNet(nn.Module):
         self.layer_5 = u_net_layer(channels * 4, channels * 8, "encoding_layer_5", transposed=False, use_batchnorm=True,
                                    use_relu=False, dropout_pct=dropout_pct)
         self.layer_6 = u_net_layer(channels * 8, channels * 8, "encoding_layer_6", transposed=False, use_batchnorm=True,
-                                   use_relu=False, dropout_pct=dropout_pct, kernel_size=2, padding=0)
+                                   use_relu=False, dropout_pct=dropout_pct, kernel_size=2, padding=1)
         self.layer_7 = u_net_layer(channels * 8, channels * 8, "encoding_layer_7", transposed=False, use_batchnorm=True,
                                    use_relu=False, dropout_pct=dropout_pct, kernel_size=2, padding=0)
 
         self.decoding_layer_7 = u_net_layer(channels * 8, channels * 8, "decoding_layer_7", transposed=True,
                                             use_batchnorm=True,
-                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=2, padding=0)
+                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=2, padding=1)
         self.decoding_layer_6 = u_net_layer(channels * 16, channels * 8, "decoding_layer_6", transposed=True,
                                             use_batchnorm=True,
-                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=2, padding=0)
+                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=2, padding=1)
         self.decoding_layer_5 = u_net_layer(channels * 16, channels * 4, "decoding_layer_5", transposed=True,
                                             use_batchnorm=True,
                                             use_relu=True, dropout_pct=dropout_pct)
@@ -127,7 +127,7 @@ class UNet(nn.Module):
         self.decoding_layer_1.add_module("decoding_layer_1_t_conv", nn.ConvTranspose2d(
             in_channels=channels * 2,
             out_channels=dataset_features,
-            kernel_size=4,
+            kernel_size=2,
             stride=2,
             padding=1,
             bias=True
