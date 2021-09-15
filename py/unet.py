@@ -6,7 +6,7 @@ import torch.utils.data
 
 
 def u_net_layer(input_channels: int, output_channels: int, name: str, kernel_size=2, padding=1, dropout_pct=0.,
-                transposed=False, use_batchnorm=True, use_relu=True) -> nn.Sequential:
+                transposed=False, use_batchnorm=True, use_relu=True, stride=2) -> nn.Sequential:
     """
     U_Network layer with modifications as described in:
     https://arxiv.org/pdf/1810.08217.pdf
@@ -20,6 +20,7 @@ def u_net_layer(input_channels: int, output_channels: int, name: str, kernel_siz
     :param transposed: Whether or not we're upsampling (second half of the model)
     :param use_batchnorm: Whether or not to use batchnorm (turns off dropout)
     :param use_relu: Whether or not to use relu activation
+    :param stride: The stride param for the convolutional layer
     :return: nn.Sequential layer
     """
     block = nn.Sequential()
@@ -36,12 +37,13 @@ def u_net_layer(input_channels: int, output_channels: int, name: str, kernel_siz
 
         # Reduce the kernel size for the upsampling part (decoding back into outputs)
         block.add_module(f"{name}_t_conv",
-                         nn.Conv2d(input_channels, output_channels, kernel_size=(kernel_size - 1), stride=1,
+                         nn.Conv2d(input_channels, output_channels, kernel_size=(kernel_size - 1), stride=stride,
                                    padding=padding, bias=True))
     else:
         # Do a regular convolution operation when feature extracting (pre upscaling)
         block.add_module(f"{name}_conv",
-                         nn.Conv2d(input_channels, output_channels, kernel_size=kernel_size, stride=2, padding=padding,
+                         nn.Conv2d(input_channels, output_channels, kernel_size=kernel_size, stride=stride,
+                                   padding=padding,
                                    bias=True))
 
     # If selected, we use batch norm instead of dropout due to its regularizing effects. It's useful for smoothing the
@@ -105,22 +107,22 @@ class UNet(nn.Module):
 
         self.decoding_layer_7 = u_net_layer(channels * 8, channels * 8, "decoding_layer_7", transposed=True,
                                             use_batchnorm=True,
-                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=2, padding=0)
+                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=2, padding=0, stride=1)
         self.decoding_layer_6 = u_net_layer(channels * 16, channels * 8, "decoding_layer_6", transposed=True,
                                             use_batchnorm=True,
-                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0)
+                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0, stride=1)
         self.decoding_layer_5 = u_net_layer(channels * 16, channels * 4, "decoding_layer_5", transposed=True,
                                             use_batchnorm=True,
-                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0)
+                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0, stride=1)
         self.decoding_layer_4 = u_net_layer(channels * 8, channels * 2, "decoding_layer_4", transposed=True,
                                             use_batchnorm=True,
-                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0)
+                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0, stride=1)
         self.decoding_layer_3 = u_net_layer(channels * 4, channels * 2, "decoding_layer_3", transposed=True,
                                             use_batchnorm=True,
-                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0)
+                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0, stride=1)
         self.decoding_layer_2 = u_net_layer(channels * 4, channels, "decoding_layer_2", transposed=True,
                                             use_batchnorm=True,
-                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0)
+                                            use_relu=True, dropout_pct=dropout_pct, kernel_size=4, padding=0, stride=1)
 
         self.decoding_layer_1 = nn.Sequential()
         self.decoding_layer_1.add_module("decoding_layer_1_relu", nn.ReLU(inplace=True))
