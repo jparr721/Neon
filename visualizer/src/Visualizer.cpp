@@ -32,7 +32,6 @@ namespace visualizer {
     const ImVec4 kErrorText(1, 0, 0, 1);
     const ImVec4 kOkayText(0, 1, 0, 1);
 
-    std::string tetgen_flags = "Yzpq";
     std::string displacement_dataset_name = "";
 
     igl::opengl::glfw::Viewer viewer;
@@ -110,7 +109,7 @@ auto visualizer::GeometryMenu() -> void {
 
         ImGui::Checkbox("Tetrahedralize", &tetrahedralize);
 
-        if (tetrahedralize) { ImGui::InputText("Flags", tetgen_flags); }
+        if (tetrahedralize) { ImGui::InputText("Flags", solver_controller->TetgenFlags()); }
 
         ImGui::Checkbox("Isotropic", &isotropic);
 

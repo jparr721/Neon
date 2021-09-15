@@ -35,3 +35,5 @@ cmake-build-debug
 !Assets/*
 build/
 third_party/libtorch
+py/datasets/input_*
+py/datasets/target_*

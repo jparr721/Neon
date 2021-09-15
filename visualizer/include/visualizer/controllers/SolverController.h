@@ -55,6 +55,7 @@ namespace visualizer::controllers {
         auto Dt() -> Real & { return dt_; }
         auto Mass() -> Real & { return mass_; }
         auto Force() -> Real & { return force_; }
+        auto TetgenFlags() -> std::string & { return tetgen_flags; }
 
     private:
         Real dt_ = 0.01;
@@ -64,7 +65,7 @@ namespace visualizer::controllers {
         Real approximate_lambda_ = 0;
         Real approximate_mu_ = 0;
 
-        const std::string tetgen_flags = "Yzpq";
+        std::string tetgen_flags = "Yzpq";
 
         Tensor3r perforated_surface_mesh_;
 

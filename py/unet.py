@@ -81,6 +81,7 @@ class UNet(nn.Module):
         assert 0 <= dropout_pct <= 1, "Dropout pct must be between 0 and 1"
 
         channels = int(2 ** channel_exponent + 0.5)
+        print("Channels: ", channels)
 
         self.layer_1 = nn.Sequential()
         self.layer_1.add_module("layer_1", nn.Conv2d(
