@@ -148,8 +148,12 @@ auto datasets::Deformation::GenerateSearchSpace(const unsigned int shape, const 
     NEON_LOG_INFO("Phew! Generation done.");
 }
 
-bool datasets::Deformation::DeformationBinarySearchReturnType::Ok() const {
+auto datasets::Deformation::DeformationBinarySearchReturnType::Ok() const -> bool {
     return utilities::numbers::IsApprox(displacement, target, epsilon);
 }
-bool datasets::Deformation::DeformationBinarySearchReturnType::TooLarge() const { return displacement > target; }
-bool datasets::Deformation::DeformationBinarySearchReturnType::TooSmall() const { return displacement < target; }
+auto datasets::Deformation::DeformationBinarySearchReturnType::TooLarge() const -> bool {
+    return displacement > target;
+}
+auto datasets::Deformation::DeformationBinarySearchReturnType::TooSmall() const -> bool {
+    return displacement < target;
+}
