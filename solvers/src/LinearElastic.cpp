@@ -283,7 +283,7 @@ auto solvers::fem::LinearElastic::AssembleElementStiffness() -> void {
 
         // Prepare to compute the nodal stresses by transforming via the shape functions
         // and then computing the stress.
-        const MatrixXr B = AssembleStrainRelationshipMatrix(shape_one, shape_two, shape_three, shape_four);
+        const MatrixXr B = AssembleShapeFunctionMatrix(shape_one, shape_two, shape_three, shape_four);
         const Real V = ComputeTetrahedralElementVolume(shape_one, shape_two, shape_three, shape_four);
         const Matrix12r stiffness = V * B.transpose() * constitutive_matrix_ * B;
 
@@ -357,7 +357,7 @@ auto solvers::fem::LinearElastic::ComputeElementStress() -> MatrixXr {
 
         // Prepare to compute the nodal stresses by transforming via the shape functions
         // and then computing the stress.
-        const MatrixXr B = AssembleStrainRelationshipMatrix(shape_one, shape_two, shape_three, shape_four);
+        const MatrixXr B = AssembleShapeFunctionMatrix(shape_one, shape_two, shape_three, shape_four);
         Vector12r u;
         u << displacement_one, displacement_two, displacement_three, displacement_four;
         element_stresses.row(row) = constitutive_matrix_ * B * u;
@@ -384,11 +384,11 @@ auto solvers::fem::LinearElastic::AssembleConstitutiveMatrix() -> void {
     constitutive_matrix_ = material_coefficients_.ConstitutiveMatrix();
 }
 
-auto solvers::fem::LinearElastic::AssembleStrainRelationshipMatrix(const Vector3r &shape_one, const Vector3r &shape_two,
+auto solvers::fem::LinearElastic::AssembleShapeFunctionMatrix(const Vector3r &shape_one, const Vector3r &shape_two,
                                                                    const Vector3r &shape_three,
                                                                    const Vector3r &shape_four) -> MatrixXr {
     using Matrix63r = Eigen::Matrix<Real, 6, 3>;
-    MatrixXr strain_relationship;
+    MatrixXr shape_function_matrix;
     const Real V = ComputeTetrahedralElementVolume(shape_one, shape_two, shape_three, shape_four);
     const auto create_beta_submatrix = [](Real beta, Real gamma, Real delta) -> Matrix63r {
         Matrix63r B;
@@ -438,14 +438,14 @@ auto solvers::fem::LinearElastic::AssembleStrainRelationshipMatrix(const Vector3
     const Matrix63r B4 = create_beta_submatrix(beta_4, gamma_4, delta_4);
 
     // Matrix is 6 x 12
-    strain_relationship.resize(B1.rows(), B1.cols() * 4);
-    strain_relationship << B1, B2, B3, B4;
+    shape_function_matrix.resize(B1.rows(), B1.cols() * 4);
+    shape_function_matrix << B1, B2, B3, B4;
     if (V != 0.f) {
-        strain_relationship /= (6 * V);
+        shape_function_matrix /= (6 * V);
     } else {
-        strain_relationship /= (6);
+        shape_function_matrix /= (6);
     }
-    return strain_relationship;
+    return shape_function_matrix;
 }
 auto solvers::fem::LinearElastic::ComputeTetrahedralElementVolume(const Vector3r &shape_one, const Vector3r &shape_two,
                                                                   const Vector3r &shape_three,

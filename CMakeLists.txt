@@ -40,7 +40,9 @@ if (USE_HEADLESS)
     add_definitions(-DNEON_HEADLESS_DISPLACEMENT)
 endif (USE_HEADLESS)
 
-find_package(Torch REQUIRED)
+if (USE_NEURAL_NETWORK)
+    find_package(Torch REQUIRED)
+endif(USE_NEURAL_NETWORK)
 find_package(OpenMP REQUIRED)
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 include_directories("${PROJECT_SOURCE_DIR}"

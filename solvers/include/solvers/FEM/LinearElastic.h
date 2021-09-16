@@ -79,7 +79,7 @@ namespace solvers::fem {
         /// \brief Computes the shape function parameter from 6 dof points.
         auto ComputeShapeFunctionFromPoints(const Vector6r &points) -> Real;
 
-        auto AssembleStrainRelationshipMatrix(const Vector3r &shape_one, const Vector3r &shape_two,
+        auto AssembleShapeFunctionMatrix(const Vector3r &shape_one, const Vector3r &shape_two,
                                               const Vector3r &shape_three, const Vector3r &shape_four) -> MatrixXr;
 
     private:

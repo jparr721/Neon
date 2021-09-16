@@ -23,7 +23,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         datasets
         "${TORCH_LIBRARIES}")
 
-if (MSVC)
+if (MSVC AND USE_NEURAL_NETWORK)
     # Pytorch - Copy DLLs to avoid memory errors
     file(GLOB TORCH_DLLS "${TORCH_INSTALL_PREFIX}/lib/*.dll")
     add_custom_command(TARGET ${PROJECT_NAME}
