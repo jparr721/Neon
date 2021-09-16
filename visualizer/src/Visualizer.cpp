@@ -6,9 +6,9 @@
 // If a copy of the GPL was not included with this file, you can
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
+#include <datasets/Deformation.h>
 #include <datasets/SolverMask.h>
 #include <future>
-#include <meshing/DofOptimizer.h>
 #include <solvers/materials/Material.h>
 #include <thread>
 #include <utilities/filesystem/CsvFile.h>
@@ -28,6 +28,32 @@ namespace visualizer {
 
     int n_entries = 100;
     int dataset_shape = 10;
+
+    Real dataset_generator_E_x_min = 1000;
+    Real dataset_generator_E_y_min = 1000;
+    Real dataset_generator_E_z_min = 1000;
+
+    Real dataset_generator_E_x_max = 40000;
+    Real dataset_generator_E_y_max = 40000;
+    Real dataset_generator_E_z_max = 40000;
+
+    Real dataset_generator_v_xy_min = 0.0;
+    Real dataset_generator_v_xz_min = 0.0;
+    Real dataset_generator_v_yz_min = 0.0;
+
+    Real dataset_generator_v_xy_max = 0.5;
+    Real dataset_generator_v_xz_max = 0.5;
+    Real dataset_generator_v_yz_max = 0.5;
+
+    // Min is rubber
+    Real dataset_generator_G_xy_min = 6e-6;
+    Real dataset_generator_G_zx_min = 6e-6;
+    Real dataset_generator_G_yz_min = 6e-6;
+
+    // Max is diamond
+    Real dataset_generator_G_xy_max = 478.0;
+    Real dataset_generator_G_zx_max = 478.0;
+    Real dataset_generator_G_yz_max = 478.0;
 
     const ImVec4 kErrorText(1, 0, 0, 1);
     const ImVec4 kOkayText(0, 1, 0, 1);
@@ -190,6 +216,37 @@ auto visualizer::SimulationMenu() -> void {
             task.detach();
         }
         ImGui::TextColored(dataset_generating ? kOkayText : kErrorText, dataset_generating ? "Running" : "Stopped");
+
+        ImGui::Text("Orthotropic Search Space");
+        ImGui::InputDouble("Min E_x", &dataset_generator_E_x_min);
+        ImGui::InputDouble("Min E_y", &dataset_generator_E_y_min);
+        ImGui::InputDouble("Min E_z", &dataset_generator_E_z_min);
+
+        ImGui::InputDouble("Max E_x", &dataset_generator_E_x_max);
+        ImGui::InputDouble("Max E_y", &dataset_generator_E_y_max);
+        ImGui::InputDouble("Max E_z", &dataset_generator_E_z_max);
+
+        ImGui::InputDouble("Min v_xy", &dataset_generator_v_xy_min);
+        ImGui::InputDouble("Min v_xz", &dataset_generator_v_xz_min);
+        ImGui::InputDouble("Min v_yz", &dataset_generator_v_yz_min);
+
+        ImGui::InputDouble("Max v_xy", &dataset_generator_v_xy_max);
+        ImGui::InputDouble("Max v_xz", &dataset_generator_v_xz_max);
+        ImGui::InputDouble("Max v_yz", &dataset_generator_v_yz_max);
+
+        ImGui::InputDouble("Min G_yz", &dataset_generator_G_yz_min);
+        ImGui::InputDouble("Min G_zx", &dataset_generator_G_zx_min);
+        ImGui::InputDouble("Min G_xy", &dataset_generator_G_xy_min);
+
+        ImGui::InputDouble("Max G_yz", &dataset_generator_G_yz_max);
+        ImGui::InputDouble("Max G_zx", &dataset_generator_G_zx_max);
+        ImGui::InputDouble("Max G_xy", &dataset_generator_G_xy_max);
+
+        if (ImGui::Button("Compute", ImVec2(w / 2, 0))) {
+            NEON_LOG_INFO("Generating dataset in the background");
+            auto task = std::thread(GenerateSearchSpaceDataset);
+            task.detach();
+        }
     }
 
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -215,9 +272,7 @@ auto visualizer::SimulationMenuWindow() -> void {
 }
 
 auto visualizer::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {
-    if (solver_controller->solvers_need_reload) {
-        viewer.core().is_animating = false;
-    }
+    if (solver_controller->solvers_need_reload) { viewer.core().is_animating = false; }
     if (viewer.core().is_animating) {
         solver_controller->SolveUniform(controllers::SolverController::kUseDynamicSolver);
         solver_controller->SolvePerforated(controllers::SolverController::kUseDynamicSolver);
@@ -248,6 +303,12 @@ auto visualizer::Refresh() -> void {
 
     Viewer().data(controllers::SolverController::kPerforatedMeshID)
             .set_mesh(solver_controller->PerforatedMesh()->positions, solver_controller->PerforatedMesh()->faces);
+}
+
+auto visualizer::GenerateSearchSpaceDataset() -> void {
+    dataset_generating = true;
+    auto deformation_generator = std::make_unique<datasets::Deformation>("deformation_dataset_generator.out");
+    //    deformation_generator->GenerateSearchSpace()
 }
 
 auto visualizer::GenerateSolverMaskDataset() -> void {

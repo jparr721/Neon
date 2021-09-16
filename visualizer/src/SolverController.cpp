@@ -16,7 +16,8 @@ visualizer::controllers::SolverController::SolverController(const int dim, const
     // Default parameter set.
     constexpr Real E_baseline = 30000;
     constexpr Real v_baseline = 0.3;
-    constexpr Real G_baseline = E_baseline / (2 * (1 + v_baseline));
+    // Because this is not a transverse isotropic or fully isotropic system, G must be defined on its own.
+    constexpr Real G_baseline = 11538;
     material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
     ReloadMeshes(dim, void_dim, thickness);
 }

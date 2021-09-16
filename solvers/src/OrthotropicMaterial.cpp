@@ -24,6 +24,7 @@ solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const Vector12r &co
     v_xz = coefficients(10);
     v_yz = coefficients(11);
 }
+
 solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const Real E, const Real v, const Real G) {
     E_x = E;
     E_y = E;
@@ -41,6 +42,22 @@ solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const Real E, const
     coefficients.resize(12);
     coefficients << E_x, E_y, E_z, G_yz, G_zx, G_xy, v_yx, v_zx, v_zy, v_xy, v_xz, v_yz;
 }
+
+solvers::materials::OrthotropicMaterial::OrthotropicMaterial(const Vector3r &E, const Vector3r &v, const Vector3r &G) {
+    E_x = E.x();
+    E_y = E.y();
+    E_z = E.z();
+    G_yz = G.x();
+    G_zx = G.y();
+    G_xy = G.z();
+    v_yx = v.x();
+    v_zx = v.y();
+    v_zy = v.z();
+    v_xy = v.x();
+    v_xz = v.y();
+    v_yz = v.z();
+}
+
 auto solvers::materials::OrthotropicMaterial::Vector() const -> Vector12r { return coefficients; }
 
 /// Returns the material coefficients for Hooke's Law in Stiffness Form.
