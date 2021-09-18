@@ -19,13 +19,14 @@
 #include <unsupported/Eigen/CXX11/Tensor>
 
 namespace datasets {
+    // rename
     struct DynamicSolverDataset {
         static constexpr unsigned int kTensorRank = 4;
         static constexpr unsigned int kDatasetFeatures = 2;
 
         // Feature indices
-        static constexpr unsigned int kFeatureForces = 0;
-        static constexpr unsigned int kFeaturePositions = 1;
+        static constexpr unsigned int kFeatureScalarField = 0;
+        static constexpr unsigned int kFeatureForces = 1;
 
         static constexpr unsigned int kDisplacements = 0;
         static constexpr unsigned int kVelocity = 1;
@@ -54,6 +55,7 @@ namespace datasets {
         [[nodiscard]] auto Entries() const -> const unsigned int;
     };
 
+    // rename
     class DynamicSolverMask {
     public:
         unsigned int mesh_shape;
@@ -79,6 +81,9 @@ namespace datasets {
         void SetZerosFromBoundaryConditions(const VectorXr &v,
                                             const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
                                             MatrixXr &m);
+
+        // Helpers
+        void PruneZeros(const MatrixXr &scalar_field, MatrixXr &pruned);
     };
 }// namespace datasets
 

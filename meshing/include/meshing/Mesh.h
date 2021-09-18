@@ -12,6 +12,7 @@
 
 #include <string>
 #include <utilities/math/LinearAlgebra.h>
+#include <utilities/math/Tensors.h>
 
 namespace meshing {
     enum class MeshFileType { kObj = 0, kPly, kOff, kUnsupported };

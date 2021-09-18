@@ -8,10 +8,10 @@
 //
 #include <datasets/Deformation.h>
 #include <datasets/SolverMask.h>
+#include <datasets/Static.h>
 #include <future>
 #include <solvers/materials/Material.h>
 #include <thread>
-#include <utilities/filesystem/CsvFile.h>
 #include <utilities/math/Time.h>
 #include <visualizer/Visualizer.h>
 #include <visualizer/controllers/SolverController.h>
@@ -26,7 +26,8 @@ namespace visualizer {
     int void_dims = 0;
     int thickness = 1;
 
-    int n_entries = 100;
+    Real min_force = 1;
+    Real max_force = 100;
     int dataset_shape = 10;
 
     Real dataset_generator_E_x_min = 1000;
@@ -208,11 +209,12 @@ auto visualizer::SimulationMenu() -> void {
 
     if (ImGui::CollapsingHeader("Datasets", ImGuiTreeNodeFlags_None)) {
         ImGui::Text("Mask-Based Solver");
-        ImGui::InputInt("Number of entries", &n_entries);
         ImGui::InputInt("Shape", &dataset_shape);
+        ImGui::InputDouble("Min Force", &min_force);
+        ImGui::InputDouble("Max Force", &max_force);
         if (ImGui::Button("Compute", ImVec2(w / 2, 0))) {
             NEON_LOG_INFO("Generating dataset in the background");
-            auto task = std::thread(GenerateSolverMaskDataset);
+            auto task = std::thread(GenerateStaticSolverDataset);
             task.detach();
         }
         ImGui::TextColored(dataset_generating ? kOkayText : kErrorText, dataset_generating ? "Running" : "Stopped");
@@ -311,9 +313,10 @@ auto visualizer::GenerateSearchSpaceDataset() -> void {
     //    deformation_generator->GenerateSearchSpace()
 }
 
-auto visualizer::GenerateSolverMaskDataset() -> void {
+auto visualizer::GenerateStaticSolverDataset() -> void {
     dataset_generating = true;
-    auto mask_dataset_generator = std::make_unique<datasets::DynamicSolverMask>(dataset_shape, n_entries);
-    mask_dataset_generator->GenerateDataset(Vector3r(0, -100, 0), 5, 0.01, 30000, 0.3, 11538);
+    datasets::MakeUniaxialStaticSolverDataset2D(min_force, max_force, dataset_shape);
+    //    auto mask_dataset_generator = std::make_unique<datasets::DynamicSolverMask>(dataset_shape, n_entries);
+    //    mask_dataset_generator->GenerateDataset(Vector3r(0, -100, 0), 5, 0.01, 30000, 0.3, 11538);
     dataset_generating = false;
 }

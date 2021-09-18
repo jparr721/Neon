@@ -13,6 +13,7 @@
 #include <solvers/materials/Material.h>
 #include <solvers/materials/OrthotropicMaterial.h>
 #include <utilities/math/LinearAlgebra.h>
+#include <utilities/math/Tensors.h>
 
 namespace solvers::materials {
     class Homogenization {

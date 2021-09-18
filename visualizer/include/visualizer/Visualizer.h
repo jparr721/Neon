@@ -34,6 +34,6 @@ namespace visualizer {
     auto SimulationMenuWindow() -> void;
 
     auto GenerateSearchSpaceDataset() -> void;
-    auto GenerateSolverMaskDataset() -> void;
+    auto GenerateStaticSolverDataset() -> void;
 }// namespace visualizer
 #endif//NEON_VISUALIZER_H

@@ -16,6 +16,7 @@
 
 #include <boost/test/unit_test.hpp>
 #include <utilities/math/LinearAlgebra.h>
+#include <utilities/math/Tensors.h>
 
 BOOST_AUTO_TEST_CASE(TestTensor3Constructor) {
     const Tensor3i t(3, 2, 3);
@@ -152,7 +153,7 @@ BOOST_AUTO_TEST_CASE(TestTop) {
     const MatrixXi v = t.Top(0);
 
     BOOST_REQUIRE(v.isApprox(d));
- }
+}
 
 
 BOOST_AUTO_TEST_CASE(TestSetTop) {
@@ -477,4 +478,24 @@ BOOST_AUTO_TEST_CASE(TestWhereIdx) {
     VectorX<int> indices = surface_mesh.WhereIdx(1);
 
     BOOST_REQUIRE(indices.isApprox(comp));
+}
+
+BOOST_AUTO_TEST_CASE(TestNNZ) {
+    VectorX<int> d = VectorX<int>::Zero(10);
+    d(1) = 1;
+    d(2) = 1;
+    d(3) = 1;
+    d(4) = 1;
+    d(5) = 1;
+    d(6) = 1;
+    std::cout << d.transpose() << std::endl;
+
+    VectorX<int> I;
+    unsigned int c;
+    utilities::math::NNZ(d, I, c, true);
+
+    VectorX<int> IC(6);
+    IC << 1, 2, 3, 4, 5, 6;
+    BOOST_REQUIRE_EQUAL(c, 6);
+    BOOST_REQUIRE(IC.isApprox(I));
 }

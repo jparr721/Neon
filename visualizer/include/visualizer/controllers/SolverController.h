@@ -17,6 +17,7 @@
 #include <solvers/integrators/CentralDifferenceMethod.h>
 #include <solvers/materials/Material.h>
 #include <solvers/materials/OrthotropicMaterial.h>
+#include <utilities/math/Tensors.h>
 
 namespace visualizer::controllers {
     class SolverController {

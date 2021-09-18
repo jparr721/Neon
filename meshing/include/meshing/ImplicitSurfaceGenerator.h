@@ -15,6 +15,7 @@
 #include <igl/parallel_for.h>
 #include <random>
 #include <utilities/math/LinearAlgebra.h>
+#include <utilities/math/Tensors.h>
 #include <utilities/runtime/NeonAssert.h>
 #include <utilities/runtime/NeonLog.h>
 #include <vector>
@@ -303,7 +304,7 @@ namespace meshing {
         }
 
         auto MakeRenderable(MatrixXr &V, MatrixXi &F) -> void {
-            const Tensor3r mc_surface = AddSquarePaddingLayers();
+            const Tensor3<T> mc_surface = AddSquarePaddingLayers();
             const int rows = mc_surface.Dimension(0);
             const int cols = mc_surface.Dimension(1);
             const int layers = mc_surface.Dimension(2);
