@@ -10,8 +10,8 @@ from torch.utils.data import Dataset
 class UNetDataset(Dataset):
     def __init__(self):
         self._DIR = "../build/bin/bin/"
-        self._INPUT_PATH = self._DIR + "input"
-        self._TARGET_PATH = self._DIR + "target"
+        self._INPUT_PATH = self._DIR + "input_static_2d"
+        self._TARGET_PATH = self._DIR + "output_static_2d"
 
         self.input_data = None
         self.target_data = None
@@ -75,13 +75,11 @@ class UNetDataset(Dataset):
         for i, line in enumerate(lines):
             lines[i] = list(map(float, line.rstrip().split()))
 
-        np.set_printoptions(linewidth=550, threshold=2000, precision=2)
         lines = np.array(lines)
 
         entries = []
-        for i in range(0, len(lines.T), 6):
-            entries.append(lines[:, i:i + 3])
-            entries.append(lines[:, i + 3:i + 6])
+        for i in range(0, len(lines.T), shape[2]):
+            entries.append(lines[:, i:i + shape[2]])
 
         lines = np.array(entries)
         lines = lines.reshape(shape)
