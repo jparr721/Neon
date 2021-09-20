@@ -1,7 +1,7 @@
 project(datasets)
 
 add_library(${PROJECT_NAME} SHARED
-        src/Deformation.cpp include/datasets/Deformation.h src/SolverMask.cpp include/datasets/SolverMask.h include/datasets/Static.h src/Static.cpp)
+        src/Deformation.cpp include/datasets/Deformation.h src/SolverMask.cpp include/datasets/SolverMask.h include/datasets/Static.h src/Static.cpp include/datasets/Dynamic.h src/Dynamic.cpp)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

@@ -82,7 +82,8 @@ class UNetDataset(Dataset):
             entries.append(lines[:, i:i + shape[2]])
 
         lines = np.array(entries)
-        lines = lines.reshape(shape)
+        # lines = lines.reshape(shape)
+        self.shape = lines.shape
         return lines
 
     def _decide_shape(self, file_name: str) -> Tuple[Union[int, Any], ...]:
