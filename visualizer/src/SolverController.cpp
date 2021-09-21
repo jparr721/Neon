@@ -18,7 +18,8 @@ visualizer::controllers::SolverController::SolverController(const int dim, const
     constexpr Real v_baseline = 0.3;
     // Because this is not a transverse isotropic or fully isotropic system, G must be defined on its own.
     constexpr Real G_baseline = 11538;
-    material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
+    uniform_material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
+    perforated_material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
     ReloadMeshes(dim, void_dim, thickness);
 }
 
@@ -50,8 +51,6 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(int dim, int voi
     MatrixXr V;
     MatrixXi F;
     gen->GenerateImplicitFunctionBasedMaterial(thickness, V, F);
-    NEON_LOG_INFO(V.size());
-    NEON_LOG_INFO(F.size());
     perforated_surface_mesh_ = gen->Surface();
 
     // Now re-make the mesh object
@@ -69,7 +68,7 @@ void visualizer::controllers::SolverController::HomogenizeVoidMesh() {
             perforated_surface_mesh_,
             solvers::materials::MaterialFromLameCoefficients(1, "m", approximate_mu_, approximate_lambda_));
     homogenization->Solve();
-    material_ = homogenization->Coefficients();
+    perforated_material_ = homogenization->Coefficients();
 }
 
 auto visualizer::controllers::SolverController::UniformMesh() const -> const std::shared_ptr<meshing::Mesh> & {
@@ -90,9 +89,10 @@ void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::Line
     ResetBoundaryConditions();
 
     uniform_solver_ =
-            std::make_unique<solvers::fem::LinearElastic>(uniform_boundary_conditions_, material_, uniform_mesh_, type);
+            std::make_unique<solvers::fem::LinearElastic>(uniform_boundary_conditions_, uniform_material_, uniform_mesh_, type);
 
-    perforated_solver_ = std::make_unique<solvers::fem::LinearElastic>(perforated_boundary_conditions_, material_,
+    perforated_solver_ = std::make_unique<solvers::fem::LinearElastic>(perforated_boundary_conditions_,
+                                                                       perforated_material_,
                                                                        perforated_mesh_, type);
 
     if (type == solvers::fem::LinearElastic::Type::kDynamic) {

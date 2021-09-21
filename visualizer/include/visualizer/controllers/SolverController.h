@@ -50,7 +50,7 @@ namespace visualizer::controllers {
         auto UniformMesh() const -> const std::shared_ptr<meshing::Mesh> &;
         auto PerforatedMesh() const -> const std::shared_ptr<meshing::Mesh> &;
 
-        auto Material() -> solvers::materials::OrthotropicMaterial & { return material_; }
+        auto Material() -> solvers::materials::OrthotropicMaterial & { return uniform_material_; }
         auto Lambda() -> Real & { return approximate_lambda_; }
         auto Mu() -> Real & { return approximate_mu_; }
         auto Dt() -> Real & { return dt_; }
@@ -70,7 +70,8 @@ namespace visualizer::controllers {
 
         Tensor3r perforated_surface_mesh_;
 
-        solvers::materials::OrthotropicMaterial material_;
+        solvers::materials::OrthotropicMaterial uniform_material_;
+        solvers::materials::OrthotropicMaterial perforated_material_;
 
         // Node Arrangement
         std::vector<unsigned int> uniform_interior_nodes_;
