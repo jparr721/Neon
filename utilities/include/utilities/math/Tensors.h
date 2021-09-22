@@ -455,7 +455,7 @@ namespace utilities::math {
             }
         }
 
-        template<typename T, unsigned dim>
+        template<typename T, int dim>
         void Write(const Eigen::Tensor<T, dim> &t, const std::string &filename) {
             NEON_ASSERT_ERROR(!std::filesystem::exists(filename), "File already exists");
             // Do not append

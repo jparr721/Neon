@@ -4,7 +4,14 @@ if (CMAKE_BUILD_TYPE EQUAL "Release")
     add_compile_options(/O2)
 endif ()
 
-add_executable(${PROJECT_NAME} src/main.cpp include/visualizer/Visualizer.h src/Visualizer.cpp src/SolverController.cpp include/visualizer/controllers/SolverController.h src/MatchUniformAndVoid.cpp include/visualizer/pipelines/MatchUniformAndVoid.h)
+add_executable(${PROJECT_NAME}
+        src/main.cpp
+        include/visualizer/Visualizer.h
+        src/Visualizer.cpp
+        src/SolverController.cpp
+        include/visualizer/controllers/SolverController.h
+        src/MatchUniformAndVoid.cpp
+        include/visualizer/pipelines/MatchUniformAndVoid.h)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

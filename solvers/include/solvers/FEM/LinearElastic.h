@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <memory>
 #include <meshing/Mesh.h>
+#include <optional>
 #include <solvers/materials/OrthotropicMaterial.h>
 #include <solvers/utilities/BoundaryCondition.h>
 #include <utilities/math/LinearAlgebra.h>
@@ -52,9 +53,20 @@ namespace solvers::fem {
         /// \brief Nodal boundary conditions.
         boundary_conditions::BoundaryConditions boundary_conditions;
 
+        /// Linear Elastic isotropic FEM
+        /// \param boundary_conditions
+        /// \param youngs_modulus
+        /// \param poissons_ratio
+        /// \param mesh
+        /// \param type
         LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions, Real youngs_modulus,
                       Real poissons_ratio, std::shared_ptr<meshing::Mesh> mesh, Type type = Type::kStatic);
 
+        /// Linear Elastic orthotropic FEM
+        /// \param boundary_conditions
+        /// \param m
+        /// \param mesh
+        /// \param type
         LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions, materials::OrthotropicMaterial m,
                       std::shared_ptr<meshing::Mesh> mesh, Type type = Type::kStatic);
 

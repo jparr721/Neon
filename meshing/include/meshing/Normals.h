@@ -7,11 +7,15 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
+#ifndef NEON_NORMALS_H
+#define NEON_NORMALS_H
 
-#ifndef NEON_MATCHUNIFORMANDVOID_H
-#define NEON_MATCHUNIFORMANDVOID_H
+#include <igl/parallel_for.h>
+#include <igl/per_face_normals.h>
+#include <utilities/math/LinearAlgebra.h>
 
-namespace pipelines {
-}
+namespace meshing {
+    void InvertNegativeNormals(const MatrixXr &V, const MatrixXi &F, MatrixXr &N);
+}// namespace meshing
 
-#endif//NEON_MATCHUNIFORMANDVOID_H
+#endif//NEON_NORMALS_H

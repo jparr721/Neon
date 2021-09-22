@@ -31,11 +31,12 @@ void visualizer::controllers::SolverController::ReloadMeshes(const int dim, cons
 void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim) {
     solvers_need_reload = true;
     NEON_LOG_INFO("Recomputing uniform mesh");
-    auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(dim, dim, dim);
+    auto gen = std::make_unique<meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>>(dim, dim, dim);
 
     MatrixXr V;
     MatrixXi F;
-    gen->GenerateImplicitFunctionBasedMaterial(meshing::ImplicitSurfaceGenerator<Real>::kNoThickness, V, F);
+    gen->GenerateImplicitFunctionBasedMaterial(meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>::kNoThickness,
+                                               0, V, F);
 
     // Now re-make the mesh object
     uniform_mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags);
@@ -44,13 +45,13 @@ void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim
 void visualizer::controllers::SolverController::ComputeVoidMesh(int dim, int void_dim, int thickness) {
     solvers_need_reload = true;
     NEON_LOG_INFO("Recomputing void mesh");
-    auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(
-            dim, dim, dim, meshing::ImplicitSurfaceGenerator<Real>::Behavior::kIsotropic,
-            meshing::ImplicitSurfaceGenerator<Real>::MakeInclusion(1, void_dim));
+    auto gen = std::make_unique<meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>>(
+            dim, dim, dim, meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>::Behavior::kIsotropic,
+            meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>::MakeInclusion(1, void_dim));
 
     MatrixXr V;
     MatrixXi F;
-    gen->GenerateImplicitFunctionBasedMaterial(thickness, V, F);
+    gen->GenerateImplicitFunctionBasedMaterial(thickness, auto_compute_area, V, F);
     perforated_surface_mesh_ = gen->Surface();
 
     // Now re-make the mesh object
@@ -88,12 +89,11 @@ void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::Line
 
     ResetBoundaryConditions();
 
-    uniform_solver_ =
-            std::make_unique<solvers::fem::LinearElastic>(uniform_boundary_conditions_, uniform_material_, uniform_mesh_, type);
+    uniform_solver_ = std::make_unique<solvers::fem::LinearElastic>(uniform_boundary_conditions_, uniform_material_,
+                                                                    uniform_mesh_, type);
 
     perforated_solver_ = std::make_unique<solvers::fem::LinearElastic>(perforated_boundary_conditions_,
-                                                                       perforated_material_,
-                                                                       perforated_mesh_, type);
+                                                                       perforated_material_, perforated_mesh_, type);
 
     if (type == solvers::fem::LinearElastic::Type::kDynamic) {
         uniform_integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(

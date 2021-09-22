@@ -10,7 +10,7 @@
 #include <datasets/Deformation.h>
 #include <memory>
 #include <meshing/DofOptimizer.h>
-#include <meshing/ImplicitSurfaceGenerator.h>
+#include <meshing/include/meshing/implicit_surfaces/ImplicitSurfaceGenerator.h>
 #include <solvers/FEM/LinearElastic.h>
 #include <utilities/math/Numbers.h>
 
@@ -69,11 +69,12 @@ auto datasets::Deformation::GenerateSearchSpace(const unsigned int shape, const 
                                                 const Vector3r &min_E, const Vector3r &max_E, const Vector3r &min_v,
                                                 const Vector3r &max_v, const Vector3r &min_G, const Vector3r &max_G,
                                                 const Real E_incr, const Real v_incr, const Real G_incr) -> void {
-    auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(shape, shape, shape);
+    auto gen = std::make_unique<meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>>(shape, shape, shape);
 
     MatrixXr V;
     MatrixXi F;
-    gen->GenerateImplicitFunctionBasedMaterial(meshing::ImplicitSurfaceGenerator<Real>::kNoThickness, V, F);
+    gen->GenerateImplicitFunctionBasedMaterial(meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>::kNoThickness,
+                                               0, V, F);
 
     // Tetrahedralize the mesh uniformly.
     const auto mesh = std::make_shared<meshing::Mesh>(V, F, "Yzpq");

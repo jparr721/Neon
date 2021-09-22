@@ -10,6 +10,7 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <cmath>
 #include <igl/list_to_matrix.h>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <utilities/runtime/NeonAssert.h>
@@ -103,6 +104,11 @@ using Matrix4 = Eigen::Matrix<T, 4, 4>;
 
 
 namespace utilities::math {
+    // Static Variables ===============================
+    constexpr Real kPi = static_cast<Real>(3.14159265);
+
+    // Functions ======================================
+
     auto LinSpace(Real start, Real stop, unsigned int num) -> VectorXr;
 
     template<typename Derived>
@@ -319,6 +325,10 @@ namespace utilities::math {
 
         igl::list_to_matrix(_I, I);
         count = I.rows();
+    }
+
+    inline auto IsApprox(const Real lhs, const Real rhs, const Real epsilon) -> bool {
+        return std::abs(lhs - rhs) < epsilon;
     }
 }// namespace utilities::math
 

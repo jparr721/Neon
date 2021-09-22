@@ -8,6 +8,7 @@
 //
 
 #include <Eigen/Cholesky>
+#include <datasets/include/datasets/Homogenization.h>
 #include <functional>
 #include <future>
 #include <igl/slice.h>
@@ -15,6 +16,7 @@
 #include <unsupported/Eigen/KroneckerProduct>
 #include <utilities/runtime/NeonLog.h>
 #include <utility>
+
 
 namespace solvers::materials {
     Homogenization::Homogenization(Tensor3r implicit_surface, const Material &material_1)

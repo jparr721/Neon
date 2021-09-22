@@ -9,7 +9,7 @@
 
 #include <datasets/SolverMask.h>
 #include <filesystem>
-#include <meshing/ImplicitSurfaceGenerator.h>
+#include <meshing/include/meshing/implicit_surfaces/ImplicitSurfaceGenerator.h>
 
 datasets::DynamicSolverDataset::DynamicSolverDataset(const unsigned int shape_x, const unsigned int shape_y,
                                                      const unsigned int entries) {
@@ -78,11 +78,11 @@ datasets::DynamicSolverMask::~DynamicSolverMask() {
 
 void datasets::DynamicSolverMask::GenerateDataset(const Vector3r &force, const Real mass, const Real dt, const Real E,
                                                   const Real v, const Real G) {
-    //    auto gen = std::make_unique<meshing::ImplicitSurfaceGenerator<Real>>(mesh_shape, mesh_shape, mesh_shape);
+    //    auto gen = std::make_unique<meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>>(mesh_shape, mesh_shape, mesh_shape);
     //
     //    MatrixXr V;
     //    MatrixXi F;
-    //    gen->GenerateImplicitFunctionBasedMaterial(meshing::ImplicitSurfaceGenerator<Real>::kNoThickness, V, F);
+    //    gen->GenerateImplicitFunctionBasedMaterial(meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>::kNoThickness, V, F);
     //
     //    // Tetrahedralize the mesh and do not allow superfluous tetrahedra to be added.
     //    mesh_ = std::make_unique<meshing::Mesh>(V, F, "Yzpq");

@@ -7,9 +7,9 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
-#include <meshing/ImplicitSurfaceGenerator.h>
+#include <meshing/include/meshing/implicit_surfaces/ImplicitSurfaceGenerator.h>
 
-meshing::Cube::Cube(int rows, int cols, int layers, const Vector3<unsigned int> &starting_index)
+meshing::implicit_surfaces::Cube::Cube(int rows, int cols, int layers, const Vector3<unsigned int> &starting_index)
     : rows_(rows), cols_(cols), layers_(layers) {
     const unsigned int c_x = starting_index.x();
     const unsigned int c_y = starting_index.y();
@@ -26,7 +26,7 @@ meshing::Cube::Cube(int rows, int cols, int layers, const Vector3<unsigned int> 
     indices_.erase(std::unique(indices_.begin(), indices_.end(), UnsignedVectorEqual), indices_.end());
 }
 
-bool meshing::Cube::operator==(const meshing::Cube &rhs) const {
+bool meshing::implicit_surfaces::Cube::operator==(const meshing::implicit_surfaces::Cube &rhs) const {
     for (const Vector3<unsigned int> &lhs_index : indices_) {
         for (const Vector3<unsigned int> &rhs_index : rhs.Indices()) {
             if (lhs_index == rhs_index) { return true; }

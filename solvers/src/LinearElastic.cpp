@@ -11,7 +11,6 @@
 #include <Eigen/SparseQR>
 #include <igl/slice.h>
 #include <solvers/FEM/LinearElastic.h>
-#include <utilities/runtime/NeonLog.h>
 #include <utility>
 
 solvers::fem::LinearElastic::LinearElastic(boundary_conditions::BoundaryConditions boundary_conditions,

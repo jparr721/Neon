@@ -10,7 +10,6 @@
 #include <datasets/SolverMask.h>
 #include <datasets/Static.h>
 #include <future>
-#include <solvers/materials/Material.h>
 #include <thread>
 #include <utilities/math/Time.h>
 #include <visualizer/Visualizer.h>
@@ -139,6 +138,7 @@ auto visualizer::GeometryMenu() -> void {
         if (tetrahedralize) { ImGui::InputText("Flags", solver_controller->TetgenFlags()); }
 
         ImGui::Checkbox("Isotropic", &isotropic);
+        ImGui::Checkbox("Auto Compute Area", &solver_controller->SurfaceGeneratorAutoComputeArea());
 
         if (ImGui::Button("Generate##Shape Generator", ImVec2(w, 0))) {
             GenerateShape();

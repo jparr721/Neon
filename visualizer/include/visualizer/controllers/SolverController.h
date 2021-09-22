@@ -11,8 +11,8 @@
 #define NEON_SOLVERCONTROLLER_H
 
 #include <memory>
-#include <meshing/ImplicitSurfaceGenerator.h>
 #include <meshing/Mesh.h>
+#include <meshing/include/meshing/implicit_surfaces/ImplicitSurfaceGenerator.h>
 #include <solvers/FEM/LinearElastic.h>
 #include <solvers/integrators/CentralDifferenceMethod.h>
 #include <solvers/materials/Material.h>
@@ -57,8 +57,11 @@ namespace visualizer::controllers {
         auto Mass() -> Real & { return mass_; }
         auto Force() -> Real & { return force_; }
         auto TetgenFlags() -> std::string & { return tetgen_flags; }
+        auto SurfaceGeneratorAutoComputeArea() -> bool & { return auto_compute_area; }
 
     private:
+        bool auto_compute_area = false;
+
         Real dt_ = 0.01;
         Real mass_ = 5;
         Real force_ = -100;

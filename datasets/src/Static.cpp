@@ -9,13 +9,13 @@
 
 #include <datasets/Static.h>
 #include <memory>
-#include <meshing/ImplicitSurfaceGenerator.h>
 #include <meshing/Mesh.h>
+#include <meshing/include/meshing/implicit_surfaces/ImplicitSurfaceGenerator.h>
 #include <solvers/FEM/LinearElastic.h>
 #include <vector>
 
 void datasets::MakeUniaxialStaticSolverDataset2D(const Real force_min, const Real force_max, const unsigned int dim) {
-    using Gen = meshing::ImplicitSurfaceGenerator<Real>;
+    using Gen = meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>;
     Tensor4<Real> input_dataset(dim, dim, 1, static_cast<int>(force_max - force_min));
     Tensor4<Real> output_dataset(dim, dim, 1, static_cast<int>(force_max - force_min));
 
@@ -27,7 +27,7 @@ void datasets::MakeUniaxialStaticSolverDataset2D(const Real force_min, const Rea
 
         MatrixXr V;
         MatrixXi F;
-        generator->GenerateImplicitFunctionBasedMaterial(Gen::kNoThickness, V, F);
+        generator->GenerateImplicitFunctionBasedMaterial(Gen::kNoThickness, 0, V, F);
 
         // Non-marching-cubes configured mesh.
         const Tensor3r tensor_field = generator->Surface();

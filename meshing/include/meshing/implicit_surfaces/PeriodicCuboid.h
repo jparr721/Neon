@@ -7,11 +7,11 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
+#ifndef NEON_PERIODICCUBOID_H
+#define NEON_PERIODICCUBOID_H
 
-#ifndef NEON_MATCHUNIFORMANDVOID_H
-#define NEON_MATCHUNIFORMANDVOID_H
 
-namespace pipelines {
-}
+class PeriodicCuboid {};
 
-#endif//NEON_MATCHUNIFORMANDVOID_H
+
+#endif//NEON_PERIODICCUBOID_H

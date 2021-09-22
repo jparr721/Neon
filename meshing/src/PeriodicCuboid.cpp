@@ -7,11 +7,4 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
-
-#ifndef NEON_MATCHUNIFORMANDVOID_H
-#define NEON_MATCHUNIFORMANDVOID_H
-
-namespace pipelines {
-}
-
-#endif//NEON_MATCHUNIFORMANDVOID_H
+#include "meshing/include/meshing/implicit_surfaces/PeriodicCuboid.h"

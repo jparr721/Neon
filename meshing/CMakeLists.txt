@@ -5,10 +5,10 @@ add_library(${PROJECT_NAME} SHARED
         include/meshing/MarchingCubes.h
 
         src/ImplicitSurfaceGenerator.cpp
-        include/meshing/ImplicitSurfaceGenerator.h
+        include/meshing/implicit_surfaces/ImplicitSurfaceGenerator.h
 
         src/Mesh.cpp
-        include/meshing/Mesh.h src/DofOptimizer.cpp include/meshing/DofOptimizer.h src/AdjacencyList.cpp include/meshing/graphs/AdjacencyList.h)
+        include/meshing/Mesh.h src/DofOptimizer.cpp include/meshing/DofOptimizer.h src/AdjacencyList.cpp include/meshing/graphs/AdjacencyList.h src/PeriodicCuboid.cpp include/meshing/implicit_surfaces/PeriodicCuboid.h src/PeriodicGyroid.cpp include/meshing/implicit_surfaces/PeriodicGyroid.h include/meshing/implicit_surfaces/APeriodicCuboid.cpp include/meshing/implicit_surfaces/APeriodicCuboid.h src/Normals.cpp include/meshing/Normals.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

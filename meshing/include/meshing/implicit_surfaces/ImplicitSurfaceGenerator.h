@@ -20,7 +20,7 @@
 #include <utilities/runtime/NeonLog.h>
 #include <vector>
 
-namespace meshing {
+namespace meshing::implicit_surfaces {
     inline auto UnsignedVectorComparison(const Vector3<unsigned> &lhs, const Vector3<unsigned> &rhs) -> bool {
         if (lhs.x() < rhs.x()) return true;
         if (rhs.x() < lhs.x()) return false;
@@ -93,6 +93,13 @@ namespace meshing {
         }
 
         ImplicitSurfaceGenerator(const unsigned int height, const unsigned int width, const unsigned int depth,
+                                 Behavior behavior, Microstructure microstructure)
+            : behavior_(behavior), microstructure_(microstructure) {
+            implicit_surface_.Resize(height, width, depth);
+            implicit_surface_.SetConstant(static_cast<T>(1));
+        }
+
+        ImplicitSurfaceGenerator(const unsigned int height, const unsigned int width, const unsigned int depth,
                                  Behavior behavior, const Inclusion inclusion, const int &material_number = 1)
             : behavior_(behavior), microstructure_(Microstructure::kComposite), inclusion_(inclusion),
               material_number_(material_number) {
@@ -125,12 +132,13 @@ namespace meshing {
         }
 
         /// \brief Generate implicit function material.
-        auto GenerateImplicitFunctionBasedMaterial(const int thickness, MatrixXr &V, MatrixXi &F) -> void {
+        auto GenerateImplicitFunctionBasedMaterial(const int thickness, const bool auto_compute_area, MatrixXr &V,
+                                                   MatrixXi &F) -> void {
             if (behavior_ == Behavior::kIsotropic) {
                 if (microstructure_ == Microstructure::kUniform) {
                     MakeRenderable(V, F);
                 } else {
-                    GenerateIsotropicMaterial(thickness, 0, V, F);
+                    GenerateIsotropicMaterial(thickness, auto_compute_area, V, F);
                 }
             }
             if (behavior_ == Behavior::kAnisotropic) { GenerateAnisotropicMaterial(thickness, 1000, V, F); }
@@ -156,8 +164,7 @@ namespace meshing {
         auto GenerateIsotropicMaterial(const int thickness, const bool auto_compute_area, MatrixXr &V, MatrixXi &F)
                 -> void {
             if (inclusion_.rows > 0) {
-                NEON_ASSERT_ERROR(thickness > 0,
-                                  "Thickness cannot be set to zero, otherwise we get really weird shit");
+                NEON_ASSERT_ERROR(thickness > 0, "Thickness cannot be set to zero, otherwise we get really weird shit");
             }
             const unsigned int dim = implicit_surface_.Dimension(0);
             MatrixXr mask = MatrixXr::Ones(dim, dim);
@@ -171,8 +178,9 @@ namespace meshing {
                         break;
                     }
                 }
-
-                NEON_ASSERT_ERROR(v_dim > 0, "Failed to compute optimum area.");
+                NEON_ASSERT_WARN(v_dim > 0, "Failed to compute optimum area. Defaulting to solid mesh");
+                implicit_surface_.SetConstant(1);
+                MakeRenderable(V, F);
             } else {
                 v_dim = inclusion_.rows;
             }
@@ -336,6 +344,6 @@ namespace meshing {
             }
         }
     };
-}// namespace meshing
+}// namespace meshing::implicit_surfaces
 
 #endif//NEON_IMPLICITSURFACEGENERATOR_H
