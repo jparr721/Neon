@@ -8,7 +8,6 @@
 //
 
 #include <Eigen/Cholesky>
-#include <datasets/include/datasets/Homogenization.h>
 #include <functional>
 #include <future>
 #include <igl/slice.h>
@@ -318,6 +317,7 @@ namespace solvers::materials {
         // Extend with a mirror of the back border
         std::vector<VectorXi> back_borders;
         constexpr int row = 0;
+        back_borders.reserve(n_el_z);
         for (auto layer_idx = 0u; layer_idx < n_el_z; ++layer_idx) {
             back_borders.emplace_back(_uniq_t_1.At(layer_idx, row));
         }
@@ -328,6 +328,7 @@ namespace solvers::materials {
         // Extend with a mirror of the left border
         std::vector<VectorXi> left_borders;
         constexpr int col = 0;
+        left_borders.reserve(n_el_z);
         for (auto layer_idx = 0u; layer_idx < n_el_z; ++layer_idx) {
             left_borders.emplace_back(_uniq_t_2.Col(layer_idx, col));
         }

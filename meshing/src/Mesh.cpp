@@ -41,7 +41,14 @@ auto meshing::Mesh::Update(const MatrixXr &change) -> void { positions = rest_po
 
 auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void {
     tetgen_succeeded = true;
-    igl::boundary_facets(F, faces);
+
+    // Faces are tetrahedra
+    if (F.cols() == 4) {
+        igl::boundary_facets(F, faces);
+    } else {
+        faces = F;
+    }
+
     tetrahedra = F;
     positions = V;
     rest_positions = V;

@@ -35,9 +35,9 @@ namespace visualizer::controllers {
         MatrixXr perforated_displacements;
         MatrixXr perforated_stresses;
 
-        SolverController(int dim, int void_dim, int thickness);
+        SolverController(int dim, Real amplitude, Real thickness);
 
-        void ReloadMeshes(int dim, int void_dim, int thickness);
+        void ReloadMeshes(int dim, Real amplitude, Real thickness);
         void HomogenizeVoidMesh();
 
         void ResetMeshPositions();
@@ -98,7 +98,7 @@ namespace visualizer::controllers {
         std::shared_ptr<solvers::integrators::CentralDifferenceMethod> perforated_integrator_;
 
         void ComputeUniformMesh(int dim);
-        void ComputeVoidMesh(int dim, int void_dim, int thickness);
+        void ComputeVoidMesh(int dim, Real amplitude, Real thickness);
         void ResetBoundaryConditions();
     };
 }// namespace visualizer::controllers

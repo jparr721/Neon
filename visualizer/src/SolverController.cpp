@@ -7,12 +7,14 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
+#include <igl/marching_cubes.h>
 #include <meshing/DofOptimizer.h>
+#include <meshing/implicit_surfaces/PeriodicGyroid.h>
 #include <solvers/materials/Homogenization.h>
 #include <utilities/math/Geometry.h>
 #include <visualizer/controllers/SolverController.h>
 
-visualizer::controllers::SolverController::SolverController(const int dim, const int void_dim, const int thickness) {
+visualizer::controllers::SolverController::SolverController(const int dim, const Real amplitude, const Real thickness) {
     // Default parameter set.
     constexpr Real E_baseline = 30000;
     constexpr Real v_baseline = 0.3;
@@ -20,12 +22,13 @@ visualizer::controllers::SolverController::SolverController(const int dim, const
     constexpr Real G_baseline = 11538;
     uniform_material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
     perforated_material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
-    ReloadMeshes(dim, void_dim, thickness);
+    ReloadMeshes(dim, amplitude, thickness);
 }
 
-void visualizer::controllers::SolverController::ReloadMeshes(const int dim, const int void_dim, const int thickness) {
+void visualizer::controllers::SolverController::ReloadMeshes(const int dim, const Real amplitude,
+                                                             const Real thickness) {
     ComputeUniformMesh(dim);
-    ComputeVoidMesh(dim, void_dim, thickness);
+    ComputeVoidMesh(dim, amplitude, thickness);
 }
 
 void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim) {
@@ -36,26 +39,23 @@ void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim
     MatrixXr V;
     MatrixXi F;
     gen->GenerateImplicitFunctionBasedMaterial(meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>::kNoThickness,
-                                               0, V, F);
+                                               false, V, F);
 
     // Now re-make the mesh object
     uniform_mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags);
 }
 
-void visualizer::controllers::SolverController::ComputeVoidMesh(int dim, int void_dim, int thickness) {
+void visualizer::controllers::SolverController::ComputeVoidMesh(const int dim, const Real amplitude,
+                                                                const Real thickness) {
     solvers_need_reload = true;
     NEON_LOG_INFO("Recomputing void mesh");
-    auto gen = std::make_unique<meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>>(
-            dim, dim, dim, meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>::Behavior::kIsotropic,
-            meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>::MakeInclusion(1, void_dim));
-
     MatrixXr V;
     MatrixXi F;
-    gen->GenerateImplicitFunctionBasedMaterial(thickness, auto_compute_area, V, F);
-    perforated_surface_mesh_ = gen->Surface();
+    meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(
+            amplitude, thickness, dim, meshing::implicit_surfaces::SineFunction, V, F, perforated_surface_mesh_);
 
     // Now re-make the mesh object
-    perforated_mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags);
+    perforated_mesh_ = std::make_shared<meshing::Mesh>(V, F);
 
     utilities::math::Scoot(Vector3r(uniform_mesh_->positions.col(0).maxCoeff() * 2, 0, 0),
                            perforated_mesh_->rest_positions);

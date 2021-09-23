@@ -10,6 +10,7 @@
 #include <datasets/SolverMask.h>
 #include <datasets/Static.h>
 #include <future>
+#include <meshing/Normals.h>
 #include <thread>
 #include <utilities/math/Time.h>
 #include <visualizer/Visualizer.h>
@@ -20,10 +21,9 @@ namespace visualizer {
     bool tetrahedralize = true;
     bool dataset_generating = false;
 
-    int rve_dims = 5;
-    int n_voids = 0;
-    int void_dims = 0;
-    int thickness = 1;
+    int rve_dims = 50;
+    Real amplitude = 0.160;
+    Real thickness = 0.7;
 
     Real min_force = 1;
     Real max_force = 100;
@@ -64,7 +64,7 @@ namespace visualizer {
     igl::opengl::glfw::imgui::ImGuiMenu menu;
 
     std::unique_ptr<visualizer::controllers::SolverController> solver_controller =
-            std::make_unique<visualizer::controllers::SolverController>(rve_dims, void_dims, thickness);
+            std::make_unique<visualizer::controllers::SolverController>(rve_dims, amplitude, thickness);
 
     const Vector3r force = Vector3r(0, -1 * 100, 0);
 }// namespace visualizer
@@ -73,7 +73,7 @@ auto visualizer::Viewer() -> igl::opengl::glfw::Viewer & { return viewer; }
 auto visualizer::Menu() -> igl::opengl::glfw::imgui::ImGuiMenu & { return menu; }
 
 auto visualizer::GenerateShape() -> void {
-    solver_controller->ReloadMeshes(rve_dims, void_dims, thickness);
+    solver_controller->ReloadMeshes(rve_dims, amplitude, thickness);
     if (Viewer().data_list.empty() || Viewer().data_list.size() == 1) { viewer.append_mesh(true); }
     solver_controller->solvers_need_reload = true;
 }
@@ -129,9 +129,8 @@ auto visualizer::GeometryMenu() -> void {
     if (ImGui::CollapsingHeader("Shape Generator", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
         ImGui::InputInt("Rve Dim", &rve_dims);
-        ImGui::InputInt("Void Dim", &void_dims);
-        ImGui::InputInt("N Voids", &n_voids);
-        ImGui::InputInt("Thickness", &thickness);
+        ImGui::InputDouble("Amplitude", &amplitude);
+        ImGui::InputDouble("Thickness", &thickness);
 
         ImGui::Checkbox("Tetrahedralize", &tetrahedralize);
 
@@ -305,6 +304,12 @@ auto visualizer::Refresh() -> void {
 
     Viewer().data(controllers::SolverController::kPerforatedMeshID)
             .set_mesh(solver_controller->PerforatedMesh()->positions, solver_controller->PerforatedMesh()->faces);
+    if (solver_controller->PerforatedMesh()->positions.size() > 0) {
+        MatrixXr N;
+        meshing::InvertNegativeNormals(solver_controller->PerforatedMesh()->positions,
+                                       solver_controller->PerforatedMesh()->faces, N);
+        Viewer().data(controllers::SolverController::kPerforatedMeshID).set_normals(N);
+    }
 }
 
 auto visualizer::GenerateSearchSpaceDataset() -> void {

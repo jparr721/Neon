@@ -25,25 +25,12 @@ int main(int argc, char **argv) {
     throw std::runtime_exception("Please enable NEON_USE_DOUBLE to use igl viewer.");
 #endif
 
-    //    visualizer::Menu().callback_draw_custom_window = &visualizer::SimulationMenuWindow;
-    //    visualizer::Menu().callback_draw_viewer_menu = &visualizer::GeometryMenu;
-    //    visualizer::Viewer().plugins.push_back(&visualizer::Menu());
-    //
-    //    visualizer::Viewer().callback_pre_draw = &visualizer::DrawCallback;
-    //    visualizer::Viewer().core().is_animating = false;
-    MatrixXr V;
-    MatrixXi F;
-    constexpr Real amplitude = 0.160;
-    constexpr Real thickness = 0.7;
-    constexpr unsigned int resolution = 50;
-    Tensor3r t;
-    meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(amplitude, thickness, resolution,
-                                                                   meshing::implicit_surfaces::kSinFunction, V, F, t);
+    visualizer::Menu().callback_draw_custom_window = &visualizer::SimulationMenuWindow;
+    visualizer::Menu().callback_draw_viewer_menu = &visualizer::GeometryMenu;
+    visualizer::Viewer().plugins.push_back(&visualizer::Menu());
 
-    MatrixXr N;
-    meshing::InvertNegativeNormals(V, F, N);
-    visualizer::Viewer().data().set_mesh(V, F);
-    visualizer::Viewer().data().set_normals(N);
+    visualizer::Viewer().callback_pre_draw = &visualizer::DrawCallback;
+    visualizer::Viewer().core().is_animating = false;
     visualizer::Viewer().launch();
 
 #endif

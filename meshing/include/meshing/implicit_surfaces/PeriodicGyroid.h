@@ -24,7 +24,7 @@ namespace meshing::implicit_surfaces {
     using GyroidImplicitFunction = std::function<Real(Real amplitude, Real thickness, const RowVector3r &)>;
     using dGyroidImplicitFunction = std::function<RowVector3r(GyroidImplicitFunction, const RowVector3r &)>;
 
-    static GyroidImplicitFunction kSinFunction = [](Real amplitude, Real thickness, const RowVector3r &pos) -> Real {
+    inline auto SineFunction(Real amplitude, Real thickness, const RowVector3r &pos) -> Real {
         const Real two_pi = (2.0 * utilities::math::kPi) / amplitude;
         const Real x = pos.x();
         const Real y = pos.y();
