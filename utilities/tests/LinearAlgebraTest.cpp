@@ -18,6 +18,8 @@
 #include <utilities/math/LinearAlgebra.h>
 #include <utilities/math/Tensors.h>
 
+using namespace utilities::math;
+
 BOOST_AUTO_TEST_CASE(TestTensor3Constructor) {
     const Tensor3i t(3, 2, 3);
     BOOST_REQUIRE(t.Dimensions().size() == 3);
@@ -498,4 +500,30 @@ BOOST_AUTO_TEST_CASE(TestNNZ) {
     IC << 1, 2, 3, 4, 5, 6;
     BOOST_REQUIRE_EQUAL(c, 6);
     BOOST_REQUIRE(IC.isApprox(I));
+}
+
+BOOST_AUTO_TEST_CASE(TestComputeTriangleAngles) {
+    const Vector3r a(1, 0, 0);
+    const Vector3r b(4, 6, 0);
+    const Vector3r c(-3, 5, 0);
+
+    Real A_hat;
+    Real B_hat;
+    Real C_hat;
+
+    utilities::math::ComputeTriangleAngles(a, b, c, A_hat, B_hat, C_hat);
+
+    BOOST_REQUIRE(IsApprox(A_hat, 1.13, 0.01));
+    BOOST_REQUIRE(IsApprox(B_hat, 0.96, 0.01));
+    BOOST_REQUIRE(IsApprox(C_hat, 1.03, 0.01));
+}
+
+BOOST_AUTO_TEST_CASE(TestDegrees) {
+    const Real denom = utilities::math::kPi / 4;
+    BOOST_REQUIRE_EQUAL(utilities::math::Degrees(denom), 45);
+}
+
+BOOST_AUTO_TEST_CASE(TestRadians) {
+    const Real denom = 90;
+    BOOST_REQUIRE(utilities::math::IsApprox(utilities::math::Radians(denom), 1.570796, 0.001));
 }

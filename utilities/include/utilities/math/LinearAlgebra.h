@@ -327,9 +327,53 @@ namespace utilities::math {
         count = I.rows();
     }
 
+    template<typename T>
+    auto ComputeAngle(const Vector3<T> &a, const Vector3<T> &b) -> Real {
+        return std::acos(a.dot(b) / (a.norm() * b.norm()));
+    }
+
+    template<typename T>
+    void ComputeTriangleAngles(const Vector3<T> &a, const Vector3<T> &b, const Vector3<T> &c, Real &A_hat, Real &B_hat,
+                               Real &C_hat) {
+        const Real a_dist = Distance(b, c);
+        const Real b_dist = Distance(a, c);
+        const Real c_dist = Distance(a, b);
+
+        // Now, using the law of cosines, get the angle for each value.
+        A_hat = std::acos((b_dist * b_dist + c_dist * c_dist - a_dist * a_dist) / (2 * (b_dist * c_dist)));
+        B_hat = std::acos((a_dist * a_dist + c_dist * c_dist - b_dist * b_dist) / (2 * (a_dist * c_dist)));
+        C_hat = std::acos((b_dist * b_dist + a_dist * a_dist - c_dist * c_dist) / (2 * (b_dist * a_dist)));
+    }
+
+    template<typename T>
+    auto Distance(const Vector3<T> &a, const Vector3<T> &b) -> Real {
+        const Real dx = b.x() - a.x();
+        const Real dy = b.y() - a.y();
+        const Real dz = b.z() - a.z();
+        return std::sqrt(std::pow(dx, 2) + std::pow(dy, 2) + std::pow(dz, 2));
+    }
+
+    template<typename Derived>
+    auto Contains(const Eigen::MatrixBase<Derived> &in, const typename Derived::Scalar value) -> bool {
+        const int rows = in.rows();
+        const int cols = in.cols();
+
+        for (int row = 0; row < rows; ++row) {
+            for (int col = 0; col < cols; ++col) {
+                if (in(row, col) == value) { return true; }
+            }
+        }
+
+        return false;
+    }
+
     inline auto IsApprox(const Real lhs, const Real rhs, const Real epsilon) -> bool {
         return std::abs(lhs - rhs) < epsilon;
     }
+
+    inline auto Degrees(const Real degree) -> Real { return degree * (180.0 / kPi); }
+
+    inline auto Radians(const Real radian) -> Real { return radian * (kPi / 180.0); }
 }// namespace utilities::math
 
 

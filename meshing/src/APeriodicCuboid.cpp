@@ -7,4 +7,4 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
-#include "APeriodicCuboid.h"
+#include "meshing/include/meshing/implicit_surfaces/APeriodicCuboid.h"

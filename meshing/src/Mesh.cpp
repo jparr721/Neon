@@ -45,11 +45,11 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F) -> void {
     // Faces are tetrahedra
     if (F.cols() == 4) {
         igl::boundary_facets(F, faces);
+        tetrahedra = F;
     } else {
         faces = F;
     }
 
-    tetrahedra = F;
     positions = V;
     rest_positions = V;
 }

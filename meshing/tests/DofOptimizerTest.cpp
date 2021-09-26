@@ -6,7 +6,7 @@
 // If a copy of the GPL was not included with this file, you can
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
-#define BOOST_TEST_MODULE LinearElasticTests
+#define BOOST_TEST_MODULE DofOptimizerTests
 #define BOOST_DYN_TEST_LINK
 #define BOOST_TEST_MAIN
 

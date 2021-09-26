@@ -8,7 +8,7 @@ add_library(${PROJECT_NAME} SHARED
         include/meshing/implicit_surfaces/ImplicitSurfaceGenerator.h
 
         src/Mesh.cpp
-        include/meshing/Mesh.h src/DofOptimizer.cpp include/meshing/DofOptimizer.h src/AdjacencyList.cpp include/meshing/graphs/AdjacencyList.h src/PeriodicCuboid.cpp include/meshing/implicit_surfaces/PeriodicCuboid.h src/PeriodicGyroid.cpp include/meshing/implicit_surfaces/PeriodicGyroid.h include/meshing/implicit_surfaces/APeriodicCuboid.cpp include/meshing/implicit_surfaces/APeriodicCuboid.h src/Normals.cpp include/meshing/Normals.h)
+        include/meshing/Mesh.h src/DofOptimizer.cpp include/meshing/DofOptimizer.h src/AdjacencyList.cpp include/meshing/graphs/AdjacencyList.h src/PeriodicCuboid.cpp include/meshing/implicit_surfaces/PeriodicCuboid.h src/PeriodicGyroid.cpp include/meshing/implicit_surfaces/PeriodicGyroid.h src/APeriodicCuboid.cpp include/meshing/implicit_surfaces/APeriodicCuboid.h src/Normals.cpp include/meshing/Normals.h src/MeshOptimizer.cpp include/meshing/MeshOptimizer.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -35,6 +35,18 @@ add_executable(
 
 target_link_libraries(
         ${PROJECT_NAME}DofOptimizerTest
+        LINK_PUBLIC ${Boost_LIBRARIES}
+        ${PROJECT_NAME}
+        utilities
+)
+
+add_executable(
+        ${PROJECT_NAME}MeshOptimizerTest
+        tests/MeshOptimizerTest.cpp
+)
+
+target_link_libraries(
+        ${PROJECT_NAME}MeshOptimizerTest
         LINK_PUBLIC ${Boost_LIBRARIES}
         ${PROJECT_NAME}
         utilities

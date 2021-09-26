@@ -304,12 +304,6 @@ auto visualizer::Refresh() -> void {
 
     Viewer().data(controllers::SolverController::kPerforatedMeshID)
             .set_mesh(solver_controller->PerforatedMesh()->positions, solver_controller->PerforatedMesh()->faces);
-    if (solver_controller->PerforatedMesh()->positions.size() > 0) {
-        MatrixXr N;
-        meshing::InvertNegativeNormals(solver_controller->PerforatedMesh()->positions,
-                                       solver_controller->PerforatedMesh()->faces, N);
-        Viewer().data(controllers::SolverController::kPerforatedMeshID).set_normals(N);
-    }
 }
 
 auto visualizer::GenerateSearchSpaceDataset() -> void {
