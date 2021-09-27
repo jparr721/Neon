@@ -7,6 +7,7 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
+#include <igl/collapse_small_triangles.h>
 #include <igl/marching_cubes.h>
 #include <meshing/DofOptimizer.h>
 #include <meshing/implicit_surfaces/PeriodicGyroid.h>
@@ -54,8 +55,10 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(const int dim, c
     meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(
             amplitude, thickness, dim, meshing::implicit_surfaces::SineFunction, V, F, perforated_surface_mesh_);
 
+    MatrixXi FF;
+    igl::collapse_small_triangles(V, F, 0.00005, FF);
     // Now re-make the mesh object
-    perforated_mesh_ = std::make_shared<meshing::Mesh>(V, F);
+    perforated_mesh_ = std::make_shared<meshing::Mesh>(V, FF);
 
     utilities::math::Scoot(Vector3r(uniform_mesh_->positions.col(0).maxCoeff() * 2, 0, 0),
                            perforated_mesh_->rest_positions);

@@ -115,66 +115,47 @@ void meshing::optimizer::ComputeEdges(const MatrixXr &V, const MatrixXi &F, Matr
                       "DEBUG INFO: \n", "F: \n", F, "\nA: \n", A.toDense());
 }
 
-void meshing::optimizer::EdgeCollapseSlivers(const Real min_theta, MatrixXr &V, MatrixXi &F, MatrixXi &E) {
-    NEON_ASSERT_ERROR(F.cols() == 3, "Can only edge collapse on triplet surface mesh, not quads.");
-    for (int row = 0; row < F.rows(); ++row) {
-        const int fa = F(row, 0);
-        const int fb = F(row, 1);
-        const int fc = F(row, 2);
+void meshing::optimizer::ComputeEdgeLengths(const MatrixXr &V, const MatrixXi &F, MatrixXr &L) {
+    NEON_ASSERT_ERROR(F.rows() == 3, "Triangular meshes only!");
 
-        const Vector3r a = V.row(fa);
-        const Vector3r b = V.row(fb);
-        const Vector3r c = V.row(fc);
+    const int rows = F.rows();
+    L.resize(rows, 3);
+#pragma omp parallel for if (rows > 10000)
+    for (int row = 0; row < rows; ++row) {
+        const int A_idx = F(row, 0);
+        const int B_idx = F(row, 1);
+        const int C_idx = F(row, 2);
 
-        // Find the smallest angle.
-        // A -> B
-        const Real ab = utilities::math::ComputeAngle(a, b);
+        // BC Edge
+        L(row, 0) = (V.row(B_idx) - V.row(C_idx)).norm();
 
-        // A -> C
-        const Real ac = utilities::math::ComputeAngle(a, c);
+        // A C Edge
+        L(row, 1) = (V.row(A_idx) - V.row(C_idx)).norm();
 
-        // B -> C
-        const Real bc = utilities::math::ComputeAngle(b, c);
-
-        const std::vector<Real> angles{ab, ac, bc};
-        const Real min = *std::min_element(angles.begin(), angles.end());
-
-        // Now check if it's smaller than our minimum theta.
-        if (min > min_theta) { continue; }
-
-        NEON_ASSERT_ERROR(utilities::math::IsApprox(min, ab, 0.001) || utilities::math::IsApprox(min, ac, 0.001) ||
-                                  utilities::math::IsApprox(min, bc, 0.001),
-                          "Something has gone terribly wrong: ", min);
-
-        // The line segment between the two faces.
-        std::pair<int, int> line;
-        if (min == ab) {
-            line = std::pair<int, int>{fa, fb};
-        } else if (min == ac) {
-            line = std::pair<int, int>{fa, fc};
-        } else if (min == bc) {
-            line = std::pair<int, int>{fb, fc};
-        }
-
-        // Find the face that is connected here
-        // TODO(@jparr721) Is the found face unique?
-        for (int r = 0; r < F.rows(); ++r) {
-            if (r == row) { continue; }
-
-            const int ffa = F(r, 0);
-            const int ffb = F(r, 1);
-            const int ffc = F(r, 2);
-
-            const Vector3i ffr = F.row(r);
-
-            // If both of the nodes are here, we get to work
-            if (!(utilities::math::Contains(ffr, line.first) && utilities::math::Contains(ffr, line.second))) {
-                continue;
-            }
-
-            // Both nodes are here, so it shares an edge with the thing we want to collapse.
-
-            // Now, find the "skinny" angle where the min_theta is
-        }
+        // A B Edge
+        L(row, 2) = (V.row(A_idx) - V.row(B_idx)).norm();
     }
 }
+
+void meshing::optimizer::ComputeTriangleSquaredArea(const MatrixXr &L, VectorXr &A) {
+    const int rows = L.rows();
+    A.resize(rows);
+#pragma omp parallel for if (rows > 10000)
+    for (int row = 0; row < rows; ++row) {
+        const Real a = L(row, 0);
+        const Real b = L(row, 1);
+        const Real c = L(row, 2);
+        // Semi-Permeter = sum of side lengths divided by 2.
+        const Real s = L.row(row).sum() / 2;
+        A(row) = s * (s - a) * (s - b) * (s - c);
+    }
+}
+
+void meshing::optimizer::CollapseSmallTriangles(Real min_area, const MatrixXr &V, const MatrixXi &F, const MatrixXi &E,
+                                                MatrixXr &VV, MatrixXi &FF) {
+    NEON_ASSERT_ERROR(F.cols() == 3, "Can only edge collapse on triplet surface mesh, not quads.");
+
+    int n_face_collapses = 0;
+    int n_edge_collapses = 0;
+
+    do { } while (n_face_collapses > 0); }
