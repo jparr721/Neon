@@ -10,6 +10,7 @@
 #include <igl/collapse_small_triangles.h>
 #include <igl/marching_cubes.h>
 #include <meshing/DofOptimizer.h>
+#include <meshing/MeshOptimizer.h>
 #include <meshing/implicit_surfaces/PeriodicGyroid.h>
 #include <solvers/materials/Homogenization.h>
 #include <utilities/math/Geometry.h>
@@ -56,8 +57,11 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(const int dim, c
             amplitude, thickness, dim, meshing::implicit_surfaces::SineFunction, V, F, perforated_surface_mesh_);
 
     MatrixXi FF;
-    igl::collapse_small_triangles(V, F, 0.00005, FF);
+
+    MatrixXr VV;
+    meshing::optimizer::CollapseSmallTriangles(1e-8, V, F, VV, FF);
     // Now re-make the mesh object
+
     perforated_mesh_ = std::make_shared<meshing::Mesh>(V, FF);
 
     utilities::math::Scoot(Vector3r(uniform_mesh_->positions.col(0).maxCoeff() * 2, 0, 0),

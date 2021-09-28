@@ -16,6 +16,7 @@
 #include <igl/readPLY.h>
 #include <iostream>
 #include <meshing/MeshOptimizer.h>
+#include <utilities/math/LinearAlgebra.h>
 
 const std::string kAssetPath = "Assets/cube.ply";
 
@@ -117,4 +118,53 @@ BOOST_AUTO_TEST_CASE(TestComputeEdges) {
     BOOST_REQUIRE(E_comp.isApprox(E));
 }
 
-BOOST_AUTO_TEST_CASE(TestResolveSlivers) {}
+BOOST_AUTO_TEST_CASE(TestComputeEdgeLengths) {
+    MatrixXr V(3, 3);
+    V.row(0) << 1, -3, 0;
+    V.row(1) << 0, 1, 0;
+    V.row(2) << 1, 10, 0;
+
+    MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+
+    MatrixXr L;
+    meshing::optimizer::ComputeEdgeLengths(V, F, L);
+
+    const RowVector3r r = L.row(0);
+    const Real a = r.x();
+    const Real b = r.y();
+    const Real c = r.z();
+
+    using namespace utilities::math;
+    BOOST_REQUIRE(IsApprox(a, 9.06, 0.01));
+    BOOST_REQUIRE(IsApprox(b, 13, 0.01));
+    BOOST_REQUIRE(IsApprox(c, 4.12, 0.01));
+}
+
+BOOST_AUTO_TEST_CASE(TestComputeTriangleSquaredArea) {
+    MatrixXr V(3, 3);
+    V.row(0) << 1, -3, 0;
+    V.row(1) << 0, 1, 0;
+    V.row(2) << 1, 10, 0;
+
+    MatrixXi F(1, 3);
+    F.row(0) << 0, 1, 2;
+
+    MatrixXr L;
+    meshing::optimizer::ComputeEdgeLengths(V, F, L);
+
+    const RowVector3r r = L.row(0);
+    const Real a = r.x();
+    const Real b = r.y();
+    const Real c = r.z();
+
+    using namespace utilities::math;
+    BOOST_REQUIRE(IsApprox(a, 9.06, 0.01));
+    BOOST_REQUIRE(IsApprox(b, 13, 0.01));
+    BOOST_REQUIRE(IsApprox(c, 4.12, 0.01));
+
+    VectorXr A;
+    meshing::optimizer::ComputeTriangleSquaredArea(L, A);
+
+    BOOST_REQUIRE(IsApprox(A(0), 42.25, 0.01));
+}

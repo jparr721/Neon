@@ -56,9 +56,9 @@ namespace meshing::optimizer {
     /// \param min_area The min value of theta for the triangle to perform the edge collapse
     /// \param V The matrix of vertex positions
     /// \param F The matrix of face positions with proper winding
-    /// \param E The matrix of edges between faces
-    void CollapseSmallTriangles(Real min_area, const MatrixXr &V, const MatrixXi &F, const MatrixXi &E, MatrixXr &VV,
-                                MatrixXi &FF);
+    /// \param VV The output matrix of refined vertex positions
+    /// \param FF The output matrix of refined faces
+    void CollapseSmallTriangles(Real min_area, const MatrixXr &V, const MatrixXi &F, MatrixXr &VV, MatrixXi &FF);
 }// namespace meshing::optimizer
 
 #endif//NEON_MESHOPTIMIZER_H

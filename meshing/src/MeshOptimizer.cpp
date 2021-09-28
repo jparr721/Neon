@@ -7,8 +7,10 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
+#include <igl/colon.h>
 #include <meshing/MeshOptimizer.h>
 #include <utilities/runtime/NeonAssert.h>
+#include <utilities/runtime/NeonLog.h>
 
 void meshing::optimizer::ComputeNormals(const MatrixXr &V, const MatrixXi &F, const Vector3r &D, MatrixXr &N) {
     NEON_ASSERT_ERROR(F.cols() == 3, "Faces must be non-volumetric");
@@ -116,7 +118,7 @@ void meshing::optimizer::ComputeEdges(const MatrixXr &V, const MatrixXi &F, Matr
 }
 
 void meshing::optimizer::ComputeEdgeLengths(const MatrixXr &V, const MatrixXi &F, MatrixXr &L) {
-    NEON_ASSERT_ERROR(F.rows() == 3, "Triangular meshes only!");
+    NEON_ASSERT_ERROR(F.cols() == 3, "Triangular meshes only!");
 
     const int rows = F.rows();
     L.resize(rows, 3);
@@ -145,17 +147,128 @@ void meshing::optimizer::ComputeTriangleSquaredArea(const MatrixXr &L, VectorXr 
         const Real a = L(row, 0);
         const Real b = L(row, 1);
         const Real c = L(row, 2);
-        // Semi-Permeter = sum of side lengths divided by 2.
+        // Semi-perimeter = sum of side lengths divided by 2.
         const Real s = L.row(row).sum() / 2;
         A(row) = s * (s - a) * (s - b) * (s - c);
     }
 }
 
-void meshing::optimizer::CollapseSmallTriangles(Real min_area, const MatrixXr &V, const MatrixXi &F, const MatrixXi &E,
-                                                MatrixXr &VV, MatrixXi &FF) {
+void meshing::optimizer::CollapseSmallTriangles(Real min_area, const MatrixXr &V, const MatrixXi &F, MatrixXr &VV,
+                                                MatrixXi &FF) {
     NEON_ASSERT_ERROR(F.cols() == 3, "Can only edge collapse on triplet surface mesh, not quads.");
 
     int n_face_collapses = 0;
     int n_edge_collapses = 0;
 
-    do { } while (n_face_collapses > 0); }
+    // Compute the edge lengths for each triangle
+    MatrixXr L;
+    ComputeEdgeLengths(V, F, L);
+
+    // Compute the squared area for each triangle.
+    VectorXr A;
+    ComputeTriangleSquaredArea(L, A);
+
+    VectorXi F_intermediate;
+    // Pre-fill with all the face indices
+    F_intermediate = igl::colon<int>(0, F.rows() - 1);
+    for (int face = 0; face < F.rows(); ++face) {
+        // If the triangle is less than the min area, collapse. By getting the max length edge and the
+        // min length edge; this gives us the indices that we need to change.
+        if (A(face) < min_area) {
+            // Get the shortest edge
+            Real min_length = 0;
+            int min_length_index = -1;
+
+            for (int edge = 0; edge < F.cols(); ++edge) {
+                // Since lengths can theoretically be pretty small, we don't want to constrain by an arbitrarily set
+                // starting value, instead we just set it to the first thing we see. And then compare from there
+                if (min_length_index == -1 || L(face, edge) < min_length) {
+                    min_length_index = edge;
+                    min_length = L(face, edge);
+                }
+            }
+
+            // Get the longest edge
+            Real max_length = 0;
+            int max_length_index = -1;
+
+            for (int edge = 0; edge < F.cols(); ++edge) {
+                // Since lengths can theoretically be pretty big, we don't want to constrain by an arbitrarily set
+                // starting value, instead we just set it to the first thing we see. And then compare from there
+                if (max_length_index == -1 || L(face, edge) < max_length) {
+                    max_length_index = edge;
+                    max_length = L(face, edge);
+                }
+            }
+
+            // If the two selected indices are the same, we need to arbitrarily pick another index
+            if (max_length_index == min_length_index) { max_length_index = (min_length_index + 1) % 3; }
+
+            // Collapse the minimum edge and place it in our intermediate face matrix.
+            // Re-assign the min length index value to the adjacent side of the max length index
+            int j = ((min_length_index + 1) % 3) == max_length_index ? (min_length_index + 2) % 3
+                                                                     : (min_length_index + 1) % 3;
+            int i = max_length_index;
+
+            // Now, set the intermediate mapping vector with the value of the max face. This will "break" the face
+            // so we can prune it later.
+            F_intermediate(F(face, i)) = F_intermediate(F(face, j));
+            ++n_edge_collapses;
+        }
+    }
+
+    MatrixXi F_reindexed;
+    F_reindexed = F;
+    for (int row = 0; row < F_reindexed.rows(); ++row) {
+        for (int col = 0; col < F_reindexed.cols(); ++col) {
+            // Assign the reindexed faces to the updated position from the intermediate vector.
+            // This will purposefully result in duplicate faces showing up in the reindexed vector, this will
+            // be used to signify that the face should be removed since it's degenerate (since it was collapsed
+            // to a regular ol' line).
+            F_reindexed(row, col) = F_intermediate(F_reindexed(row, col));
+        }
+    }
+
+    // Determine whether or not to keep faces in the reindex matrix by checking for duplicate faces and, if found,
+    // skipping it and removing the face entirely
+    // Resize to the same dims as the reindexed vector. We will do a conservative resize when we've pruned the
+    // broken faces
+    FF.resizeLike(F_reindexed);
+
+    int ffi = 0;
+
+    for (int face = 0; face < F_reindexed.rows(); ++face) {
+        bool is_face_collapsed = false;
+
+        // Check for duplicate indices on each face
+        for (int i = 0; i < F_reindexed.cols(); ++i) {
+            for (int j = i + 1; j < F_reindexed.cols(); ++j) {
+                // If we find a duplicate, we skip this face
+                if (F_reindexed(face, i) == F_reindexed(face, j)) {
+                    is_face_collapsed = true;
+                    ++n_face_collapses;
+                }
+            }
+        }
+
+        // If the face is not a degenerate triangle, move on to add it to the new faces.
+        if (!is_face_collapsed) {
+            // This index is independent of the reindexed index for obvious reasons.
+            FF.row(ffi) = F_reindexed.row(face);
+            ++ffi;
+        }
+    }
+
+    // Clip the bottom rows from the FF matrix of new faces.
+    FF.conservativeResize(ffi, FF.cols());
+
+    if (n_edge_collapses == 0) {
+        NEON_ASSERT_ERROR(n_face_collapses == 0,
+                          "Faces collapsed without an edge collapse. The mesh contains degenerate triangles!");
+        return;
+    }
+
+    // Recurse until no small triangles remain.
+    MatrixXi FC = FF;
+    return CollapseSmallTriangles(min_area, V, FC, VV, FF);
+}
