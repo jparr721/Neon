@@ -61,17 +61,19 @@ namespace visualizer {
     igl::opengl::glfw::Viewer viewer;
     igl::opengl::glfw::imgui::ImGuiMenu menu;
 
-    std::unique_ptr<visualizer::controllers::SolverController> solver_controller =
-            std::make_unique<visualizer::controllers::SolverController>(rve_dims, amplitude, thickness);
+    std::shared_ptr<visualizer::controllers::SolverController> solver_controller;
 
     const Vector3r force = Vector3r(0, -1 * 100, 0);
 }// namespace visualizer
 
 auto visualizer::Viewer() -> igl::opengl::glfw::Viewer & { return viewer; }
 auto visualizer::Menu() -> igl::opengl::glfw::imgui::ImGuiMenu & { return menu; }
-auto visualizer::Controller() -> const std::unique_ptr<visualizer::controllers::SolverController> & {
+auto visualizer::Controller() -> std::shared_ptr<visualizer::controllers::SolverController> & {
     return solver_controller;
 }
+auto visualizer::RveDims() -> int & { return rve_dims; }
+auto visualizer::Amplitude() -> Real & { return amplitude; }
+auto visualizer::Thickness() -> Real & { return thickness; }
 
 auto visualizer::GenerateShape() -> void {
     solver_controller->ReloadMeshes(rve_dims, amplitude, thickness);

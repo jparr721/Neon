@@ -32,17 +32,17 @@ void meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(Real amplitu
     igl::parallel_for(GV.rows(), [&](const int i) { GF(i) = fn(amplitude, GV.row(i)); });
     scalar_field = Tensor3r::Expand(GF, resolution, resolution, resolution);
 
-    scalar_field.SetTop(0, MatrixXr::Zero(scalar_field.Dimension(0), scalar_field.Dimension(0)));
-    scalar_field.SetTop(scalar_field.Dimension(0) - 1,
-                        MatrixXr::Zero(scalar_field.Dimension(0), scalar_field.Dimension(0)));
-    scalar_field.SetLayer(0, MatrixXr::Zero(scalar_field.Dimension(0), scalar_field.Dimension(0)));
-    scalar_field.SetLayer(scalar_field.Dimension(0) - 1,
-                          MatrixXr::Zero(scalar_field.Dimension(0), scalar_field.Dimension(0)));
-    scalar_field.SetSide(0, MatrixXr::Zero(scalar_field.Dimension(0), scalar_field.Dimension(0)));
-    scalar_field.SetSide(scalar_field.Dimension(0) - 1,
-                         MatrixXr::Zero(scalar_field.Dimension(0), scalar_field.Dimension(0)));
+    Tensor3r renderable_scalar_field = Tensor3r(scalar_field);
 
-    GF = scalar_field.Vector();
+    const MatrixXr zero = MatrixXr::Zero(resolution, resolution);
+    renderable_scalar_field.SetTop(0, zero);
+    renderable_scalar_field.SetTop(resolution - 1, zero);
+    renderable_scalar_field.SetLayer(0, zero);
+    renderable_scalar_field.SetLayer(resolution - 1, zero);
+    renderable_scalar_field.SetSide(0, zero);
+    renderable_scalar_field.SetSide(resolution - 1, zero);
+
+    GF = renderable_scalar_field.Vector();
 
     igl::marching_cubes(GF, GV, resolution, resolution, resolution, thickness, V, F);
 }

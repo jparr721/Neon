@@ -23,7 +23,10 @@
 namespace visualizer {
     auto Viewer() -> igl::opengl::glfw::Viewer &;
     auto Menu() -> igl::opengl::glfw::imgui::ImGuiMenu &;
-    auto Controller() -> const std::unique_ptr<visualizer::controllers::SolverController> &;
+    auto Controller() -> std::shared_ptr<visualizer::controllers::SolverController> &;
+    auto RveDims() -> int &;
+    auto Amplitude() -> Real &;
+    auto Thickness() -> Real &;
 
     // Operations
     auto GenerateShape() -> void;

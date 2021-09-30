@@ -69,7 +69,7 @@ namespace visualizer::controllers {
         Real approximate_lambda_ = 0;
         Real approximate_mu_ = 0;
 
-        std::string tetgen_flags = "Yzqp/0.00011191";
+        std::string tetgen_flags = "YzpqQ";
 
         Tensor3r perforated_surface_mesh_;
 

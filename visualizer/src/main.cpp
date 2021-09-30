@@ -30,6 +30,8 @@ int main(int argc, char **argv) {
     visualizer::Viewer().plugins.push_back(&visualizer::Menu());
 
     visualizer::Viewer().callback_pre_draw = &visualizer::DrawCallback;
+    visualizer::Controller() = std::make_shared<visualizer::controllers::SolverController>(
+            visualizer::RveDims(), visualizer::Amplitude(), visualizer::Thickness());
     visualizer::Refresh();
     visualizer::Viewer().core().is_animating = false;
     visualizer::Viewer().launch();
