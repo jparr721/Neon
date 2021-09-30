@@ -10,11 +10,9 @@
 #include <datasets/SolverMask.h>
 #include <datasets/Static.h>
 #include <future>
-#include <meshing/Normals.h>
 #include <thread>
 #include <utilities/math/Time.h>
 #include <visualizer/Visualizer.h>
-#include <visualizer/controllers/SolverController.h>
 
 namespace visualizer {
     bool isotropic = false;
@@ -71,6 +69,9 @@ namespace visualizer {
 
 auto visualizer::Viewer() -> igl::opengl::glfw::Viewer & { return viewer; }
 auto visualizer::Menu() -> igl::opengl::glfw::imgui::ImGuiMenu & { return menu; }
+auto visualizer::Controller() -> const std::unique_ptr<visualizer::controllers::SolverController> & {
+    return solver_controller;
+}
 
 auto visualizer::GenerateShape() -> void {
     solver_controller->ReloadMeshes(rve_dims, amplitude, thickness);
@@ -80,9 +81,9 @@ auto visualizer::GenerateShape() -> void {
 
 auto visualizer::GeometryMenu() -> void {
     // UniformMesh
-    if (ImGui::CollapsingHeader("UniformMesh", ImGuiTreeNodeFlags_DefaultOpen)) {
+    if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
-        if (ImGui::Button("Save##UniformMesh", ImVec2(w, 0))) { Viewer().open_dialog_save_mesh(); }
+        if (ImGui::Button("Save##Mesh", ImVec2(w, 0))) { Viewer().open_dialog_save_mesh(); }
     }
 
     // Viewing options

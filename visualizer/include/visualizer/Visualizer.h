@@ -18,10 +18,12 @@
 #include <solvers/FEM/LinearElastic.h>
 #include <solvers/integrators/CentralDifferenceMethod.h>
 #include <utilities/math/LinearAlgebra.h>
+#include <visualizer/controllers/SolverController.h>
 
 namespace visualizer {
     auto Viewer() -> igl::opengl::glfw::Viewer &;
     auto Menu() -> igl::opengl::glfw::imgui::ImGuiMenu &;
+    auto Controller() -> const std::unique_ptr<visualizer::controllers::SolverController> &;
 
     // Operations
     auto GenerateShape() -> void;

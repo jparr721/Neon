@@ -15,7 +15,6 @@
 #include <solvers/materials/Homogenization.h>
 #include <utilities/math/Geometry.h>
 #include <visualizer/controllers/SolverController.h>
-#include <igl/extract_manifold_patches.h>
 
 visualizer::controllers::SolverController::SolverController(const int dim, const Real amplitude, const Real thickness) {
     // Default parameter set.
@@ -57,14 +56,9 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(const int dim, c
 
     MatrixXi FF;
     MatrixXr VV;
-    meshing::optimizer::CollapseSmallTriangles(1e-8, V, F, VV, FF);
+    //    meshing::optimizer::CollapseSmallTriangles(1e-8, V, F, VV, FF);
 
-    VectorXi P;
-    const auto n_patches = igl::extract_manifold_patches(FF, P);
-    NEON_LOG_INFO("N patches: ", n_patches);
-    NEON_LOG_INFO("P: ", P.array() > 0);
-
-    perforated_mesh_ = std::make_shared<meshing::Mesh>(V, FF);
+    perforated_mesh_ = std::make_shared<meshing::Mesh>(V, F);
 
     utilities::math::Scoot(Vector3r(uniform_mesh_->positions.col(0).maxCoeff() * 2, 0, 0),
                            perforated_mesh_->rest_positions);

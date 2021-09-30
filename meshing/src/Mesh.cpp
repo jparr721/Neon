@@ -78,9 +78,6 @@ auto meshing::Mesh::ReloadMesh(const MatrixXr &V, const MatrixXi &F, const std::
     }
 
     igl::boundary_facets(TT, faces);
-
-    // NOTE(@jparr721) This _could_ be error-prone when calculating FEM solvers since I am not 100% sure
-    // if it properly includes face elements. We should check here first if we experience weirdness.
     tetrahedra = TT;
     positions = TV;
     rest_positions = TV;

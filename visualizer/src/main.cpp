@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
     visualizer::Viewer().plugins.push_back(&visualizer::Menu());
 
     visualizer::Viewer().callback_pre_draw = &visualizer::DrawCallback;
+    visualizer::Refresh();
     visualizer::Viewer().core().is_animating = false;
     visualizer::Viewer().launch();
 
