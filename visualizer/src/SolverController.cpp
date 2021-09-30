@@ -15,6 +15,7 @@
 #include <solvers/materials/Homogenization.h>
 #include <utilities/math/Geometry.h>
 #include <visualizer/controllers/SolverController.h>
+#include <igl/extract_manifold_patches.h>
 
 visualizer::controllers::SolverController::SolverController(const int dim, const Real amplitude, const Real thickness) {
     // Default parameter set.
@@ -35,7 +36,6 @@ void visualizer::controllers::SolverController::ReloadMeshes(const int dim, cons
 
 void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim) {
     solvers_need_reload = true;
-    NEON_LOG_INFO("Recomputing uniform mesh");
     auto gen = std::make_unique<meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>>(dim, dim, dim);
 
     MatrixXr V;
@@ -50,17 +50,19 @@ void visualizer::controllers::SolverController::ComputeUniformMesh(const int dim
 void visualizer::controllers::SolverController::ComputeVoidMesh(const int dim, const Real amplitude,
                                                                 const Real thickness) {
     solvers_need_reload = true;
-    NEON_LOG_INFO("Recomputing void mesh");
     MatrixXr V;
     MatrixXi F;
     meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(
             amplitude, thickness, dim, meshing::implicit_surfaces::SineFunction, V, F, perforated_surface_mesh_);
 
     MatrixXi FF;
-
     MatrixXr VV;
     meshing::optimizer::CollapseSmallTriangles(1e-8, V, F, VV, FF);
-    // Now re-make the mesh object
+
+    VectorXi P;
+    const auto n_patches = igl::extract_manifold_patches(FF, P);
+    NEON_LOG_INFO("N patches: ", n_patches);
+    NEON_LOG_INFO("P: ", P.array() > 0);
 
     perforated_mesh_ = std::make_shared<meshing::Mesh>(V, FF);
 

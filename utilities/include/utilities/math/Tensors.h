@@ -95,6 +95,25 @@ namespace utilities::math {
 
         auto operator()(int row, int col, int layer) const -> T { return instance_(row, col, layer); }
 
+        void MakeBinary(Real cutoff = 0.0) {
+            const int rows = Dimension(0);
+            const int cols = Dimension(1);
+            const int layers = Dimension(2);
+
+            for (int row = 0; row < rows; ++row) {
+                for (int col = 0; col < cols; ++col) {
+                    for (int layer = 0; layer < layers; ++layer) {
+                        const auto value = instance_(row, col, layer);
+                        if (value <= cutoff) {
+                            instance_(row, col, layer) = 0;
+                        } else {
+                            instance_(row, col, layer) = 1;
+                        }
+                    }
+                }
+            }
+        }
+
         auto Layer(const int layer) const -> MatrixX<T> {
             MatrixX<T> m;
             const int rows = Dimension(0);

@@ -29,7 +29,9 @@ void meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(Real amplitu
     MatrixXr GV;
     igl::grid(RowVector3r(resolution, resolution, resolution), GV);
     VectorXr GF(GV.rows());
-    igl::parallel_for(GV.rows(), [&](const int i) { GF(i) = fn(amplitude, thickness, GV.row(i)); });
-    scalar_field = Tensor3r::Expand(GV, resolution, resolution, resolution);
-    igl::marching_cubes(GF, GV, resolution, resolution, resolution, 0, V, F);
+    igl::parallel_for(GV.rows(), [&](const int i) { GF(i) = fn(amplitude, GV.row(i)); });
+    igl::parallel_for(GF.rows(), [&](const int i) { GF(i) = GF(i) < 0 ? 0 : 1; });
+    scalar_field = Tensor3r::Expand(GF.transpose().eval(), resolution, resolution, resolution);
+    NEON_LOG_INFO(scalar_field);
+    igl::marching_cubes(GF, GV, resolution, resolution, resolution, thickness, V, F);
 }
