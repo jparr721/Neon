@@ -42,7 +42,6 @@ void meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(Real amplitu
     scalar_field.SetSide(scalar_field.Dimension(0) - 1,
                          MatrixXr::Zero(scalar_field.Dimension(0), scalar_field.Dimension(0)));
 
-    //    NEON_LOG_INFO(scalar_field.MakeBinary(thickness).Layer(0));
     GF = scalar_field.Vector();
 
     igl::marching_cubes(GF, GV, resolution, resolution, resolution, thickness, V, F);
