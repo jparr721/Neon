@@ -176,6 +176,7 @@ namespace utilities::math {
         // Then, extract by segment into an STL container
         std::vector<MatrixX<T>> h_stack;
         const unsigned int stride = indices.cols();
+
         for (int i = 0; i < column.rows(); i += stride) {
             const MatrixX<T> v = column.segment(i, stride).transpose();
             h_stack.emplace_back(v);

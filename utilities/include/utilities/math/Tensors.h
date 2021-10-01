@@ -442,8 +442,14 @@ namespace utilities::math {
             if constexpr (n_indices == 3) { return instance_(indices...); }
         }
 
+        template<typename Derived, typename Dim>
+        static inline auto Expand(const Eigen::PlainObjectBase<Derived> &in, const Vector3<Dim> &dim) -> Tensor3<T> {
+            return Tensor3<T>(Eigen::TensorMap<Eigen::Tensor<const T, 3>>(in.data(), dim.x(), dim.y(), dim.z()));
+        }
+
         template<typename Derived>
-        static auto Expand(const Eigen::PlainObjectBase<Derived> &in, int x_dim, int y_dim, int z_dim) -> Tensor3<T> {
+        static inline auto Expand(const Eigen::PlainObjectBase<Derived> &in, int x_dim, int y_dim, int z_dim)
+                -> Tensor3<T> {
             return Tensor3<T>(Eigen::TensorMap<Eigen::Tensor<const T, 3>>(in.data(), x_dim, y_dim, z_dim));
         }
 

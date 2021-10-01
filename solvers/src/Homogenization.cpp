@@ -13,7 +13,7 @@
 #include <igl/slice.h>
 #include <solvers/materials/Homogenization.h>
 #include <unsupported/Eigen/KroneckerProduct>
-#include <utilities/runtime/NeonLog.h>
+#include <utilities/runtime/Profiler.h>
 #include <utility>
 
 
@@ -153,93 +153,95 @@ namespace solvers::materials {
         MatrixXr ke_mu = MatrixXr::Zero(24, 24);
         MatrixXr fe_mu = MatrixXr::Zero(24, 6);
 
-        for (int ii = 0; ii < xx.rows(); ++ii) {
-            for (int jj = 0; jj < yy.rows(); ++jj) {
-                for (int kk = 0; kk < zz.rows(); ++kk) {
-                    // Integration point
-                    const Real x = xx[ii];
-                    const Real y = yy[jj];
-                    const Real z = zz[kk];
+        {
+            for (int ii = 0; ii < xx.rows(); ++ii) {
+                for (int jj = 0; jj < yy.rows(); ++jj) {
+                    for (int kk = 0; kk < zz.rows(); ++kk) {
+                        // Integration point
+                        const Real x = xx[ii];
+                        const Real y = yy[jj];
+                        const Real z = zz[kk];
 
-                    VectorXr qx;
-                    qx.resize(8);
-                    qx.row(0) << -((y - 1) * (z - 1)) / 8;
-                    qx.row(1) << ((y - 1) * (z - 1)) / 8;
-                    qx.row(2) << -((y + 1) * (z - 1)) / 8;
-                    qx.row(3) << ((y + 1) * (z - 1)) / 8;
-                    qx.row(4) << ((y - 1) * (z + 1)) / 8;
-                    qx.row(5) << -((y - 1) * (z + 1)) / 8;
-                    qx.row(6) << ((y + 1) * (z + 1)) / 8;
-                    qx.row(7) << -((y + 1) * (z + 1)) / 8;
+                        VectorXr qx;
+                        qx.resize(8);
+                        qx.row(0) << -((y - 1) * (z - 1)) / 8;
+                        qx.row(1) << ((y - 1) * (z - 1)) / 8;
+                        qx.row(2) << -((y + 1) * (z - 1)) / 8;
+                        qx.row(3) << ((y + 1) * (z - 1)) / 8;
+                        qx.row(4) << ((y - 1) * (z + 1)) / 8;
+                        qx.row(5) << -((y - 1) * (z + 1)) / 8;
+                        qx.row(6) << ((y + 1) * (z + 1)) / 8;
+                        qx.row(7) << -((y + 1) * (z + 1)) / 8;
 
-                    VectorXr qy;
-                    qy.resize(8);
-                    qy.row(0) << -((x - 1) * (z - 1)) / 8;
-                    qy.row(1) << ((x + 1) * (z - 1)) / 8;
-                    qy.row(2) << -((x + 1) * (z - 1)) / 8;
-                    qy.row(3) << ((x - 1) * (z - 1)) / 8;
-                    qy.row(4) << ((x - 1) * (z + 1)) / 8;
-                    qy.row(5) << -((x + 1) * (z + 1)) / 8;
-                    qy.row(6) << ((x + 1) * (z + 1)) / 8;
-                    qy.row(7) << -((x - 1) * (z + 1)) / 8;
+                        VectorXr qy;
+                        qy.resize(8);
+                        qy.row(0) << -((x - 1) * (z - 1)) / 8;
+                        qy.row(1) << ((x + 1) * (z - 1)) / 8;
+                        qy.row(2) << -((x + 1) * (z - 1)) / 8;
+                        qy.row(3) << ((x - 1) * (z - 1)) / 8;
+                        qy.row(4) << ((x - 1) * (z + 1)) / 8;
+                        qy.row(5) << -((x + 1) * (z + 1)) / 8;
+                        qy.row(6) << ((x + 1) * (z + 1)) / 8;
+                        qy.row(7) << -((x - 1) * (z + 1)) / 8;
 
-                    VectorXr qz;
-                    qz.resize(8);
-                    qz.row(0) << -((x - 1) * (y - 1)) / 8;
-                    qz.row(1) << ((x + 1) * (y - 1)) / 8;
-                    qz.row(2) << -((x + 1) * (y + 1)) / 8;
-                    qz.row(3) << ((x - 1) * (y + 1)) / 8;
-                    qz.row(4) << ((x - 1) * (y - 1)) / 8;
-                    qz.row(5) << -((x + 1) * (y - 1)) / 8;
-                    qz.row(6) << ((x + 1) * (y + 1)) / 8;
-                    qz.row(7) << -((x - 1) * (y + 1)) / 8;
+                        VectorXr qz;
+                        qz.resize(8);
+                        qz.row(0) << -((x - 1) * (y - 1)) / 8;
+                        qz.row(1) << ((x + 1) * (y - 1)) / 8;
+                        qz.row(2) << -((x + 1) * (y + 1)) / 8;
+                        qz.row(3) << ((x - 1) * (y + 1)) / 8;
+                        qz.row(4) << ((x - 1) * (y - 1)) / 8;
+                        qz.row(5) << -((x + 1) * (y - 1)) / 8;
+                        qz.row(6) << ((x + 1) * (y + 1)) / 8;
+                        qz.row(7) << -((x - 1) * (y + 1)) / 8;
 
-                    MatrixXr qq;
-                    qq.resize(3, 8);
-                    qq.row(0) = qx;
-                    qq.row(1) = qy;
-                    qq.row(2) = qz;
+                        MatrixXr qq;
+                        qq.resize(3, 8);
+                        qq.row(0) = qx;
+                        qq.row(1) = qy;
+                        qq.row(2) = qz;
 
-                    MatrixXr dims;
-                    dims.resize(3, 8);
-                    dims.row(0) << -a, a, a, -a, -a, a, a, -a;
-                    dims.row(1) << -b, -b, b, b, -b, -b, b, b;
-                    dims.row(2) << -c, -c, -c, -c, c, c, c, c;
-                    dims.transposeInPlace();
+                        MatrixXr dims;
+                        dims.resize(3, 8);
+                        dims.row(0) << -a, a, a, -a, -a, a, a, -a;
+                        dims.row(1) << -b, -b, b, b, -b, -b, b, b;
+                        dims.row(2) << -c, -c, -c, -c, c, c, c, c;
+                        dims.transposeInPlace();
 
-                    // Compute the jacobian matrix
-                    const MatrixXr J = qq * dims;
-                    const MatrixXr qxyz = J.fullPivLu().solve(qq);
+                        // Compute the jacobian matrix
+                        const MatrixXr J = qq * dims;
+                        const MatrixXr qxyz = J.fullPivLu().solve(qq);
 
-                    Tensor3r B_e = Tensor3r(6, 3, 8);
-                    B_e.SetConstant(0);
-                    const auto layers = B_e.Dimension(2);
+                        Tensor3r B_e = Tensor3r(6, 3, 8);
+                        B_e.SetConstant(0);
+                        const auto layers = B_e.Dimension(2);
 
-                    for (int layer = 0; layer < layers; ++layer) {
-                        B_e(0, 0, layer) = qxyz(0, layer);
-                        B_e(1, 1, layer) = qxyz(1, layer);
-                        B_e(2, 2, layer) = qxyz(2, layer);
-                        B_e(3, 0, layer) = qxyz(1, layer);
-                        B_e(3, 1, layer) = qxyz(0, layer);
-                        B_e(4, 1, layer) = qxyz(2, layer);
-                        B_e(4, 2, layer) = qxyz(1, layer);
-                        B_e(5, 0, layer) = qxyz(2, layer);
-                        B_e(5, 2, layer) = qxyz(0, layer);
+                        for (int layer = 0; layer < layers; ++layer) {
+                            B_e(0, 0, layer) = qxyz(0, layer);
+                            B_e(1, 1, layer) = qxyz(1, layer);
+                            B_e(2, 2, layer) = qxyz(2, layer);
+                            B_e(3, 0, layer) = qxyz(1, layer);
+                            B_e(3, 1, layer) = qxyz(0, layer);
+                            B_e(4, 1, layer) = qxyz(2, layer);
+                            B_e(4, 2, layer) = qxyz(1, layer);
+                            B_e(5, 0, layer) = qxyz(2, layer);
+                            B_e(5, 2, layer) = qxyz(0, layer);
+                        }
+
+                        MatrixXr B = MatrixXr::Zero(6, 24);
+                        B << B_e.At(0), B_e.At(1), B_e.At(2), B_e.At(3), B_e.At(4), B_e.At(5), B_e.At(6), B_e.At(7);
+                        const MatrixXr BT = B.adjoint();
+
+                        const Real weight = J.determinant() * ww(ii) * ww(jj) * ww(kk);
+
+                        // Element stiffness coefficient matrices
+                        ke_lambda += weight * ((BT * C_lambda) * B);
+                        ke_mu += weight * ((BT * C_mu) * B);
+
+                        // Element load coefficient matrices
+                        fe_lambda += weight * (BT * C_lambda);
+                        fe_mu += weight * (BT * C_mu);
                     }
-
-                    MatrixXr B = MatrixXr::Zero(6, 24);
-                    B << B_e.At(0), B_e.At(1), B_e.At(2), B_e.At(3), B_e.At(4), B_e.At(5), B_e.At(6), B_e.At(7);
-                    const MatrixXr BT = B.adjoint();
-
-                    const Real weight = J.determinant() * ww(ii) * ww(jj) * ww(kk);
-
-                    // Element stiffness coefficient matrices
-                    ke_lambda += weight * ((BT * C_lambda) * B);
-                    ke_mu += weight * ((BT * C_mu) * B);
-
-                    // Element load coefficient matrices
-                    fe_lambda += weight * (BT * C_lambda);
-                    fe_mu += weight * (BT * C_mu);
                 }
             }
         }
@@ -373,21 +375,24 @@ namespace solvers::materials {
                                                  const MatrixXi &unique_degrees_of_freedom, const MatrixXr &ke_lambda,
                                                  const MatrixXr &ke_mu) -> SparseMatrixXr {
         NEON_LOG_INFO("Assembling stiffness matrix");
-        const MatrixXi idx_i_kron = Eigen::kroneckerProduct(unique_degrees_of_freedom, MatrixXi::Ones(24, 1)).adjoint();
-        const VectorXi idx_i = ((utilities::math::MatrixToVector(idx_i_kron)).array() - 1).matrix();
-
-        const MatrixXi idx_j_kron = Eigen::kroneckerProduct(unique_degrees_of_freedom, MatrixXi::Ones(1, 24)).adjoint();
-        const VectorXi idx_j = ((utilities::math::MatrixToVector(idx_j_kron)).array() - 1).matrix();
-
-        const MatrixXr sK = (utilities::math::MatrixToVector(ke_lambda) * lambda_.Vector().transpose()) +
-                            (utilities::math::MatrixToVector(ke_mu) * mu_.Vector().transpose());
-
-        const VectorXr stiffness_entries = utilities::math::MatrixToVector(sK);
-
-        const auto K_entries = utilities::math::ToTriplets(idx_i, idx_j, stiffness_entries);
-
         SparseMatrixXr K(n_degrees_of_freedom, n_degrees_of_freedom);
-        K.setFromTriplets(K_entries.begin(), K_entries.end());
+        {
+            const MatrixXi idx_i_kron =
+                    Eigen::kroneckerProduct(unique_degrees_of_freedom, MatrixXi::Ones(24, 1)).adjoint();
+            const VectorXi idx_i = ((utilities::math::MatrixToVector(idx_i_kron)).array() - 1).matrix();
+
+            const MatrixXi idx_j_kron =
+                    Eigen::kroneckerProduct(unique_degrees_of_freedom, MatrixXi::Ones(1, 24)).adjoint();
+            const VectorXi idx_j = ((utilities::math::MatrixToVector(idx_j_kron)).array() - 1).matrix();
+
+            const MatrixXr sK = (utilities::math::MatrixToVector(ke_lambda) * lambda_.Vector().transpose()) +
+                                (utilities::math::MatrixToVector(ke_mu) * mu_.Vector().transpose());
+
+            const VectorXr stiffness_entries = utilities::math::MatrixToVector(sK);
+
+            const auto K_entries = utilities::math::ToTriplets(idx_i, idx_j, stiffness_entries);
+            K.setFromTriplets(K_entries.begin(), K_entries.end());
+        }
 
         SparseMatrixXr KT = K.adjoint();
 
@@ -436,20 +441,22 @@ namespace solvers::materials {
 
         // If it's one material, then the second material may be a void-based
         // element.
-        if (is_one_material_) {
-            // Get the indices where the values are defined (nonzero).
-            const VectorXi indices = voxel_.WhereIdx(primary_material_.number);
+        {
+            if (is_one_material_) {
+                // Get the indices where the values are defined (nonzero).
+                const VectorXi indices = voxel_.WhereIdx(primary_material_.number);
 
-            MatrixXi _dof(indices.rows(), unique_degrees_of_freedom.cols());
+                MatrixXi _dof(indices.rows(), unique_degrees_of_freedom.cols());
 
-            // Index the unique degrees of freedom by row
-            for (int i = 0; i < indices.rows(); ++i) { _dof.row(i) = unique_degrees_of_freedom.row(indices(i)); }
+                // Index the unique degrees of freedom by row
+                for (int i = 0; i < indices.rows(); ++i) { _dof.row(i) = unique_degrees_of_freedom.row(indices(i)); }
 
-            active_dofs = utilities::math::MatrixToVector(_dof);
-        } else {
-            // If it's a composite, we only support densely connected meshses, so
-            // all degrees of freedom remain active in this case.
-            active_dofs = utilities::math::MatrixToVector(unique_degrees_of_freedom);
+                active_dofs = utilities::math::MatrixToVector(_dof);
+            } else {
+                // If it's a composite, we only support densely connected meshses, so
+                // all degrees of freedom remain active in this case.
+                active_dofs = utilities::math::MatrixToVector(unique_degrees_of_freedom);
+            }
         }
 
         utilities::math::Dedupe(active_dofs);
@@ -533,33 +540,35 @@ namespace solvers::materials {
         // Element displacements for each of the 6 epison strains
         MatrixXr X0_epsilon = MatrixXr::Zero(24, 6);
 
-        // ke_lambda, ke_mu, fe_lambda, fe_mu;
-        const MatrixXr ke_lambda = hexahedron.at(0);
-        const MatrixXr ke_mu = hexahedron.at(1);
-        const MatrixXr fe_lambda = hexahedron.at(2);
-        const MatrixXr fe_mu = hexahedron.at(3);
+        {
+            // ke_lambda, ke_mu, fe_lambda, fe_mu;
+            const MatrixXr ke_lambda = hexahedron.at(0);
+            const MatrixXr ke_mu = hexahedron.at(1);
+            const MatrixXr fe_lambda = hexahedron.at(2);
+            const MatrixXr fe_mu = hexahedron.at(3);
 
-        // Fixes the DOF nodes [1, 2, 3, 5, 6, 12]
-        const MatrixXr ke = ke_mu + ke_lambda;
-        const MatrixXr fe = fe_mu + fe_lambda;
+            // Fixes the DOF nodes [1, 2, 3, 5, 6, 12]
+            const MatrixXr ke = ke_mu + ke_lambda;
+            const MatrixXr fe = fe_mu + fe_lambda;
 
-        // Assign DOF indices
-        VectorXi epsilon_dof_indices(18);
-        epsilon_dof_indices << 3, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23;
-        const VectorXi epsilon_dof_cols = VectorXi::LinSpaced(fe.cols(), 0, fe.cols());
+            // Assign DOF indices
+            VectorXi epsilon_dof_indices(18);
+            epsilon_dof_indices << 3, 6, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23;
+            const VectorXi epsilon_dof_cols = VectorXi::LinSpaced(fe.cols(), 0, fe.cols());
 
-        // Correct fe to proper DOF
-        MatrixXr fe_sub;
-        utilities::math::Slice(fe, epsilon_dof_indices, epsilon_dof_cols, fe_sub);
+            // Correct fe to proper DOF
+            MatrixXr fe_sub;
+            utilities::math::Slice(fe, epsilon_dof_indices, epsilon_dof_cols, fe_sub);
 
-        MatrixXr ke_sub;
-        utilities::math::Slice(ke, epsilon_dof_indices, epsilon_dof_indices, ke_sub);
+            MatrixXr ke_sub;
+            utilities::math::Slice(ke, epsilon_dof_indices, epsilon_dof_indices, ke_sub);
 
-        const MatrixXr epsilon_entries = ke_sub.fullPivLu().solve(fe_sub);
+            const MatrixXr epsilon_entries = ke_sub.fullPivLu().solve(fe_sub);
 
-        int row = 0;
-        for (int i = 0; i < epsilon_dof_indices.rows(); ++i, ++row) {
-            X0_epsilon.row(epsilon_dof_indices(i)) = epsilon_entries.row(row);
+            int row = 0;
+            for (int i = 0; i < epsilon_dof_indices.rows(); ++i, ++row) {
+                X0_epsilon.row(epsilon_dof_indices(i)) = epsilon_entries.row(row);
+            }
         }
 
         // epsilon_11 = (1,0,0,0,0,0)
@@ -580,47 +589,49 @@ namespace solvers::materials {
                                                     const MatrixXr &ke_lambda, const MatrixXr &ke_mu,
                                                     const MatrixXr &displacement, const Tensor3r &unit_strain_parameter)
             -> void {
+        utilities::runtime::profiler::Profiler p;
+        p();
         NEON_LOG_INFO("Assembling constitutive tensor");
         const Real volume = cell_len_x_ * cell_len_y_ * cell_len_z_;
 
         const MatrixXi indices = (unique_degrees_of_freedom.array() - 1).matrix();
-#pragma omp parallel for collapse(2)
+
         for (int i = 0; i < 6; ++i) {
             for (int j = 0; j < 6; ++j) {
-                const MatrixXr sum_L_lhs = (unit_strain_parameter.Layer(i) -
-                                            utilities::math::IndexMatrixByMatrix(displacement, indices, i)) *
-                                           ke_lambda;
-                const MatrixXr sum_L_rhs =
-                        unit_strain_parameter.Layer(j) - utilities::math::IndexMatrixByMatrix(displacement, indices, i);
+                MatrixXr sum_L;
+                MatrixXr sum_M;
 
-                const MatrixXr prod_L = (sum_L_lhs.array() * sum_L_rhs.array()).matrix();
+                {
+                    MatrixXr layeri = unit_strain_parameter.Layer(i);
+                    MatrixXr layerj = unit_strain_parameter.Layer(j);
+                    MatrixXr index = utilities::math::IndexMatrixByMatrix(displacement, indices, i);
+                    ComputeConstitutiveProduct(layeri, layerj, index, ke_lambda, sum_L);
+                    ComputeConstitutiveProduct(layeri, layerj, index, ke_mu, sum_M);
+                }
 
-                const VectorXr sum_L = prod_L.rowwise().sum();
+                Real contribution_sum;
+                {
+                    Tensor3r lambda_contribution =
+                            Tensor3r(lambda_.Instance() * Tensor3r::Expand(sum_L, lambda_.Dimensions()).Instance());
+                    Tensor3r mu_contribution =
+                            Tensor3r(mu_.Instance() * Tensor3r::Expand(sum_M, mu_.Dimensions()).Instance());
 
-                const MatrixXr sum_M_lhs = (unit_strain_parameter.Layer(i) -
-                                            utilities::math::IndexMatrixByMatrix(displacement, indices, i)) *
-                                           ke_mu;
-                const MatrixXr sum_M_rhs =
-                        unit_strain_parameter.Layer(j) - utilities::math::IndexMatrixByMatrix(displacement, indices, i);
-
-                const MatrixXr prod_M = (sum_M_lhs.array() * sum_M_rhs.array()).matrix();
-
-                const VectorXr sum_M = prod_M.rowwise().sum();
-
-                Tensor3r lambda_contribution =
-                        Tensor3r(lambda_.Instance() * Tensor3r::Expand(sum_L, lambda_.Dimension(0),
-                                                                       lambda_.Dimension(1), lambda_.Dimension(2))
-                                                              .Instance());
-
-                Tensor3r mu_contribution = Tensor3r(
-                        mu_.Instance() *
-                        Tensor3r::Expand(sum_M, mu_.Dimension(0), mu_.Dimension(1), mu_.Dimension(2)).Instance());
-
-                const Real contribution_sum =
-                        Tensor3r(lambda_contribution.Instance() + mu_contribution.Instance()).Sum();
+                    contribution_sum = Tensor3r(lambda_contribution.Instance() + mu_contribution.Instance()).Sum();
+                }
 
                 constitutive_tensor_(i, j) = static_cast<Real>(1) / volume * contribution_sum;
             }
         }
+        p();
+        NEON_LOG_INFO(p);
     }
+
+    void Homogenization::ComputeConstitutiveProduct(const MatrixXr &layeri, const MatrixXr &layerj,
+                                                    const MatrixXr &index, const MatrixXr &stiffness, MatrixXr &sum) {
+        const MatrixXr lhs = (layeri - index) * stiffness;
+        const MatrixXr rhs = layerj - index;
+        const MatrixXr prod = (lhs.array() * rhs.array()).matrix();
+        sum = prod.rowwise().sum();
+    }
+
 }// namespace solvers::materials

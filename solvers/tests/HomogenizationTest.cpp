@@ -17,8 +17,8 @@
 #include <utilities/include/utilities/math/LinearAlgebra.h>
 
 auto IsApprox(Real lhs, Real rhs, Real epsilon) -> bool { return std::fabs(lhs - rhs) < epsilon; }
-auto ComputeSurfaceMesh() -> Tensor3r {
-    Tensor3r t(10, 10, 10);
+auto ComputeSurfaceMesh(int dim = 10) -> Tensor3r {
+    Tensor3r t(dim, dim, dim);
     t.SetConstant(1);
     return t;
 }
@@ -471,4 +471,31 @@ BOOST_AUTO_TEST_CASE(TestSolverOnLargerMatrix) {
 
     const auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
     homogenization->Solve();
+}
+
+BOOST_AUTO_TEST_CASE(TestSolverOn30by30Matrix) {
+    const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
+    const auto surface_mesh = ComputeSurfaceMesh(30);
+    auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
+
+    homogenization->Solve();
+    const MatrixXr constitutive_tensor = homogenization->Stiffness();
+}
+
+BOOST_AUTO_TEST_CASE(TestSolverOn40by40Matrix) {
+    const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
+    const auto surface_mesh = ComputeSurfaceMesh(40);
+    auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
+
+    homogenization->Solve();
+    const MatrixXr constitutive_tensor = homogenization->Stiffness();
+}
+
+BOOST_AUTO_TEST_CASE(TestSolverOn50by50Matrix) {
+    const auto material = solvers::materials::MaterialFromLameCoefficients(1, "one", 10, 10);
+    const auto surface_mesh = ComputeSurfaceMesh(50);
+    auto homogenization = std::make_shared<solvers::materials::Homogenization>(surface_mesh, material);
+
+    homogenization->Solve();
+    const MatrixXr constitutive_tensor = homogenization->Stiffness();
 }

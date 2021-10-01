@@ -92,6 +92,10 @@ namespace solvers::materials {
         auto AssembleConstitutiveTensor(const MatrixXi &unique_degrees_of_freedom, const MatrixXr &ke_lambda,
                                         const MatrixXr &ke_mu, const MatrixXr &displacement,
                                         const Tensor3r &unit_strain_parameter) -> void;
+
+        // ================== HELPERS
+        static void ComputeConstitutiveProduct(const MatrixXr &layeri, const MatrixXr &layerj, const MatrixXr &index,
+                                               const MatrixXr &stiffness, MatrixXr &sum);
     };
 }// namespace solvers::materials
 

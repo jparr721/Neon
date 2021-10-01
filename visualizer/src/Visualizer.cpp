@@ -63,7 +63,7 @@ namespace visualizer {
 
     std::shared_ptr<visualizer::controllers::SolverController> solver_controller;
 
-    const Vector3r force = Vector3r(0, -1 * 100, 0);
+    const Vector3r force = Vector3r(0, -100, 0);
 }// namespace visualizer
 
 auto visualizer::Viewer() -> igl::opengl::glfw::Viewer & { return viewer; }
