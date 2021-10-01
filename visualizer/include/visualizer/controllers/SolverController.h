@@ -41,7 +41,8 @@ namespace visualizer::controllers {
         void HomogenizeVoidMesh();
 
         void ResetMeshPositions();
-        void ReloadSolvers(solvers::fem::LinearElastic::Type type);
+        void ReloadUniformSolver(solvers::fem::LinearElastic::Type type);
+        void ReloadPerforatedSolver(solvers::fem::LinearElastic::Type type);
 
         void SolveUniform(bool dynamic);
         void SolvePerforated(bool dynamic);
@@ -99,7 +100,8 @@ namespace visualizer::controllers {
 
         void ComputeUniformMesh(int dim);
         void ComputeVoidMesh(int dim, Real amplitude, Real thickness);
-        void ResetBoundaryConditions();
+        void ResetUniformBoundaryConditions();
+        void ResetPerforatedBoundaryConditions();
     };
 }// namespace visualizer::controllers
 

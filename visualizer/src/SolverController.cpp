@@ -87,20 +87,27 @@ void visualizer::controllers::SolverController::ResetMeshPositions() {
     perforated_mesh_->ResetMesh();
 }
 
-void visualizer::controllers::SolverController::ReloadSolvers(solvers::fem::LinearElastic::Type type) {
+void visualizer::controllers::SolverController::ReloadUniformSolver(solvers::fem::LinearElastic::Type type) {
     solvers_need_reload = false;
-
-    ResetBoundaryConditions();
+    ResetUniformBoundaryConditions();
 
     uniform_solver_ = std::make_unique<solvers::fem::LinearElastic>(uniform_boundary_conditions_, uniform_material_,
                                                                     uniform_mesh_, type);
+
+    if (type == solvers::fem::LinearElastic::Type::kDynamic) {
+        uniform_integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(
+                dt_, mass_, uniform_solver_->K_e, uniform_solver_->U_e, uniform_solver_->F_e);
+    }
+}
+
+void visualizer::controllers::SolverController::ReloadPerforatedSolver(solvers::fem::LinearElastic::Type type) {
+    solvers_need_reload = false;
+    ResetPerforatedBoundaryConditions();
 
     perforated_solver_ = std::make_unique<solvers::fem::LinearElastic>(perforated_boundary_conditions_,
                                                                        perforated_material_, perforated_mesh_, type);
 
     if (type == solvers::fem::LinearElastic::Type::kDynamic) {
-        uniform_integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(
-                dt_, mass_, uniform_solver_->K_e, uniform_solver_->U_e, uniform_solver_->F_e);
         perforated_integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(
                 dt_, mass_, perforated_solver_->K_e, perforated_solver_->U_e, perforated_solver_->F_e);
     }
@@ -129,7 +136,7 @@ void visualizer::controllers::SolverController::SolvePerforated(const bool dynam
     perforated_mesh_->Update(perforated_displacements);
 }
 
-void visualizer::controllers::SolverController::ResetBoundaryConditions() {
+void visualizer::controllers::SolverController::ResetUniformBoundaryConditions() {
     const Vector3r force(0, force_, 0);
     uniform_interior_nodes_.clear();
     uniform_force_nodes_.clear();
@@ -139,7 +146,10 @@ void visualizer::controllers::SolverController::ResetBoundaryConditions() {
                                  uniform_force_nodes_, uniform_fixed_nodes_);
     solvers::boundary_conditions::LoadBoundaryConditions(force, uniform_mesh_, uniform_force_nodes_,
                                                          uniform_interior_nodes_, uniform_boundary_conditions_);
+}
 
+void visualizer::controllers::SolverController::ResetPerforatedBoundaryConditions() {
+    const Vector3r force(0, force_, 0);
     perforated_interior_nodes_.clear();
     perforated_force_nodes_.clear();
     perforated_fixed_nodes_.clear();

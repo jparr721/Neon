@@ -186,7 +186,8 @@ auto visualizer::SimulationMenu() -> void {
                 NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
                 return;
             }
-            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kDynamic);
+            solver_controller->ReloadUniformSolver(solvers::fem::LinearElastic::Type::kDynamic);
+            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kDynamic);
             solver_controller->ResetMeshPositions();
         }
 
@@ -195,7 +196,8 @@ auto visualizer::SimulationMenu() -> void {
                 NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
                 return;
             }
-            solver_controller->ReloadSolvers(solvers::fem::LinearElastic::Type::kStatic);
+            solver_controller->ReloadUniformSolver(solvers::fem::LinearElastic::Type::kStatic);
+            //            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kStatic);
             solver_controller->ResetMeshPositions();
         }
 
@@ -256,7 +258,7 @@ auto visualizer::SimulationMenu() -> void {
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Compute Static##Simulation", ImVec2(w, 0))) {
             solver_controller->SolveUniform(controllers::SolverController::kUseStaticSolver);
-            solver_controller->SolvePerforated(controllers::SolverController::kUseStaticSolver);
+            //            solver_controller->SolvePerforated(controllers::SolverController::kUseStaticSolver);
             Refresh();
         }
     }

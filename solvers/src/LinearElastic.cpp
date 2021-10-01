@@ -8,6 +8,7 @@
 //
 
 #include <Eigen/OrderingMethods>
+#include <Eigen/SparseLU>
 #include <Eigen/SparseQR>
 #include <igl/slice.h>
 #include <solvers/FEM/LinearElastic.h>
@@ -79,7 +80,8 @@ void solvers::fem::LinearElastic::SolveWithIntegrator() {
     }
 }
 void solvers::fem::LinearElastic::SolveStatic() {
-    Eigen::SparseQR<SparseMatrixXr, Eigen::COLAMDOrdering<int>> solver;
+    //    Eigen::SparseQR<SparseMatrixXr, Eigen::COLAMDOrdering<int>> solver;
+    Eigen::SparseLU<SparseMatrixXr> solver;
     solver.compute(K_e);
     NEON_ASSERT_ERROR(solver.info() == Eigen::Success, "Solver failed to compute factorization");
     U_e = solver.solve(F_e);
