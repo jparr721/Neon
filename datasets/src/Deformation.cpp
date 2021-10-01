@@ -17,9 +17,9 @@
 datasets::Deformation::Deformation(const std::string &path)
     : path_(path), csv_(path, {"E_x", "E_y", "E_z", "v_xy", "v_xz", "v_yz", "G_yz", "G_zx", "G_xy", "Displacement"}) {}
 
-auto datasets::Deformation::Generate(const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
+void datasets::Deformation::Generate(const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
                                      const std::shared_ptr<meshing::Mesh> &mesh_, Real min_E, Real max_E, Real min_v,
-                                     Real max_v, Real E_incr, Real v_incr) -> void {
+                                     Real max_v, Real E_incr, Real v_incr) {
     const auto mesh = std::make_shared<meshing::Mesh>(*mesh_);
     const int range_size = 40000 / 100;
     const VectorXr E_range = VectorXr::LinSpaced(range_size, 1000, 40000);
@@ -65,10 +65,10 @@ auto datasets::Deformation::Generate(const solvers::boundary_conditions::Boundar
     }
 }
 
-auto datasets::Deformation::GenerateSearchSpace(const unsigned int shape, const Real force_min, const Real force_max,
-                                                const Vector3r &min_E, const Vector3r &max_E, const Vector3r &min_v,
-                                                const Vector3r &max_v, const Vector3r &min_G, const Vector3r &max_G,
-                                                const Real E_incr, const Real v_incr, const Real G_incr) -> void {
+void datasets::Deformation::GenerateSearchSpace(unsigned int shape, const int force_min, const int force_max, const int min_E,
+                                                const int max_E, const Real &min_v, const Real &max_v,
+                                                const Real &min_G, const Real &max_G, int E_incr, Real v_incr,
+                                                Real G_incr) {
     auto gen = std::make_unique<meshing::implicit_surfaces::ImplicitSurfaceGenerator<Real>>(shape, shape, shape);
 
     MatrixXr V;
@@ -95,20 +95,17 @@ auto datasets::Deformation::GenerateSearchSpace(const unsigned int shape, const 
         meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, mesh, interior_nodes, force_nodes,
                                      fixed_nodes);
 #pragma omp parallel for collapse(3)
-        for (int E_x = static_cast<int>(min_E.x()); E_x < static_cast<int>(max_E.x());
-             E_x += static_cast<int>(E_incr)) {
-            for (int E_y = static_cast<int>(min_E.y()); E_y < static_cast<int>(max_E.y());
-                 E_y += static_cast<int>(E_incr)) {
-                for (int E_z = static_cast<int>(min_E.z()); E_z < static_cast<int>(max_E.z());
-                     E_z += static_cast<int>(E_incr)) {
+        for (int E_x = min_E; E_x < max_E; E_x += E_incr) {
+            for (int E_y = min_E; E_y < max_E; E_y += E_incr) {
+                for (int E_z = min_E; E_z < max_E; E_z += E_incr) {
                     const Vector3r E(E_x, E_y, E_z);
-                    for (Real v_xy = min_v.x(); v_xy < max_v.x(); v_xy += v_incr) {
-                        for (Real v_xz = min_v.x(); v_xz < max_v.x(); v_xz += v_incr) {
-                            for (Real v_yz = min_v.x(); v_yz < max_v.x(); v_yz += v_incr) {
+                    for (Real v_xy = min_v; v_xy < max_v; v_xy += v_incr) {
+                        for (Real v_xz = min_v; v_xz < max_v; v_xz += v_incr) {
+                            for (Real v_yz = min_v; v_yz < max_v; v_yz += v_incr) {
                                 const Vector3r v(v_xy, v_xz, v_yz);
-                                for (Real G_yz = min_G.x(); G_yz < max_G.x(); G_yz += G_incr) {
-                                    for (Real G_zx = min_G.x(); G_zx < max_G.x(); G_zx += G_incr) {
-                                        for (Real G_xy = min_G.x(); G_xy < max_G.x(); G_xy += G_incr) {
+                                for (Real G_yz = min_G; G_yz < max_G; G_yz += G_incr) {
+                                    for (Real G_zx = min_G; G_zx < max_G; G_zx += G_incr) {
+                                        for (Real G_xy = min_G; G_xy < max_G; G_xy += G_incr) {
                                             const Vector3r G(G_yz, G_zx, G_xy);
 
                                             const auto material = solvers::materials::OrthotropicMaterial(E, v, G);

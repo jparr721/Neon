@@ -30,14 +30,13 @@ namespace datasets {
 
     public:
         explicit Deformation(const std::string &path);
-        auto Generate(const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
+        void Generate(const solvers::boundary_conditions::BoundaryConditions &boundary_conditions,
                       const std::shared_ptr<meshing::Mesh> &mesh_, Real min_E = 1000, Real max_E = 40000,
-                      Real min_v = 0.0, Real max_v = 0.5, Real E_incr = 1000, Real v_incr = 0.1) -> void;
+                      Real min_v = 0.0, Real max_v = 0.5, Real E_incr = 1000, Real v_incr = 0.1);
 
-        auto GenerateSearchSpace(unsigned int shape, Real force_min, Real force_max, const Vector3r &min_E,
-                                 const Vector3r &max_E, const Vector3r &min_v, const Vector3r &max_v,
-                                 const Vector3r &min_G, const Vector3r &max_G, Real E_incr, Real v_incr, Real G_incr)
-                -> void;
+        void GenerateSearchSpace(unsigned int shape, int force_min, int force_max, int min_E, int max_E,
+                                 const Real &min_v, const Real &max_v, const Real &min_G, const Real &max_G, int E_incr,
+                                 Real v_incr, Real G_incr);
 
     private:
         static constexpr Real epsilon = 0.01;

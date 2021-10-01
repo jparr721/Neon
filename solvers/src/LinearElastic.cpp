@@ -80,11 +80,19 @@ void solvers::fem::LinearElastic::SolveWithIntegrator() {
     }
 }
 void solvers::fem::LinearElastic::SolveStatic() {
-    //    Eigen::SparseQR<SparseMatrixXr, Eigen::COLAMDOrdering<int>> solver;
-    Eigen::SparseLU<SparseMatrixXr> solver;
-    solver.compute(K_e);
-    NEON_ASSERT_ERROR(solver.info() == Eigen::Success, "Solver failed to compute factorization");
-    U_e = solver.solve(F_e);
+    Eigen::SparseLU<SparseMatrixXr> lu_solver;
+    lu_solver.compute(K_e);
+    if (lu_solver.info() != Eigen::Success) {
+        NEON_LOG_ERROR("Failed to factorize using an LU factorization, falling back to sparse QR (this could take a ",
+                       "lot longer)");
+        Eigen::SparseQR<SparseMatrixXr, Eigen::COLAMDOrdering<int>> qr_solver;
+        qr_solver.compute(K_e);
+        NEON_ASSERT_ERROR(qr_solver.info() == Eigen::Success, "QR Solver failed! Check your stiffness matrix!");
+        U_e = qr_solver.solve(F_e);
+    } else {
+        U_e = lu_solver.solve(F_e);
+    }
+
 
     int i = 0;
     for (const auto &[node, _] : boundary_conditions) {
@@ -386,8 +394,8 @@ auto solvers::fem::LinearElastic::AssembleConstitutiveMatrix() -> void {
 }
 
 auto solvers::fem::LinearElastic::AssembleShapeFunctionMatrix(const Vector3r &shape_one, const Vector3r &shape_two,
-                                                                   const Vector3r &shape_three,
-                                                                   const Vector3r &shape_four) -> MatrixXr {
+                                                              const Vector3r &shape_three, const Vector3r &shape_four)
+        -> MatrixXr {
     using Matrix63r = Eigen::Matrix<Real, 6, 3>;
     MatrixXr shape_function_matrix;
     const Real V = ComputeTetrahedralElementVolume(shape_one, shape_two, shape_three, shape_four);

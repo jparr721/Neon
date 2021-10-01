@@ -1,7 +1,7 @@
 project(datasets)
 
 add_library(${PROJECT_NAME} SHARED
-        src/Deformation.cpp include/datasets/Deformation.h src/SolverMask.cpp include/datasets/SolverMask.h include/datasets/Static.h src/Static.cpp include/datasets/Dynamic.h src/Dynamic.cpp src/Homogenization.cpp include/datasets/Homogenization.h)
+        src/Deformation.cpp include/datasets/Deformation.h src/SolverMask.cpp include/datasets/SolverMask.h include/datasets/Static.h src/Static.cpp include/datasets/Dynamic.h src/Dynamic.cpp src/Homogenization.cpp include/datasets/Homogenization.h include/datasets/simulations/linear_elastic_50by50_cube.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

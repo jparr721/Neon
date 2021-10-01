@@ -21,7 +21,7 @@ visualizer::controllers::SolverController::SolverController(const int dim, const
     constexpr Real E_baseline = 30000;
     constexpr Real v_baseline = 0.3;
     // Because this is not a transverse isotropic or fully isotropic system, G must be defined on its own.
-    constexpr Real G_baseline = 11538;
+    constexpr Real G_baseline = 1;
     uniform_material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
     perforated_material_ = solvers::materials::OrthotropicMaterial(E_baseline, v_baseline, G_baseline);
     ReloadMeshes(dim, amplitude, thickness);
@@ -54,11 +54,11 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(const int dim, c
     meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(
             amplitude, thickness, dim, meshing::implicit_surfaces::SineFunction, V, F, perforated_surface_mesh_);
 
-    MatrixXi FF;
     MatrixXr VV;
-    //    meshing::optimizer::CollapseSmallTriangles(1e-8, V, F, VV, FF);
+    MatrixXi FF;
+    meshing::optimizer::CollapseSmallTriangles(1e-8, V, F, VV, FF);
 
-    perforated_mesh_ = std::make_shared<meshing::Mesh>(V, F);
+    perforated_mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags);
 
     utilities::math::Scoot(Vector3r(uniform_mesh_->positions.col(0).maxCoeff() * 2, 0, 0),
                            perforated_mesh_->rest_positions);

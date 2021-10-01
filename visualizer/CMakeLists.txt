@@ -10,8 +10,8 @@ add_executable(${PROJECT_NAME}
         src/Visualizer.cpp
         src/SolverController.cpp
         include/visualizer/controllers/SolverController.h
-        src/MatchUniformAndVoid.cpp
-        include/visualizer/pipelines/MatchUniformAndVoid.h)
+        src/BehaviorMatching.cpp
+        include/visualizer/pipelines/BehaviorMatching.h include/visualizer/pipelines/Pipeline.h)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

@@ -197,7 +197,7 @@ auto visualizer::SimulationMenu() -> void {
                 return;
             }
             solver_controller->ReloadUniformSolver(solvers::fem::LinearElastic::Type::kStatic);
-            //            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kStatic);
+            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kStatic);
             solver_controller->ResetMeshPositions();
         }
 
@@ -258,7 +258,7 @@ auto visualizer::SimulationMenu() -> void {
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Compute Static##Simulation", ImVec2(w, 0))) {
             solver_controller->SolveUniform(controllers::SolverController::kUseStaticSolver);
-            //            solver_controller->SolvePerforated(controllers::SolverController::kUseStaticSolver);
+            solver_controller->SolvePerforated(controllers::SolverController::kUseStaticSolver);
             Refresh();
         }
     }

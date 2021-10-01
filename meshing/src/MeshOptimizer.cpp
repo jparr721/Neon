@@ -156,6 +156,7 @@ void meshing::optimizer::ComputeTriangleSquaredArea(const MatrixXr &L, VectorXr 
 void meshing::optimizer::CollapseSmallTriangles(Real min_area, const MatrixXr &V, const MatrixXi &F, MatrixXr &VV,
                                                 MatrixXi &FF) {
     NEON_ASSERT_ERROR(F.cols() == 3, "Can only edge collapse on triplet surface mesh, not quads.");
+    NEON_LOG_INFO(min_area);
 
     int n_face_collapses = 0;
     int n_edge_collapses = 0;
@@ -167,6 +168,7 @@ void meshing::optimizer::CollapseSmallTriangles(Real min_area, const MatrixXr &V
     // Compute the squared area for each triangle.
     VectorXr A;
     ComputeTriangleSquaredArea(L, A);
+    min_area = A.maxCoeff() * 2;
 
     VectorXi F_intermediate;
     // Pre-fill with all the face indices
@@ -270,5 +272,5 @@ void meshing::optimizer::CollapseSmallTriangles(Real min_area, const MatrixXr &V
 
     // Recurse until no small triangles remain.
     MatrixXi FC = FF;
-    return CollapseSmallTriangles(min_area, V, FC, VV, FF);
+    return CollapseSmallTriangles(min_area * min_area, V, FC, VV, FF);
 }
