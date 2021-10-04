@@ -19,11 +19,14 @@
 #include <solvers/integrators/CentralDifferenceMethod.h>
 #include <utilities/math/LinearAlgebra.h>
 #include <visualizer/controllers/SolverController.h>
+#include <visualizer/pipelines/BehaviorMatching.h>
 
 namespace visualizer {
+    // Vars
     auto Viewer() -> igl::opengl::glfw::Viewer &;
     auto Menu() -> igl::opengl::glfw::imgui::ImGuiMenu &;
     auto Controller() -> std::shared_ptr<visualizer::controllers::SolverController> &;
+    auto BehaviorMatchingPipeline() -> std::unique_ptr<pipelines::BehaviorMatching> &;
     auto RveDims() -> int &;
     auto Amplitude() -> Real &;
     auto Thickness() -> Real &;
@@ -37,8 +40,5 @@ namespace visualizer {
     auto GeometryMenu() -> void;
     auto SimulationMenu() -> void;
     auto SimulationMenuWindow() -> void;
-
-    auto GenerateSearchSpaceDataset() -> void;
-    auto GenerateStaticSolverDataset() -> void;
 }// namespace visualizer
 #endif//NEON_VISUALIZER_H

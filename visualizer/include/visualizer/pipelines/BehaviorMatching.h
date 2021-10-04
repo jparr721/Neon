@@ -11,6 +11,7 @@
 #ifndef NEON_BEHAVIORMATCHING_H
 #define NEON_BEHAVIORMATCHING_H
 
+#include <optional>
 #include <utilities/math/LinearAlgebra.h>
 
 namespace pipelines {
@@ -56,7 +57,12 @@ namespace pipelines {
                                              "behavior_matching/homogenization_data.csv"};
 
         BehaviorMatching();
-        void Run();
+
+        /// Runs the pipeline with the loaded dataset, optionally returning the matching entry with some epsilon
+        /// \param target_displacement The target displacement we want to find the optimum parameters for
+        /// \param epsilon The epsilon variability
+        /// \return
+        auto Run(Real target_displacement, Real epsilon = 0.0) -> std::optional<HomogenizationDatasetEntry>;
 
     private:
         std::vector<BehaviorDatasetEntry> behavior_dataset_;

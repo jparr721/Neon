@@ -18,7 +18,30 @@ pipelines::BehaviorMatching::BehaviorMatching() {
     LoadHomogenizationDataset();
 }
 
-void pipelines::BehaviorMatching::Run() {}
+auto pipelines::BehaviorMatching::Run(const Real target_displacement, const Real epsilon)
+        -> std::optional<HomogenizationDatasetEntry> {
+    std::optional<BehaviorDatasetEntry> found = std::nullopt;
+    for (const auto &entry : behavior_dataset_) {
+        // If we found a match, jump the parameters to the homogenization list so we can start looking for the material coeffs.
+        if (utilities::math::IsApprox(entry.displacement, target_displacement, epsilon)) {
+            found = entry;
+            break;
+        }
+    }
+
+    if (found.has_value()) {
+        const auto behavior_entry = found.value();
+        for (const auto &entry : homogenization_dataset_) {
+            // Uniaxial (for now)
+            if (entry.E.isApprox(behavior_entry.E, epsilon)) {
+                // Entry found, return the homogenization entry.
+                return std::make_optional(entry);
+            }
+        }
+    }
+
+    return std::nullopt;
+}
 
 void pipelines::BehaviorMatching::LoadBehaviorDataset() {
     const auto filename = paths.at(FilePathIndex::kBehaviorDataset);

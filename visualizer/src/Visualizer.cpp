@@ -36,6 +36,7 @@ namespace visualizer {
     igl::opengl::glfw::imgui::ImGuiMenu menu;
 
     std::shared_ptr<visualizer::controllers::SolverController> solver_controller;
+    std::unique_ptr<pipelines::BehaviorMatching> behavior_matching_pipeline;
 
     const Vector3r force = Vector3r(0, -100, 0);
 }// namespace visualizer
@@ -44,6 +45,9 @@ auto visualizer::Viewer() -> igl::opengl::glfw::Viewer & { return viewer; }
 auto visualizer::Menu() -> igl::opengl::glfw::imgui::ImGuiMenu & { return menu; }
 auto visualizer::Controller() -> std::shared_ptr<visualizer::controllers::SolverController> & {
     return solver_controller;
+}
+auto visualizer::BehaviorMatchingPipeline() -> std::unique_ptr<pipelines::BehaviorMatching> & {
+    return behavior_matching_pipeline;
 }
 auto visualizer::RveDims() -> int & { return rve_dims; }
 auto visualizer::Amplitude() -> Real & { return amplitude; }
