@@ -86,7 +86,7 @@ void datasets::Deformation::GenerateSearchSpace(unsigned int shape, const int fo
 
     // My God...
     NEON_LOG_INFO("Running! Go take a nap or something");
-    for (int force = force_min; force <= force_max; ++force) {
+    for (int force = force_min; force >= force_max; --force) {
         NEON_LOG_INFO("Iteration: ", force, " out of ", force_max);
         interior_nodes.clear();
         force_nodes.clear();
@@ -95,6 +95,7 @@ void datasets::Deformation::GenerateSearchSpace(unsigned int shape, const int fo
         solvers::boundary_conditions::BoundaryConditions boundary_conditions;
         meshing::DofOptimizeUniaxial(meshing::Axis::Y, meshing::kMaxNodes, mesh, interior_nodes, force_nodes,
                                      fixed_nodes);
+#pragma omp parallel for collapse(3)
         for (int E_x = min_E; E_x < max_E; E_x += E_incr) {
             for (int E_y = min_E; E_y < max_E; E_y += E_incr) {
                 for (int E_z = min_E; E_z < max_E; E_z += E_incr) {
@@ -122,11 +123,15 @@ void datasets::Deformation::GenerateSearchSpace(unsigned int shape, const int fo
                                             for (const auto &n : force_nodes) { sum += mesh->positions.row(n).y(); }
                                             sum /= force_nodes.size();
 
-                                            csv_ << std::vector<std::string>{
-                                                    std::to_string(E_x),  std::to_string(E_y),  std::to_string(E_z),
-                                                    std::to_string(v_xy), std::to_string(v_xz), std::to_string(v_yz),
-                                                    std::to_string(G_yz), std::to_string(G_zx), std::to_string(G_xy),
-                                                    std::to_string(sum),
+#pragma omp critical
+                                            {
+                                                csv_ << std::vector<std::string>{
+                                                        std::to_string(E_x),  std::to_string(E_y),
+                                                        std::to_string(E_z),  std::to_string(v_xy),
+                                                        std::to_string(v_xz), std::to_string(v_yz),
+                                                        std::to_string(G_yz), std::to_string(G_zx),
+                                                        std::to_string(G_xy), std::to_string(sum),
+                                                };
                                             };
                                         }
                                     }
