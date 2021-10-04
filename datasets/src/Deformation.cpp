@@ -9,9 +9,9 @@
 
 #include <datasets/Deformation.h>
 #include <memory>
-#include <meshing/DofOptimizer.h>
 #include <meshing/include/meshing/implicit_surfaces/ImplicitSurfaceGenerator.h>
 #include <solvers/FEM/LinearElastic.h>
+#include <solvers/materials/Homogenization.h>
 #include <utilities/math/Numbers.h>
 
 datasets::Deformation::Deformation(const std::string &path)

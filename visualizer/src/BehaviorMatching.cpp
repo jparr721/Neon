@@ -7,24 +7,55 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 
 #include <datasets/Deformation.h>
+#include <datasets/HomogenizationDataset.h>
 #include <datasets/simulations/linear_elastic_50by50_cube.h>
 #include <filesystem>
-#include <utilities/runtime/NeonLog.h>
 #include <visualizer/pipelines/BehaviorMatching.h>
+
+pipelines::BehaviorMatching::BehaviorMatching(const std::vector<std::string> &file_paths) : Pipeline(file_paths) {
+    if (!std::filesystem::exists("behavior_matching")) { std::filesystem::create_directory("behavior_matching"); }
+    LoadBehaviorDataset();
+    LoadHomogenizationDataset();
+}
 
 void pipelines::BehaviorMatching::Run() {}
 
 void pipelines::BehaviorMatching::LoadBehaviorDataset() {
     const auto filename = file_paths_.at(FilePathIndex::kBehaviorDataset);
-    if (!std::filesystem::exists(filename)) { MakeBehaviorDataset(filename); }
+    if (!std::filesystem::exists(filename)) { GenerateBehaviorDataset(filename); }
+    const utilities::filesystem::extractor_fn<BehaviorDatasetEntry> row_extractor =
+            [](const std::vector<std::string> &tokens, std::vector<BehaviorDatasetEntry> &rows) {
+                const Vector3r E(std::stod(tokens.at(0)), std::stod(tokens.at(1)), std::stod(tokens.at(2)));
+                const Vector3r v(std::stod(tokens.at(3)), std::stod(tokens.at(4)), std::stod(tokens.at(5)));
+                const Vector3r G(std::stod(tokens.at(6)), std::stod(tokens.at(7)), std::stod(tokens.at(8)));
+                const Real displacement = std::stod(tokens.at(9));
+                rows.emplace_back(BehaviorDatasetEntry{E, v, G, displacement});
+            };
+
+    std::vector<std::string> keys;
+    utilities::filesystem::ExtractCSVContent(filename, row_extractor, keys, behavior_dataset_);
 }
 
 void pipelines::BehaviorMatching::LoadHomogenizationDataset() {
     const auto filename = file_paths_.at(FilePathIndex::kHomogenizationDataset);
-    if (!std::filesystem::exists(filename)) { MakeHomogenizationDataset(filename); }
+    if (!std::filesystem::exists(filename)) { GenerateHomogenizationDataset(filename); }
+    const utilities::filesystem::extractor_fn<HomogenizationDatasetEntry> row_extractor =
+            [](const std::vector<std::string> &tokens, std::vector<HomogenizationDatasetEntry> &rows) {
+                const Real thickness = std::stod(tokens.at(0));
+                const Real amplitude = std::stod(tokens.at(1));
+                const Real material_ratio = std::stod(tokens.at(2));
+
+                Vector3r E(std::stod(tokens.at(3)), std::stod(tokens.at(4)), std::stod(tokens.at(5)));
+                Vector3r v(std::stod(tokens.at(6)), std::stod(tokens.at(7)), std::stod(tokens.at(8)));
+                Vector3r G(std::stod(tokens.at(9)), std::stod(tokens.at(10)), std::stod(tokens.at(11)));
+                rows.emplace_back(HomogenizationDatasetEntry{thickness, amplitude, material_ratio, E, v, G});
+            };
+
+    std::vector<std::string> keys;
+    utilities::filesystem::ExtractCSVContent(filename, row_extractor, keys, homogenization_dataset_);
 }
 
-void pipelines::BehaviorMatching::MakeBehaviorDataset(const std::string &filename) {
+void pipelines::BehaviorMatching::GenerateBehaviorDataset(const std::string &filename) {
     using namespace simulations::static_files;
     NEON_LOG_WARN("Making a behavioral dataset, this could take awhile");
     const auto deformation_generator = std::make_unique<datasets::Deformation>(filename);
@@ -32,4 +63,9 @@ void pipelines::BehaviorMatching::MakeBehaviorDataset(const std::string &filenam
                                                kEIncr, kvIncr, kGIncr);
 }
 
-void pipelines::BehaviorMatching::MakeHomogenizationDataset(const std::string &filename) {}
+void pipelines::BehaviorMatching::GenerateHomogenizationDataset(const std::string &filename) {
+    using namespace simulations::static_files;
+    NEON_LOG_WARN("Making homogenization dataset, this could take awhile");
+    const auto material = solvers::materials::MaterialFromEandv(1, "", 120000, 0.3);
+    datasets::MakeHomogenizationDataset(filename, kMinT, kMaxT, kMinA, kMaxA, kTIncr, kAIncr, material, 50);
+}

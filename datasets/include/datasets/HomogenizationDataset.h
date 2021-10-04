@@ -7,12 +7,14 @@
 // obtain one at https://www.gnu.org/licenses/gpl-3.0.en.html.
 //
 
-#ifndef NEON_HOMOGENIZATION_H
-#define NEON_HOMOGENIZATION_H
+#ifndef NEON_HOMOGENIZATIONDATASET_H
+#define NEON_HOMOGENIZATIONDATASET_H
 
 #include <memory>
 #include <meshing/Mesh.h>
 #include <optional>
+#include <solvers/materials/Homogenization.h>
+#include <solvers/materials/Material.h>
 #include <solvers/materials/OrthotropicMaterial.h>
 #include <utilities/math/LinearAlgebra.h>
 
@@ -30,9 +32,9 @@ namespace datasets {
                                           const std::shared_ptr<meshing::Mesh> &mesh,
                                           const solvers::materials::OrthotropicMaterial &uniform_material_config)
             -> std::optional<solvers::materials::OrthotropicMaterial>;
-    void MakeHomogenizationDataset(Real force, Real target_deformation,
-                                   const solvers::materials::OrthotropicMaterial &uniform_material_config,
-                                   unsigned int dim);
+    void MakeHomogenizationDataset(const std::string &filename, Real min_thickness, Real max_thickness,
+                                   Real min_amplitude, Real max_amplitude, Real thickness_incr, Real amplitude_incr,
+                                   const solvers::materials::Material &material, unsigned int dim);
 }// namespace datasets
 
-#endif//NEON_HOMOGENIZATION_H
+#endif//NEON_HOMOGENIZATIONDATASET_H

@@ -17,19 +17,12 @@ solvers::integrators::CentralDifferenceMethod::CentralDifferenceMethod(Real dt, 
                                                                        const VectorXr &initial_displacements,
                                                                        const VectorXr &initial_forces)
     : dt(dt), stiffness_(std::move(stiffness)) {
-    NEON_LOG_INFO("Mass");
     SetMassMatrix(point_mass);
-    NEON_LOG_INFO("Damp");
     ComputeRayleighDamping(0.5f, 0.5f, 0);
-    NEON_LOG_INFO("Consts");
     SetIntegrationConstants();
-    NEON_LOG_INFO("EMM");
     SetEffectiveMassMatrix();
-    NEON_LOG_INFO("MV");
     SetMovementVectors(initial_displacements, initial_forces);
-    NEON_LOG_INFO("LP");
     SetLastPosition(initial_displacements);
-    NEON_LOG_INFO("D");
 }
 
 solvers::integrators::CentralDifferenceMethod::CentralDifferenceMethod(Real dt, const SparseMatrixXr &mass_matrix,
@@ -72,6 +65,8 @@ void solvers::integrators::CentralDifferenceMethod::Solve(const VectorXr &forces
 }
 
 void solvers::integrators::CentralDifferenceMethod::SetEffectiveMassMatrix() {
+    NEON_LOG_INFO("\n", damping_);
+    NEON_LOG_INFO("NONZEROS: ", damping_.nonZeros());
     // If damping is zero, then we can quickly compute our emm
     if (damping_.nonZeros() == 0) {
         SparseMatrixXr temp = a0 * mass_matrix_;
@@ -106,5 +101,12 @@ auto solvers::integrators::CentralDifferenceMethod::ComputeEffectiveLoad(const V
 }
 
 auto solvers::integrators::CentralDifferenceMethod::ComputeRayleighDamping(Real mu, Real lambda, Real mod) -> void {
+    if (mod == 0) {
+        // Resize full of zeros but don't reserve for nonzero elements
+        damping_.resize(mass_matrix_.rows(), mass_matrix_.cols());
+        damping_.reserve(0);
+        return;
+    }
+
     damping_ = mod * (mu * mass_matrix_ + lambda * stiffness_);
 }

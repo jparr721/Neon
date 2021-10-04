@@ -23,7 +23,7 @@ namespace pipelines {
     class BehaviorMatching : public Pipeline {
     private:
         /// Vector-valued function of constant variables of all displacements for all combinations
-        struct BehaviorDataset {
+        struct BehaviorDatasetEntry {
             Vector3r E;
             Vector3r v;
             Vector3r G;
@@ -33,10 +33,7 @@ namespace pipelines {
         };
 
         /// Homogenization of material lattices of consistent density
-        struct HomogenizationDataset {
-            // Dimensions of the material-void mesh.
-            unsigned int dimensions;
-
+        struct HomogenizationDatasetEntry {
             // Sine-wave thickness and amplitude
             Real thickness;
             Real amplitude;
@@ -56,18 +53,21 @@ namespace pipelines {
             kHomogenizationDataset = 1,
         };
 
-        explicit BehaviorMatching(const std::vector<std::string> &file_paths) : Pipeline(file_paths) {}
+        const std::vector<std::string> paths{"behavior_matching/behavior_data.csv",
+                                             "behavior_matching/homogenization_data.csv"};
+
+        explicit BehaviorMatching(const std::vector<std::string> &file_paths);
         void Run() override;
 
     private:
-        std::vector<BehaviorDataset> behavior_dataset_;
-        std::vector<HomogenizationDataset> homogenization_dataset_;
+        std::vector<BehaviorDatasetEntry> behavior_dataset_;
+        std::vector<HomogenizationDatasetEntry> homogenization_dataset_;
 
         void LoadBehaviorDataset();
         void LoadHomogenizationDataset();
 
-        void MakeBehaviorDataset(const std::string &filename);
-        void MakeHomogenizationDataset(const std::string &filename);
+        void GenerateBehaviorDataset(const std::string &filename);
+        void GenerateHomogenizationDataset(const std::string &filename);
     };
 }
 

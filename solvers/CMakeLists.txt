@@ -10,7 +10,7 @@ add_library(${PROJECT_NAME} SHARED
         include/solvers/utilities/BoundaryCondition.h
         src/BoundaryCondition.cpp
         src/CentralDifferenceMethod.cpp
-        include/solvers/integrators/CentralDifferenceMethod.h include/solvers/materials/OrthotropicMaterial.h src/OrthotropicMaterial.cpp)
+        include/solvers/integrators/CentralDifferenceMethod.h include/solvers/materials/OrthotropicMaterial.h src/OrthotropicMaterial.cpp include/solvers/materials/ScalarField.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

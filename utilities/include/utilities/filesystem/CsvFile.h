@@ -11,11 +11,13 @@
 #define NEON_CSVFILE_H
 
 #include <cassert>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utilities/runtime/NeonAssert.h>
 #include <utilities/runtime/NeonLog.h>
 #include <vector>
 
@@ -64,6 +66,51 @@ namespace utilities::filesystem {
 
         std::fstream fs_;
     };
+
+    template<typename T>
+    using extractor_fn = std::function<void(const std::vector<std::string> &, std::vector<T> &)>;
+    template<typename T>
+    void ExtractCSVContent(const std::string &filename, const extractor_fn<T> &extractor,
+                           std::vector<std::string> &keys, std::vector<T> &rows) {
+        NEON_ASSERT_ERROR(std::filesystem::exists(filename), "File not found.");
+
+        std::fstream handle(filename, std::ios::in);
+        std::string line;
+
+        /// A fast string splitter, should be a utility at some point...
+        const auto split = [](const std::string &in, char delim, std::vector<std::string> &out) {
+            int last = 0;
+            int current = 0;
+
+            while (current < in.length()) {
+                if (in.at(current) != delim) {
+                    ++current;
+                    continue;
+                }
+                out.emplace_back(in.substr(last, current - last));
+                ++current;
+                last = current;
+            }
+
+            if (last != current) {
+                // Pick up any remaining characters.
+                out.emplace_back(in.substr(last, current - last));
+            }
+        };
+
+        int row = 0;
+        while (getline(handle, line)) {
+            if (row == 0) {
+                split(line, ',', keys);
+                ++row;
+                continue;
+            }
+            std::vector<std::string> t_row;
+            split(line, ',', t_row);
+            extractor(t_row, rows);
+            ++row;
+        }
+    }
 }// namespace utilities::filesystem
 
 #endif//NEON_CSVFILE_H

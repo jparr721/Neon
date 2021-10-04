@@ -27,9 +27,20 @@ namespace simulations::static_files {
     constexpr Real kvIncr = 0.01;
 
     // Shear Modulus
-    constexpr Real kMinG = 1e-5; // Rubber
+    constexpr Real kMinG = 1e-5;// Rubber
     constexpr Real kMaxG = 480; // Diamond
     constexpr Real kGIncr = 1;
-}
+
+    // Thickness
+    constexpr Real kMinT = 0.1;
+    constexpr Real kMaxT = 0.7;
+    constexpr Real kTIncr = 0.01;
+
+    // Amplitude
+    constexpr Real kMinA = 0.1;
+    constexpr Real kMaxA = 0.9;
+    constexpr Real kAIncr = 0.01;
+
+}// namespace simulations::static_files
 
 #endif//NEON_LINEAR_ELASTIC_50BY50_CUBE_H
