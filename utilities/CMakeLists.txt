@@ -4,7 +4,17 @@ add_library(${PROJECT_NAME} SHARED
         src/LinearAlgebra.cpp
 
         include/utilities/math/LinearAlgebra.h
-        include/utilities/runtime/NeonAssert.h include/utilities/runtime/NeonLog.h include/utilities/filesystem/CsvFile.h include/utilities/math/Time.h src/Time.cpp include/utilities/algorithms/Algorithms.h include/utilities/math/Numbers.h src/Numbers.cpp include/utilities/math/Geometry.h include/utilities/math/Tensors.h include/utilities/runtime/Profiler.h src/Profiler.cpp)
+        include/utilities/runtime/NeonAssert.h
+        include/utilities/runtime/NeonLog.h
+        include/utilities/filesystem/CsvFile.h
+        include/utilities/math/Time.h
+        src/Time.cpp
+        include/utilities/algorithms/Algorithms.h
+        include/utilities/math/Numbers.h
+        src/Numbers.cpp
+        include/utilities/math/Geometry.h
+        include/utilities/math/Tensors.h
+        include/utilities/runtime/Profiler.h src/Profiler.cpp)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC
@@ -18,7 +28,7 @@ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Config
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
+target_link_libraries(${PROJECT_NAME} PRIVATE igl::core igl::opengl Eigen3::Eigen)
 
 install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
 install(EXPORT ${PROJECT_NAME}Config DESTINATION share/${PROJECT_NAME}/cmake)
@@ -33,6 +43,8 @@ target_link_libraries(
         ${PROJECT_NAME}AssertionTest
         LINK_PUBLIC ${Boost_LIBRARIES}
         ${PROJECT_NAME}
+        Eigen3::Eigen
+        igl::core
 )
 
 add_executable(
@@ -44,4 +56,6 @@ target_link_libraries(
         ${PROJECT_NAME}LinearAlgebraTest
         LINK_PUBLIC ${Boost_LIBRARIES}
         ${PROJECT_NAME}
+        Eigen3::Eigen
+        igl::core
 )

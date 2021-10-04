@@ -25,7 +25,7 @@ install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Config
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen utilities solvers meshing)
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen igl::core utilities solvers meshing)
 
 install(DIRECTORY include/ DESTINATION "${INSTALL_INCLUDE_DIR}")
 install(EXPORT ${PROJECT_NAME}Config DESTINATION share/${PROJECT_NAME}/cmake)
