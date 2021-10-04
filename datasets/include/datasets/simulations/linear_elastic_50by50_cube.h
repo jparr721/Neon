@@ -17,7 +17,7 @@ namespace simulations::static_files {
     constexpr unsigned int kShape = 50;
 
     // Pounds
-    constexpr int kForceMin = -1;
+    constexpr int kForceMin = -100;
     constexpr int kForceMax = -100;
 
     // Youngs Modulus
