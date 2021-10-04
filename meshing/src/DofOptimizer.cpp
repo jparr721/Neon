@@ -129,6 +129,27 @@ void meshing::FindSurfaceNodes(meshing::Axis axis, const bool max, const std::sh
     for (int row = 0; row < mesh->positions.rows(); ++row) {
         if (mesh->positions.row(row)(axis) == axis_coeff) { nodes.emplace_back(row); }
     }
+
+    // If our number of nodes is suspiciously small (< 10% of the mesh), we initiate a re-check with some epsilon.
+    nodes.clear();
+    if (nodes.size() < mesh->positions.rows() * 0.1) {
+        // Get the value range of the positions on this axis.
+        const Real axis_distance = mesh->positions.col(axis).maxCoeff() - mesh->positions.col(axis).minCoeff();
+
+        // Take 1% of the axis distance and apply that as the epsilon.
+        const Real epsilon = axis_distance * 0.01;
+
+        for (int row = 0; row < mesh->positions.rows(); ++row) {
+            const Real axis_value = mesh->positions.row(row)(axis);
+            if (max) {
+                if (axis_value >= (axis_coeff - epsilon)) { nodes.emplace_back(row); }
+            }
+
+            if (!max) {
+                if (axis_value <= (axis_coeff + epsilon)) { nodes.emplace_back(row); }
+            }
+        }
+    }
 }
 
 void meshing::FindSurfaceNodes(std::vector<Axis> axes, const bool max, const std::shared_ptr<meshing::Mesh> &mesh,

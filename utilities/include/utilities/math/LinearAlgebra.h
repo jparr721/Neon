@@ -102,6 +102,9 @@ using Matrix3 = Eigen::Matrix<T, 3, 3>;
 template<typename T>
 using Matrix4 = Eigen::Matrix<T, 4, 4>;
 
+template<typename T>
+using SparseMatrixX = Eigen::SparseMatrix<T>;
+
 
 namespace utilities::math {
     // Static Variables ===============================
@@ -375,6 +378,22 @@ namespace utilities::math {
     inline auto Degrees(const Real degree) -> Real { return degree * (180.0 / kPi); }
 
     inline auto Radians(const Real radian) -> Real { return radian * (kPi / 180.0); }
+
+    template<typename T>
+    inline void FastDiagonalInverse(const SparseMatrixX<T> &in, SparseMatrixX<T> &out) {
+        using triplet = Eigen::Triplet<T>;
+
+        std::vector<triplet> entries;
+        out.resize(in.rows(), in.cols());
+        // If it's identity with some arbitrary coefficient, the inverse is just the reciprocal of the first nonzero value
+        for (int i = 0; i < in.outerSize(); ++i) {
+            for (typename SparseMatrixX<T>::InnerIterator it(in, i); it; ++it) {
+                if (it.row() != it.col()) { continue; }
+                entries.push_back(triplet(i, i, 1 / it.value()));
+            }
+        }
+        out.setFromTriplets(entries.begin(), entries.end());
+    }
 }// namespace utilities::math
 
 

@@ -60,7 +60,6 @@ namespace visualizer::controllers {
         auto TetgenFlags() -> std::string & { return tetgen_flags; }
         auto SurfaceGeneratorAutoComputeArea() -> bool & { return auto_compute_area; }
 
-    private:
         bool auto_compute_area = false;
 
         Real dt_ = 0.01;

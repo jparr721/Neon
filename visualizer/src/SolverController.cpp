@@ -54,10 +54,6 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(const int dim, c
     meshing::implicit_surfaces::ComputeImplicitGyroidMarchingCubes(
             amplitude, thickness, dim, meshing::implicit_surfaces::SineFunction, V, F, perforated_surface_mesh_);
 
-    MatrixXr VV;
-    MatrixXi FF;
-    meshing::optimizer::CollapseSmallTriangles(1e-8, V, F, VV, FF);
-
     perforated_mesh_ = std::make_shared<meshing::Mesh>(V, F, tetgen_flags);
 
     utilities::math::Scoot(Vector3r(uniform_mesh_->positions.col(0).maxCoeff() * 2, 0, 0),
@@ -67,7 +63,6 @@ void visualizer::controllers::SolverController::ComputeVoidMesh(const int dim, c
 
 void visualizer::controllers::SolverController::HomogenizeVoidMesh() {
     solvers_need_reload = true;
-    NEON_LOG_INFO("Homogenizing void mesh");
     auto homogenization = std::make_unique<solvers::materials::Homogenization>(
             perforated_surface_mesh_,
             solvers::materials::MaterialFromLameCoefficients(1, "m", approximate_mu_, approximate_lambda_));
@@ -95,6 +90,7 @@ void visualizer::controllers::SolverController::ReloadUniformSolver(solvers::fem
                                                                     uniform_mesh_, type);
 
     if (type == solvers::fem::LinearElastic::Type::kDynamic) {
+        NEON_LOG_INFO("Making integrator");
         uniform_integrator_ = std::make_unique<solvers::integrators::CentralDifferenceMethod>(
                 dt_, mass_, uniform_solver_->K_e, uniform_solver_->U_e, uniform_solver_->F_e);
     }

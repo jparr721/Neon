@@ -22,9 +22,12 @@ solvers::fem::LinearElastic::LinearElastic(boundary_conditions::BoundaryConditio
             materials::OrthotropicMaterial(youngs_modulus, poissons_ratio, youngs_modulus / (2 * (1 + poissons_ratio)));
 
     // Since this is a linear solver, we can formulate all of our starting assets right away.
+    NEON_LOG_INFO("Making constutitve matrix");
     AssembleConstitutiveMatrix();
+    NEON_LOG_INFO("Making stiffness matrix");
     AssembleElementStiffness();
     AssembleGlobalStiffness();
+    NEON_LOG_INFO("Making boundary forces");
     AssembleBoundaryForces();
     if (type == Type::kDynamic) {
         // Element nodes for the dynamic case so we only use active dofs.
@@ -41,9 +44,12 @@ solvers::fem::LinearElastic::LinearElastic(solvers::boundary_conditions::Boundar
     : boundary_conditions(std::move(boundary_conditions)), mesh_(std::move(mesh)), type(type),
       material_coefficients_(std::move(m)) {
     // Since this is a linear solver, we can formulate all of our starting assets right away.
+    NEON_LOG_INFO("Making constutitve matrix");
     AssembleConstitutiveMatrix();
+    NEON_LOG_INFO("Making stiffness matrix");
     AssembleElementStiffness();
     AssembleGlobalStiffness();
+    NEON_LOG_INFO("Making boundary forces");
     AssembleBoundaryForces();
     if (type == Type::kDynamic) {
         // Element nodes for the dynamic case so we only use active dofs.
@@ -52,6 +58,7 @@ solvers::fem::LinearElastic::LinearElastic(solvers::boundary_conditions::Boundar
 
     // Global displacement is always for all nodes.
     U = VectorXr::Zero(mesh_->positions.rows() * 3);
+    NEON_LOG_INFO("Done initializing solver");
 }
 
 void solvers::fem::LinearElastic::Solve(MatrixXr &displacements, MatrixXr &stress) {

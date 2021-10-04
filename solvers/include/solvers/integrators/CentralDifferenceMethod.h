@@ -45,17 +45,16 @@ namespace solvers::integrators {
          */
         VectorXr previous_position;
 
-        CentralDifferenceMethod(Real dt, Real point_mass, MatrixXr stiffness, const VectorXr &initial_displacements,
-                                const VectorXr &initial_forces);
+        CentralDifferenceMethod(Real dt, Real point_mass, SparseMatrixXr stiffness,
+                                const VectorXr &initial_displacements, const VectorXr &initial_forces);
 
-        CentralDifferenceMethod(Real dt, const SparseMatrixXr &mass_matrix, MatrixXr stiffness,
+        CentralDifferenceMethod(Real dt, const SparseMatrixXr &mass_matrix, SparseMatrixXr stiffness,
                                 const VectorXr &initial_displacements, const VectorXr &initial_forces);
 
         // Setters
-        void SetDamping(Real mu = 0.5f, Real lambda = 0.5f);
         void SetMassMatrix(Real point_mass);
         void SetMassMatrix(const SparseMatrixXr &m);
-        void SetIntegrationConstants(Real dt) noexcept;
+        void SetIntegrationConstants() noexcept;
 
         // Getters
         [[nodiscard]] auto NodalMass() -> Real { return mass_matrix_.coeff(0, 0); }
@@ -83,12 +82,15 @@ namespace solvers::integrators {
         [[nodiscard]] auto Velocity() const -> VectorXr { return velocity_; }
         [[nodiscard]] auto Acceleration() const -> VectorXr { return acceleration_; }
 
+        auto ComputeRayleighDamping(Real mu = 0.5, Real lambda = 0.5, Real mod = 0) -> void;
+
     private:
-        const MatrixXr stiffness_;
+        const SparseMatrixXr stiffness_;
 
         SparseMatrixXr mass_matrix_;
+        SparseMatrixXr mass_matrix_inverse_;
 
-        MatrixXr damping_;
+        SparseMatrixXr damping_;
         SparseMatrixXr effective_mass_matrix_;
 
         VectorXr velocity_;
@@ -96,12 +98,9 @@ namespace solvers::integrators {
 
         void SetEffectiveMassMatrix();
         void SetLastPosition(const VectorXr &positions);
-        void SetMovementVectors(const VectorXr &positions, const VectorXr &forces, const MatrixXr &mass_matrix);
+        void SetMovementVectors(const VectorXr &positions, const VectorXr &forces);
 
         auto ComputeEffectiveLoad(const VectorXr &displacements, const VectorXr &forces) const -> VectorXr;
-
-        auto ComputeRayleighDamping(const MatrixXr &stiffness, const MatrixXr &mass, Real mu, Real lambda, Real mod,
-                                    MatrixXr &out) -> void;
     };
 }// namespace solvers::integrators
 

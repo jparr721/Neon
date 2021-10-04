@@ -18,7 +18,7 @@ namespace pipelines {
     /// The behavior matching pipeline takes the input dimensions and runs the FEM solver on them for the following:
     /// 1. Uniaxial
     /// 2. Torsional
-    /// 3. Torsional
+    /// 3. Shear
     /// Homogenize based on the homogenization dataset and determine the optimum E and v that match that.
     class BehaviorMatching : public Pipeline {
     private:

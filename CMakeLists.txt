@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.19)
 project(Neon LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+
 set(CMAKE_BUILD_DIR ${CMAKE_SOURCE_DIR}/build)
+
 set(CMAKE_BINARY_DIR ${CMAKE_BUILD_DIR}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -42,7 +44,7 @@ endif (USE_HEADLESS)
 
 if (USE_NEURAL_NETWORK)
     find_package(Torch REQUIRED)
-endif(USE_NEURAL_NETWORK)
+endif (USE_NEURAL_NETWORK)
 find_package(OpenMP REQUIRED)
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 include_directories("${PROJECT_SOURCE_DIR}"

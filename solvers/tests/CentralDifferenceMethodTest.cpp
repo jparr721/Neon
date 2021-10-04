@@ -36,7 +36,7 @@ auto MakeMassMatrix() -> SparseMatrixXr {
 BOOST_AUTO_TEST_CASE(TestConstructor) {
     const Vector2r initial_displacement = Vector2r(0, 0);
     const Vector2r initial_forces = Vector2r(0.f, 10.f);
-    const Matrix2r stiffness = MakeStiffnessMatrix();
+    const SparseMatrixXr stiffness = MakeStiffnessMatrix().sparseView();
     const SparseMatrixXr mass_matrix = MakeMassMatrix();
 
     const auto integrator = std::make_unique<solvers::integrators::CentralDifferenceMethod>(
@@ -50,12 +50,12 @@ BOOST_AUTO_TEST_CASE(TestConstructor) {
 BOOST_AUTO_TEST_CASE(TestSolver) {
     VectorXr displacement = Vector2r(0, 0);
     Vector2r forces = Vector2r(0, 10);
-    const Matrix2r stiffness = MakeStiffnessMatrix();
+    const SparseMatrixXr stiffness = MakeStiffnessMatrix().sparseView();
     const SparseMatrixXr mass_matrix = MakeMassMatrix();
 
     const auto integrator = std::make_unique<solvers::integrators::CentralDifferenceMethod>(.28, mass_matrix, stiffness,
                                                                                             displacement, forces);
-    integrator->SetDamping(0, 0);
+    integrator->ComputeRayleighDamping(0, 0, 0);
 
     for (int i = 0; i < 12; ++i) {
         integrator->Solve(forces, displacement);

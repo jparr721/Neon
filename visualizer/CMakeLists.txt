@@ -1,6 +1,6 @@
 project(visualizer)
 
-if (CMAKE_BUILD_TYPE EQUAL "Release")
+if (${CMAKE_BUILD_TYPE} EQUAL "Release")
     add_compile_options(/O2)
 endif ()
 

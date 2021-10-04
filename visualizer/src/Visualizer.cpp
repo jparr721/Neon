@@ -27,32 +27,6 @@ namespace visualizer {
     Real max_force = 100;
     int dataset_shape = 10;
 
-    Real dataset_generator_E_x_min = 1000;
-    Real dataset_generator_E_y_min = 1000;
-    Real dataset_generator_E_z_min = 1000;
-
-    Real dataset_generator_E_x_max = 40000;
-    Real dataset_generator_E_y_max = 40000;
-    Real dataset_generator_E_z_max = 40000;
-
-    Real dataset_generator_v_xy_min = 0.0;
-    Real dataset_generator_v_xz_min = 0.0;
-    Real dataset_generator_v_yz_min = 0.0;
-
-    Real dataset_generator_v_xy_max = 0.5;
-    Real dataset_generator_v_xz_max = 0.5;
-    Real dataset_generator_v_yz_max = 0.5;
-
-    // Min is rubber
-    Real dataset_generator_G_xy_min = 6e-6;
-    Real dataset_generator_G_zx_min = 6e-6;
-    Real dataset_generator_G_yz_min = 6e-6;
-
-    // Max is diamond
-    Real dataset_generator_G_xy_max = 478.0;
-    Real dataset_generator_G_zx_max = 478.0;
-    Real dataset_generator_G_yz_max = 478.0;
-
     const ImVec4 kErrorText(1, 0, 0, 1);
     const ImVec4 kOkayText(0, 1, 0, 1);
 
@@ -182,23 +156,33 @@ auto visualizer::SimulationMenu() -> void {
         ImGui::InputDouble("v_yz", &solver_controller->Material().v_yz);
 
         if (ImGui::Button("Reload Solver##Solvers", ImVec2(w, 0))) {
+            solver_controller->ResetMeshPositions();
             if (!solver_controller->UniformMesh()->tetgen_succeeded) {
                 NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
                 return;
             }
             solver_controller->ReloadUniformSolver(solvers::fem::LinearElastic::Type::kDynamic);
-            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kDynamic);
-            solver_controller->ResetMeshPositions();
-        }
-
-        if (ImGui::Button("Reload Static Solver##Solvers", ImVec2(w, 0))) {
-            if (!solver_controller->UniformMesh()->tetgen_succeeded) {
+            if (!solver_controller->PerforatedMesh()->tetgen_succeeded) {
                 NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
                 return;
             }
-            solver_controller->ReloadUniformSolver(solvers::fem::LinearElastic::Type::kStatic);
-            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kStatic);
+            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kDynamic);
+        }
+
+        if (ImGui::Button("Reload Static Solver##Solvers", ImVec2(w, 0))) {
             solver_controller->ResetMeshPositions();
+            if (!solver_controller->UniformMesh()->tetgen_succeeded) {
+                NEON_LOG_WARN("Uniform Mesh was not tetrahedralized, cannot load solver!");
+                return;
+            }
+
+            solver_controller->ReloadUniformSolver(solvers::fem::LinearElastic::Type::kStatic);
+
+            if (!solver_controller->PerforatedMesh()->tetgen_succeeded) {
+                NEON_LOG_WARN("Perforated Mesh was not tetrahedralized, cannot load solver!");
+                return;
+            }
+            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kStatic);
         }
 
         ImGui::TextColored(solver_controller->solvers_need_reload ? kErrorText : kOkayText,
@@ -222,37 +206,6 @@ auto visualizer::SimulationMenu() -> void {
             task.detach();
         }
         ImGui::TextColored(dataset_generating ? kOkayText : kErrorText, dataset_generating ? "Running" : "Stopped");
-
-        ImGui::Text("Orthotropic Search Space");
-        ImGui::InputDouble("Min E_x", &dataset_generator_E_x_min);
-        ImGui::InputDouble("Min E_y", &dataset_generator_E_y_min);
-        ImGui::InputDouble("Min E_z", &dataset_generator_E_z_min);
-
-        ImGui::InputDouble("Max E_x", &dataset_generator_E_x_max);
-        ImGui::InputDouble("Max E_y", &dataset_generator_E_y_max);
-        ImGui::InputDouble("Max E_z", &dataset_generator_E_z_max);
-
-        ImGui::InputDouble("Min v_xy", &dataset_generator_v_xy_min);
-        ImGui::InputDouble("Min v_xz", &dataset_generator_v_xz_min);
-        ImGui::InputDouble("Min v_yz", &dataset_generator_v_yz_min);
-
-        ImGui::InputDouble("Max v_xy", &dataset_generator_v_xy_max);
-        ImGui::InputDouble("Max v_xz", &dataset_generator_v_xz_max);
-        ImGui::InputDouble("Max v_yz", &dataset_generator_v_yz_max);
-
-        ImGui::InputDouble("Min G_yz", &dataset_generator_G_yz_min);
-        ImGui::InputDouble("Min G_zx", &dataset_generator_G_zx_min);
-        ImGui::InputDouble("Min G_xy", &dataset_generator_G_xy_min);
-
-        ImGui::InputDouble("Max G_yz", &dataset_generator_G_yz_max);
-        ImGui::InputDouble("Max G_zx", &dataset_generator_G_zx_max);
-        ImGui::InputDouble("Max G_xy", &dataset_generator_G_xy_max);
-
-        if (ImGui::Button("Compute", ImVec2(w / 2, 0))) {
-            NEON_LOG_INFO("Generating dataset in the background");
-            auto task = std::thread(GenerateSearchSpaceDataset);
-            task.detach();
-        }
     }
 
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {

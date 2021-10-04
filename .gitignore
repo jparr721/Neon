@@ -34,5 +34,7 @@ cmake-build-debug
 
 !Assets/*
 build/
+build-debug/
 third_party/libtorch
-/py/datasets/
+py/__pycache__/
+py/datasets/

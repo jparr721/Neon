@@ -8,36 +8,41 @@
 //
 
 #include <solvers/integrators/CentralDifferenceMethod.h>
+#include <utilities/runtime/NeonLog.h>
 #include <utility>
 
 
-solvers::integrators::CentralDifferenceMethod::CentralDifferenceMethod(Real dt, Real point_mass, MatrixXr stiffness,
+solvers::integrators::CentralDifferenceMethod::CentralDifferenceMethod(Real dt, Real point_mass,
+                                                                       SparseMatrixXr stiffness,
                                                                        const VectorXr &initial_displacements,
                                                                        const VectorXr &initial_forces)
     : dt(dt), stiffness_(std::move(stiffness)) {
+    NEON_LOG_INFO("Mass");
     SetMassMatrix(point_mass);
-    SetDamping(0.5f, 0.5f);
-    SetIntegrationConstants(dt);
+    NEON_LOG_INFO("Damp");
+    ComputeRayleighDamping(0.5f, 0.5f, 0);
+    NEON_LOG_INFO("Consts");
+    SetIntegrationConstants();
+    NEON_LOG_INFO("EMM");
     SetEffectiveMassMatrix();
-    SetMovementVectors(initial_displacements, initial_forces, mass_matrix_);
+    NEON_LOG_INFO("MV");
+    SetMovementVectors(initial_displacements, initial_forces);
+    NEON_LOG_INFO("LP");
     SetLastPosition(initial_displacements);
+    NEON_LOG_INFO("D");
 }
 
 solvers::integrators::CentralDifferenceMethod::CentralDifferenceMethod(Real dt, const SparseMatrixXr &mass_matrix,
-                                                                       MatrixXr stiffness,
+                                                                       SparseMatrixXr stiffness,
                                                                        const VectorXr &initial_displacements,
                                                                        const VectorXr &initial_forces)
     : dt(dt), stiffness_(std::move(stiffness)) {
     SetMassMatrix(mass_matrix);
-    SetDamping(0.5f, 0.5f);
-    SetIntegrationConstants(dt);
+    ComputeRayleighDamping(0.5f, 0.5f, 0);
+    SetIntegrationConstants();
     SetEffectiveMassMatrix();
-    SetMovementVectors(initial_displacements, initial_forces, mass_matrix_);
+    SetMovementVectors(initial_displacements, initial_forces);
     SetLastPosition(initial_displacements);
-}
-
-void solvers::integrators::CentralDifferenceMethod::SetDamping(Real mu, Real lambda) {
-    ComputeRayleighDamping(stiffness_, mass_matrix_, mu, lambda, 0, damping_);
 }
 
 void solvers::integrators::CentralDifferenceMethod::SetMassMatrix(Real point_mass) {
@@ -48,8 +53,8 @@ void solvers::integrators::CentralDifferenceMethod::SetMassMatrix(Real point_mas
 
 void solvers::integrators::CentralDifferenceMethod::SetMassMatrix(const SparseMatrixXr &m) { mass_matrix_ = m; }
 
-void solvers::integrators::CentralDifferenceMethod::SetIntegrationConstants(Real dt) noexcept {
-    a0 = 1.f / (std::powf(dt, 2));
+void solvers::integrators::CentralDifferenceMethod::SetIntegrationConstants() noexcept {
+    a0 = 1.f / (dt * dt);
     a1 = 1.f / (2.f * dt);
     a2 = 2.f * a0;
     a3 = 1.f / a2;
@@ -67,8 +72,14 @@ void solvers::integrators::CentralDifferenceMethod::Solve(const VectorXr &forces
 }
 
 void solvers::integrators::CentralDifferenceMethod::SetEffectiveMassMatrix() {
+    // If damping is zero, then we can quickly compute our emm
+    if (damping_.nonZeros() == 0) {
+        SparseMatrixXr temp = a0 * mass_matrix_;
+        utilities::math::FastDiagonalInverse(temp, effective_mass_matrix_);
+        return;
+    }
     effective_mass_matrix_ = a0 * mass_matrix_ + a1 * damping_;
-    Eigen::SimplicialLDLT<SparseMatrixXr> solver;
+    Eigen::SparseLU<SparseMatrixXr> solver;
     solver.compute(effective_mass_matrix_);
     SparseMatrixXr I(effective_mass_matrix_.rows(), effective_mass_matrix_.cols());
     I.setIdentity();
@@ -80,12 +91,12 @@ void solvers::integrators::CentralDifferenceMethod::SetLastPosition(const Vector
 }
 
 void solvers::integrators::CentralDifferenceMethod::SetMovementVectors(const VectorXr &positions,
-                                                                       const VectorXr &forces,
-                                                                       const MatrixXr &mass_matrix) {
+                                                                       const VectorXr &forces) {
     velocity_.resize(positions.rows());
     velocity_.setZero();
     acceleration_.resize(positions.rows());
-    acceleration_ = mass_matrix.inverse() * forces;
+    utilities::math::FastDiagonalInverse(mass_matrix_, mass_matrix_inverse_);
+    acceleration_ = mass_matrix_inverse_ * forces;
 }
 
 auto solvers::integrators::CentralDifferenceMethod::ComputeEffectiveLoad(const VectorXr &displacements,
@@ -94,8 +105,6 @@ auto solvers::integrators::CentralDifferenceMethod::ComputeEffectiveLoad(const V
            (a0 * mass_matrix_ - a1 * damping_) * previous_position;
 }
 
-auto solvers::integrators::CentralDifferenceMethod::ComputeRayleighDamping(const MatrixXr &stiffness,
-                                                                           const MatrixXr &mass, Real mu, Real lambda,
-                                                                           Real mod, MatrixXr &out) -> void {
-    out = mod * (mu * mass + lambda * stiffness);
+auto solvers::integrators::CentralDifferenceMethod::ComputeRayleighDamping(Real mu, Real lambda, Real mod) -> void {
+    damping_ = mod * (mu * mass_matrix_ + lambda * stiffness_);
 }
