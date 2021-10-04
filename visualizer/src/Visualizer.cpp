@@ -161,7 +161,9 @@ auto visualizer::SimulationMenu() -> void {
                 NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
                 return;
             }
+
             solver_controller->ReloadUniformSolver(solvers::fem::LinearElastic::Type::kDynamic);
+
             if (!solver_controller->PerforatedMesh()->tetgen_succeeded) {
                 NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
                 return;
@@ -193,19 +195,6 @@ auto visualizer::SimulationMenu() -> void {
         ImGui::InputDouble("Lambda", &solver_controller->Lambda());
         ImGui::InputDouble("Mu", &solver_controller->Mu());
         if (ImGui::Button("Homogenize##Homogenization", ImVec2(w, 0))) { solver_controller->HomogenizeVoidMesh(); }
-    }
-
-    if (ImGui::CollapsingHeader("Datasets", ImGuiTreeNodeFlags_None)) {
-        ImGui::Text("Mask-Based Solver");
-        ImGui::InputInt("Shape", &dataset_shape);
-        ImGui::InputDouble("Min Force", &min_force);
-        ImGui::InputDouble("Max Force", &max_force);
-        if (ImGui::Button("Compute", ImVec2(w / 2, 0))) {
-            NEON_LOG_INFO("Generating dataset in the background");
-            auto task = std::thread(GenerateStaticSolverDataset);
-            task.detach();
-        }
-        ImGui::TextColored(dataset_generating ? kOkayText : kErrorText, dataset_generating ? "Running" : "Stopped");
     }
 
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -262,18 +251,4 @@ auto visualizer::Refresh() -> void {
 
     Viewer().data(controllers::SolverController::kPerforatedMeshID)
             .set_mesh(solver_controller->PerforatedMesh()->positions, solver_controller->PerforatedMesh()->faces);
-}
-
-auto visualizer::GenerateSearchSpaceDataset() -> void {
-    dataset_generating = true;
-    auto deformation_generator = std::make_unique<datasets::Deformation>("deformation_dataset_generator.out");
-    //    deformation_generator->GenerateSearchSpace()
-}
-
-auto visualizer::GenerateStaticSolverDataset() -> void {
-    dataset_generating = true;
-    datasets::MakeUniaxialStaticSolverDataset2D(min_force, max_force, dataset_shape);
-    //    auto mask_dataset_generator = std::make_unique<datasets::DynamicSolverMask>(dataset_shape, n_entries);
-    //    mask_dataset_generator->GenerateDataset(Vector3r(0, -100, 0), 5, 0.01, 30000, 0.3, 11538);
-    dataset_generating = false;
 }

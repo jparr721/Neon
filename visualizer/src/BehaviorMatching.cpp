@@ -12,7 +12,7 @@
 #include <filesystem>
 #include <visualizer/pipelines/BehaviorMatching.h>
 
-pipelines::BehaviorMatching::BehaviorMatching(const std::vector<std::string> &file_paths) : Pipeline(file_paths) {
+pipelines::BehaviorMatching::BehaviorMatching() {
     if (!std::filesystem::exists("behavior_matching")) { std::filesystem::create_directory("behavior_matching"); }
     LoadBehaviorDataset();
     LoadHomogenizationDataset();
@@ -21,7 +21,7 @@ pipelines::BehaviorMatching::BehaviorMatching(const std::vector<std::string> &fi
 void pipelines::BehaviorMatching::Run() {}
 
 void pipelines::BehaviorMatching::LoadBehaviorDataset() {
-    const auto filename = file_paths_.at(FilePathIndex::kBehaviorDataset);
+    const auto filename = paths.at(FilePathIndex::kBehaviorDataset);
     if (!std::filesystem::exists(filename)) { GenerateBehaviorDataset(filename); }
     const utilities::filesystem::extractor_fn<BehaviorDatasetEntry> row_extractor =
             [](const std::vector<std::string> &tokens, std::vector<BehaviorDatasetEntry> &rows) {
@@ -34,10 +34,14 @@ void pipelines::BehaviorMatching::LoadBehaviorDataset() {
 
     std::vector<std::string> keys;
     utilities::filesystem::ExtractCSVContent(filename, row_extractor, keys, behavior_dataset_);
+    std::sort(behavior_dataset_.begin(), behavior_dataset_.end(),
+              [](const BehaviorDatasetEntry &lhs, const BehaviorDatasetEntry &rhs) {
+                  return lhs.displacement < rhs.displacement;
+              });
 }
 
 void pipelines::BehaviorMatching::LoadHomogenizationDataset() {
-    const auto filename = file_paths_.at(FilePathIndex::kHomogenizationDataset);
+    const auto filename = paths.at(FilePathIndex::kHomogenizationDataset);
     if (!std::filesystem::exists(filename)) { GenerateHomogenizationDataset(filename); }
     const utilities::filesystem::extractor_fn<HomogenizationDatasetEntry> row_extractor =
             [](const std::vector<std::string> &tokens, std::vector<HomogenizationDatasetEntry> &rows) {
@@ -53,6 +57,10 @@ void pipelines::BehaviorMatching::LoadHomogenizationDataset() {
 
     std::vector<std::string> keys;
     utilities::filesystem::ExtractCSVContent(filename, row_extractor, keys, homogenization_dataset_);
+    std::sort(homogenization_dataset_.begin(), homogenization_dataset_.end(),
+              [](const HomogenizationDatasetEntry &lhs, const HomogenizationDatasetEntry &rhs) {
+                  return lhs.E.x() < rhs.E.x() && lhs.E.y() < rhs.E.y() && lhs.E.z() < rhs.E.z();
+              });
 }
 
 void pipelines::BehaviorMatching::GenerateBehaviorDataset(const std::string &filename) {

@@ -19,27 +19,32 @@ namespace simulations::static_files {
     // Youngs Modulus
     constexpr int kMinE = 30000;
     constexpr int kMaxE = 150000;
-    constexpr int kEIncr = 1000;
+    // Changeme
+    constexpr int kEIncr = 10000;
 
     // Poisson's Ratio
     constexpr Real kMinv = 0.0;
     constexpr Real kMaxv = 0.5;
-    constexpr Real kvIncr = 0.01;
+    // Changeme
+    constexpr Real kvIncr = 0.1;
 
     // Shear Modulus
     constexpr Real kMinG = 1e-5;// Rubber
     constexpr Real kMaxG = 480; // Diamond
-    constexpr Real kGIncr = 1;
+    // Changeme
+    constexpr Real kGIncr = 10;
 
     // Thickness
     constexpr Real kMinT = 0.1;
     constexpr Real kMaxT = 0.7;
-    constexpr Real kTIncr = 0.01;
+    //Changeme
+    constexpr Real kTIncr = 0.1;
 
     // Amplitude
     constexpr Real kMinA = 0.1;
     constexpr Real kMaxA = 0.9;
-    constexpr Real kAIncr = 0.01;
+    // Changeme
+    constexpr Real kAIncr = 0.1;
 
 }// namespace simulations::static_files
 

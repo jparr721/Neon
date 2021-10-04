@@ -12,7 +12,6 @@
 #define NEON_BEHAVIORMATCHING_H
 
 #include <utilities/math/LinearAlgebra.h>
-#include <visualizer/pipelines/Pipeline.h>
 
 namespace pipelines {
     /// The behavior matching pipeline takes the input dimensions and runs the FEM solver on them for the following:
@@ -20,7 +19,7 @@ namespace pipelines {
     /// 2. Torsional
     /// 3. Shear
     /// Homogenize based on the homogenization dataset and determine the optimum E and v that match that.
-    class BehaviorMatching : public Pipeline {
+    class BehaviorMatching {
     private:
         /// Vector-valued function of constant variables of all displacements for all combinations
         struct BehaviorDatasetEntry {
@@ -56,8 +55,8 @@ namespace pipelines {
         const std::vector<std::string> paths{"behavior_matching/behavior_data.csv",
                                              "behavior_matching/homogenization_data.csv"};
 
-        explicit BehaviorMatching(const std::vector<std::string> &file_paths);
-        void Run() override;
+        BehaviorMatching();
+        void Run();
 
     private:
         std::vector<BehaviorDatasetEntry> behavior_dataset_;
@@ -69,6 +68,6 @@ namespace pipelines {
         void GenerateBehaviorDataset(const std::string &filename);
         void GenerateHomogenizationDataset(const std::string &filename);
     };
-}
+}// namespace pipelines
 
 #endif//NEON_BEHAVIORMATCHING_H

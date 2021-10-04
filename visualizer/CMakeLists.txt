@@ -11,7 +11,7 @@ add_executable(${PROJECT_NAME}
         src/SolverController.cpp
         include/visualizer/controllers/SolverController.h
         src/BehaviorMatching.cpp
-        include/visualizer/pipelines/BehaviorMatching.h include/visualizer/pipelines/Pipeline.h)
+        include/visualizer/pipelines/BehaviorMatching.h)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
