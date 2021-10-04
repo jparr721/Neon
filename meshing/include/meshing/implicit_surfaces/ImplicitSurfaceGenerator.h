@@ -103,7 +103,7 @@ public:
       : microstructure_(Microstructure::kUniform),
         behavior_(Behavior::kIsotropic) {
     implicit_surface_.Resize(height, width, depth);
-    implicit_surface_.SetConstant(static_cast<T>(material_number_));
+    implicit_surface_.SetConstant(static_cast<T>(1));
   }
 
   ImplicitSurfaceGenerator(const unsigned int height, const unsigned int width,
