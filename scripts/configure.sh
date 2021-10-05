@@ -2,7 +2,11 @@
 
 set -euox pipefail
 
-mkdir build
+if [ ! -d "build" ]; then
+  mkdir build
+fi
 cd build
 cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DUSE_DOUBLE=ON -DCMAKE_EXPORT_COMPILE_COMMANDS=1 ..
 cd ..
+
+ln -s $(pwd)/build/compile_commands.json $(pwd)
