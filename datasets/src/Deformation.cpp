@@ -93,8 +93,6 @@ void datasets::Deformation::GenerateSearchSpace(
   // Tetrahedralize the mesh uniformly.
   const auto mesh = std::make_shared<meshing::Mesh>(V, F, "Yzpq");
 
-  NEON_LOG_INFO("Rows: ", mesh->positions.rows());
-
   // Assign boundary conditions, for now this is hard-coded as the uni-axial
   // force
   std::vector<unsigned int> interior_nodes;
