@@ -1,7 +1,12 @@
 project(visualizer)
 
 if (${CMAKE_BUILD_TYPE} EQUAL "Release")
-    add_compile_options(/O2)
+    if (UNIX)
+        add_compile_options(-Ofast)
+    endif (UNIX)
+    if (MSVC)
+        add_compile_options(/O2)
+    endif (MSVC)
 endif ()
 
 add_executable(${PROJECT_NAME}

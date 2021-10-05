@@ -107,6 +107,8 @@ void datasets::Deformation::GenerateSearchSpace(unsigned int shape, const int fo
                                                         std::to_string(G_xy), std::to_string(avg_displacement),
                                                 };
                                             };
+
+                                            solver_controller->ResetUniformMeshPositions();
                                         }
                                     }
                                 }
