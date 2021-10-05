@@ -18,7 +18,7 @@
 #include <utilities/math/LinearAlgebra.h>
 #include <utilities/math/Tensors.h>
 
-using namespace utilities::math;
+using namespace solvers::math;
 
 BOOST_AUTO_TEST_CASE(TestTensor3Constructor) {
   const Tensor3i t(3, 2, 3);
@@ -219,8 +219,7 @@ BOOST_AUTO_TEST_CASE(TestHStack) {
   MatrixX<int> comp(6, 2);
   comp << 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3;
 
-  const MatrixX<int> stacked =
-      utilities::math::HStack(std::vector{one, two, three});
+  const MatrixX<int> stacked = solvers::math::HStack(std::vector{one, two, three});
 
   BOOST_REQUIRE(stacked.isApprox(comp));
 }
@@ -238,8 +237,7 @@ BOOST_AUTO_TEST_CASE(TestHStackVectors) {
   MatrixX<int> comp(3, 2);
   comp << 1, 1, 2, 2, 3, 3;
 
-  const MatrixX<int> stacked =
-      utilities::math::HStack(std::vector{one, two, three});
+  const MatrixX<int> stacked = solvers::math::HStack(std::vector{one, two, three});
 
   BOOST_REQUIRE(stacked.isApprox(comp));
 }
@@ -274,7 +272,7 @@ BOOST_AUTO_TEST_CASE(TestReArrange) {
   VectorX<int> indices(3);
   indices << 1, 2, 0;
 
-  const MatrixX<int> m2 = utilities::math::ReArrange(m, indices);
+  const MatrixX<int> m2 = solvers::math::ReArrange(m, indices);
 
   MatrixX<int> comp(3, 3);
   comp.row(0) << 4, 5, 6;
@@ -296,7 +294,7 @@ BOOST_AUTO_TEST_CASE(TestReArrange2) {
   VectorX<int> indices(4);
   indices << 1, 2, 0, 3;
 
-  const MatrixX<int> m2 = utilities::math::ReArrange(m, indices);
+  const MatrixX<int> m2 = solvers::math::ReArrange(m, indices);
 
   MatrixX<int> comp(4, 3);
   comp.row(0) << 4, 5, 6;
@@ -321,7 +319,7 @@ BOOST_AUTO_TEST_CASE(TestIndexMatrixByMatrix) {
   indices.row(1) << 1, 2, 0;
   indices.row(2) << 4, 5, 2;
 
-  const MatrixX<int> m2 = utilities::math::IndexMatrixByMatrix(m, indices);
+  const MatrixX<int> m2 = solvers::math::IndexMatrixByMatrix(m, indices);
 
   MatrixX<int> comp(9, 3);
   comp.row(0) << 1, 2, 3;
@@ -353,7 +351,7 @@ BOOST_AUTO_TEST_CASE(TestIndexMatrixByMatrix2) {
   indices.row(1) << 1, 2, 0;
   indices.row(2) << 4, 5, 2;
 
-  const MatrixXr m2 = utilities::math::IndexMatrixByMatrix(m, indices);
+  const MatrixXr m2 = solvers::math::IndexMatrixByMatrix(m, indices);
 
   MatrixXr comp(9, 3);
   comp.row(0) << 1, 2, 3;
@@ -385,7 +383,7 @@ BOOST_AUTO_TEST_CASE(TestIndexMatrixByMatrixWithCol) {
   indices.row(1) << 1, 2, 0;
   indices.row(2) << 4, 5, 2;
 
-  const MatrixX<int> m2 = utilities::math::IndexMatrixByMatrix(m, indices, 0);
+  const MatrixX<int> m2 = solvers::math::IndexMatrixByMatrix(m, indices, 0);
 
   MatrixX<int> comp(3, 3);
   comp.row(0) << 1, 4, 7;
@@ -409,7 +407,7 @@ BOOST_AUTO_TEST_CASE(TestIndexMatrixByMatrixWithCol2) {
   indices.row(1) << 1, 2, 0;
   indices.row(2) << 4, 5, 2;
 
-  const MatrixXr m2 = utilities::math::IndexMatrixByMatrix(m, indices, 0);
+  const MatrixXr m2 = solvers::math::IndexMatrixByMatrix(m, indices, 0);
 
   MatrixXr comp(3, 3);
   comp.row(0) << 1, 4, 7;
@@ -503,7 +501,7 @@ BOOST_AUTO_TEST_CASE(TestNNZ) {
 
   VectorX<int> I;
   unsigned int c;
-  utilities::math::NNZ(d, I, c, true);
+  solvers::math::NNZ(d, I, c, true);
 
   VectorX<int> IC(6);
   IC << 1, 2, 3, 4, 5, 6;
@@ -520,7 +518,7 @@ BOOST_AUTO_TEST_CASE(TestComputeTriangleAngles) {
   Real B_hat;
   Real C_hat;
 
-  utilities::math::ComputeTriangleAngles(a, b, c, A_hat, B_hat, C_hat);
+  solvers::math::ComputeTriangleAngles(a, b, c, A_hat, B_hat, C_hat);
 
   BOOST_REQUIRE(IsApprox(A_hat, 1.13, 0.01));
   BOOST_REQUIRE(IsApprox(B_hat, 0.96, 0.01));
@@ -528,12 +526,11 @@ BOOST_AUTO_TEST_CASE(TestComputeTriangleAngles) {
 }
 
 BOOST_AUTO_TEST_CASE(TestDegrees) {
-  const Real denom = utilities::math::kPi / 4;
-  BOOST_REQUIRE_EQUAL(utilities::math::Degrees(denom), 45);
+    const Real denom = solvers::math::kPi / 4;
+    BOOST_REQUIRE_EQUAL(solvers::math::Degrees(denom), 45);
 }
 
 BOOST_AUTO_TEST_CASE(TestRadians) {
   const Real denom = 90;
-  BOOST_REQUIRE(utilities::math::IsApprox(utilities::math::Radians(denom),
-                                          1.570796, 0.001));
+  BOOST_REQUIRE(solvers::math::IsApprox(solvers::math::Radians(denom), 1.570796, 0.001));
 }

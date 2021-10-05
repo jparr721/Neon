@@ -8,4 +8,4 @@
 //
 #include <utilities/math/Numbers.h>
 
-auto utilities::numbers::IsApprox(Real lhs, Real rhs, Real epsilon) -> bool { return std::abs(lhs - rhs) <= epsilon; }
+auto solvers::numbers::IsApprox(Real lhs, Real rhs, Real epsilon) -> bool { return std::abs(lhs - rhs) <= epsilon; }

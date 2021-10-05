@@ -34,7 +34,7 @@ namespace {
     }
 }// namespace
 
-namespace utilities::assert {
+namespace solvers::assert {
     template<typename... Context>
     auto NeonAssert(const NeonAssertionLevel level, const bool condition, const std::string &function,
                     const std::string &file, const int line, Context... context) -> void {
@@ -67,9 +67,9 @@ namespace utilities::assert {
 }// namespace utilities::assert
 
 #define NEON_ASSERT_WARN(cond, ...)                                                                                    \
-    utilities::assert::NeonAssert(NeonAssertionLevel::kWarn, cond, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+    solvers::assert::NeonAssert(NeonAssertionLevel::kWarn, cond, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
 
 #define NEON_ASSERT_ERROR(cond, ...)                                                                                   \
-    utilities::assert::NeonAssert(NeonAssertionLevel::kError, cond, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+    solvers::assert::NeonAssert(NeonAssertionLevel::kError, cond, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
 
 #endif//NEON_NEONASSERT_H

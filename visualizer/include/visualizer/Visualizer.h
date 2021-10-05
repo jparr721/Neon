@@ -16,16 +16,16 @@
 #include <imgui/imgui.h>
 #include <meshing/Mesh.h>
 #include <solvers/FEM/LinearElastic.h>
+#include <solvers/controllers/SolverController.h>
 #include <solvers/integrators/CentralDifferenceMethod.h>
 #include <utilities/math/LinearAlgebra.h>
-#include <visualizer/controllers/SolverController.h>
 #include <visualizer/pipelines/BehaviorMatching.h>
 
-namespace visualizer {
+namespace solvers {
     // Vars
     auto Viewer() -> igl::opengl::glfw::Viewer &;
     auto Menu() -> igl::opengl::glfw::imgui::ImGuiMenu &;
-    auto Controller() -> std::shared_ptr<visualizer::controllers::SolverController> &;
+    auto Controller() -> std::shared_ptr<solvers::controllers::SolverController> &;
     auto BehaviorMatchingPipeline() -> std::unique_ptr<pipelines::BehaviorMatching> &;
     auto RveDims() -> int &;
     auto Amplitude() -> Real &;

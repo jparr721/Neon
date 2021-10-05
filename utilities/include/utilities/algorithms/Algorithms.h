@@ -12,7 +12,7 @@
 
 #include <functional>
 
-namespace utilities::algorithms {
+namespace solvers::algorithms {
     struct FnBinarySearchAbstractReturnType {
         virtual auto TooLarge() const -> bool = 0;
         virtual auto TooSmall() const -> bool = 0;

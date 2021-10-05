@@ -95,18 +95,18 @@ template <typename T> using Matrix4 = Eigen::Matrix<T, 4, 4>;
 
 template <typename T> using SparseMatrixX = Eigen::SparseMatrix<T>;
 
-namespace utilities::math {
-// Static Variables ===============================
-constexpr Real kPi = static_cast<Real>(3.14159265);
+namespace solvers::math {
+    // Static Variables ===============================
+    constexpr Real kPi = static_cast<Real>(3.14159265);
 
-// Functions ======================================
+    // Functions ======================================
 
-auto LinSpace(Real start, Real stop, unsigned int num) -> VectorXr;
+    auto LinSpace(Real start, Real stop, unsigned int num) -> VectorXr;
 
-template <typename Derived>
-inline auto Shape(const Eigen::PlainObjectBase<Derived> &in) -> Vector2<int> {
-  return Vector2<int>(in.rows(), in.cols());
-}
+    template<typename Derived>
+    inline auto Shape(const Eigen::PlainObjectBase<Derived> &in) -> Vector2<int> {
+        return Vector2<int>(in.rows(), in.cols());
+    }
 
 template <typename T>
 inline auto MatrixToVector(const MatrixX<T> &in) -> VectorX<T> {

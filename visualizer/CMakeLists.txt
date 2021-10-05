@@ -8,8 +8,6 @@ add_executable(${PROJECT_NAME}
         src/main.cpp
         include/visualizer/Visualizer.h
         src/Visualizer.cpp
-        src/SolverController.cpp
-        include/visualizer/controllers/SolverController.h
         src/BehaviorMatching.cpp
         include/visualizer/pipelines/BehaviorMatching.h)
 

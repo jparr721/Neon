@@ -75,15 +75,15 @@ void datasets::MakeUniaxialStaticSolverDataset2D(const Real force_min, const Rea
 
         MatrixXr displacement_field = scalar_field * avg_U;
 
-        utilities::math::tensors::Assign(input_dataset, 0u, c_entry, force_field);
-        utilities::math::tensors::Assign(output_dataset, 0u, c_entry, displacement_field);
+        solvers::math::tensors::Assign(input_dataset, 0u, c_entry, force_field);
+        solvers::math::tensors::Assign(output_dataset, 0u, c_entry, displacement_field);
         ++c_entry;
     }
 
     NEON_LOG_INFO("Simulation complete, saving");
     const std::string input_dataset_filename = "input_static_2d";
-    utilities::math::tensors::Write(input_dataset, input_dataset_filename);
+    solvers::math::tensors::Write(input_dataset, input_dataset_filename);
 
     const std::string output_dataset_filename = "output_static_2d";
-    utilities::math::tensors::Write(output_dataset, output_dataset_filename);
+    solvers::math::tensors::Write(output_dataset, output_dataset_filename);
 }

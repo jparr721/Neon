@@ -15,28 +15,23 @@
 #include <visualizer/Visualizer.h>
 
 int main(int argc, char **argv) {
-  // Igl's viewer requires vertex matrices to be doubles, fail if unset
+    // Igl's viewer requires vertex matrices to be doubles, fail if unset
 #ifndef NEON_USE_DOUBLE
-  throw std::runtime_exception(
-      "Please enable NEON_USE_DOUBLE to use igl viewer.");
+    throw std::runtime_exception("Please enable NEON_USE_DOUBLE to use igl viewer.");
 #endif
 #ifdef NEON_HEADLESS_BEHAVIOR_MATCHING_GENERATOR
-  NEON_LOG_INFO("Running behavior matching setup");
-  visualizer::BehaviorMatchingPipeline() =
-      std::make_unique<pipelines::BehaviorMatching>();
+    NEON_LOG_INFO("Running behavior matching setup");
+    solvers::BehaviorMatchingPipeline() = std::make_unique<pipelines::BehaviorMatching>();
 #else
-  visualizer::Menu().callback_draw_custom_window =
-      &visualizer::SimulationMenuWindow;
-  visualizer::Menu().callback_draw_viewer_menu = &visualizer::GeometryMenu;
-  visualizer::Viewer().plugins.push_back(&visualizer::Menu());
+    solvers::Menu().callback_draw_custom_window = &solvers::SimulationMenuWindow;
+    solvers::Menu().callback_draw_viewer_menu = &solvers::GeometryMenu;
+    solvers::Viewer().plugins.push_back(&solvers::Menu());
 
-  visualizer::Viewer().callback_pre_draw = &visualizer::DrawCallback;
-  visualizer::Controller() =
-      std::make_shared<visualizer::controllers::SolverController>(
-          visualizer::RveDims(), visualizer::Amplitude(),
-          visualizer::Thickness());
-  visualizer::Refresh();
-  visualizer::Viewer().core().is_animating = false;
-  visualizer::Viewer().launch();
+    solvers::Viewer().callback_pre_draw = &solvers::DrawCallback;
+    solvers::Controller() = std::make_shared<solvers::controllers::SolverController>(
+            solvers::RveDims(), solvers::Amplitude(), solvers::Thickness());
+    solvers::Refresh();
+    solvers::Viewer().core().is_animating = false;
+    solvers::Viewer().launch();
 #endif
 }

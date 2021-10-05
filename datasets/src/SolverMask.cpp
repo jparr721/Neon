@@ -171,7 +171,7 @@ void datasets::DynamicSolverMask::Solve(MatrixXr &displacements, MatrixXr &stres
 }
 
 void datasets::DynamicSolverMask::VectorToOrientedMatrix(const VectorXr &v, MatrixXr &m) {
-    m = (utilities::math::VectorToMatrix(v, 3, v.rows() / 3).transpose()).eval();
+    m = (solvers::math::VectorToMatrix(v, 3, v.rows() / 3).transpose()).eval();
 }
 
 void datasets::DynamicSolverMask::SetZerosFromBoundaryConditions(

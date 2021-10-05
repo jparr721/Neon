@@ -20,15 +20,14 @@
 
 namespace datasets {
 class Deformation {
-  struct DeformationBinarySearchReturnType
-      : public utilities::algorithms::FnBinarySearchAbstractReturnType {
-    Real displacement = -1;
-    Real target = -1;
-    Real E = -1;
-    auto TooLarge() const -> bool override;
-    auto TooSmall() const -> bool override;
-    auto Ok() const -> bool override;
-  };
+    struct DeformationBinarySearchReturnType : public solvers::algorithms::FnBinarySearchAbstractReturnType {
+        Real displacement = -1;
+        Real target = -1;
+        Real E = -1;
+        auto TooLarge() const -> bool override;
+        auto TooSmall() const -> bool override;
+        auto Ok() const -> bool override;
+    };
 
 public:
   explicit Deformation(const std::string &path);
@@ -48,7 +47,7 @@ private:
   static constexpr Real epsilon = 0.01;
 
   const std::string path_;
-  utilities::filesystem::CsvFile<std::string> csv_;
+  solvers::filesystem::CsvFile<std::string> csv_;
   std::vector<std::string> keys_;
   std::unordered_map<std::string, std::vector<Real>> rows_;
 };

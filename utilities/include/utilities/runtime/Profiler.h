@@ -14,7 +14,7 @@
 #include <ostream>
 #include <utilities/math/LinearAlgebra.h>
 
-namespace utilities::runtime::profiler {
+namespace solvers::runtime::profiler {
     class Profiler {
     public:
         double start = 0;

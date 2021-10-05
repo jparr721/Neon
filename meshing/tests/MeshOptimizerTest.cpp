@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(TestComputeEdgeLengths) {
     const Real b = r.y();
     const Real c = r.z();
 
-    using namespace utilities::math;
+    using namespace solvers::math;
     BOOST_REQUIRE(IsApprox(a, 9.06, 0.01));
     BOOST_REQUIRE(IsApprox(b, 13, 0.01));
     BOOST_REQUIRE(IsApprox(c, 4.12, 0.01));
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(TestComputeTriangleSquaredArea) {
     const Real b = r.y();
     const Real c = r.z();
 
-    using namespace utilities::math;
+    using namespace solvers::math;
     BOOST_REQUIRE(IsApprox(a, 9.06, 0.01));
     BOOST_REQUIRE(IsApprox(b, 13, 0.01));
     BOOST_REQUIRE(IsApprox(c, 4.12, 0.01));

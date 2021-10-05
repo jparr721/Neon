@@ -27,7 +27,7 @@ using Tensor4 = Eigen::Tensor<T, 4>;
 template<typename T>
 using Tensor5 = Eigen::Tensor<T, 5>;
 
-namespace utilities::math {
+namespace solvers::math {
 
     template<typename T>
     class Tensor3 {
@@ -502,11 +502,11 @@ namespace utilities::math {
         }
     }// namespace tensors
 
-}// namespace utilities::math
+}// namespace solvers::math
 
 template<typename T>
-using Tensor3 = utilities::math::Tensor3<T>;
-using Tensor3r = utilities::math::Tensor3<Real>;
-using Tensor3i = utilities::math::Tensor3<int>;
+using Tensor3 = solvers::math::Tensor3<T>;
+using Tensor3r = solvers::math::Tensor3<Real>;
+using Tensor3i = solvers::math::Tensor3<int>;
 
 #endif//NEON_TENSORS_H

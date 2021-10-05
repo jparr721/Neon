@@ -47,7 +47,7 @@ auto datasets::FindOptimumDeformationParameters(const Real force, const Real tar
                 for (const auto &n : force_nodes) { deformation += displacements.row(n).y(); }
                 deformation /= static_cast<Real>(force_nodes.size());
 
-                if (utilities::math::IsApprox(deformation, target_deformation, 0.01)) { return material; }
+                if (solvers::math::IsApprox(deformation, target_deformation, 0.01)) { return material; }
             }
         }
     }
@@ -59,9 +59,8 @@ void datasets::MakeHomogenizationDataset(const std::string &filename, Real min_t
                                          Real min_amplitude, Real max_amplitude, Real thickness_incr,
                                          Real amplitude_incr, const solvers::materials::Material &material,
                                          unsigned int dim) {
-    utilities::filesystem::CsvFile<std::string> csv_(filename,
-                                                     {"Dimensions", "Thickness", "Amplitude", "Material Ratio", "E1",
-                                                      "E2", "E3", "v1", "v2", "v3", "G1", "G2", "G3"});
+    solvers::filesystem::CsvFile<std::string> csv_(filename, {"Dimensions", "Thickness", "Amplitude", "Material Ratio",
+                                                              "E1", "E2", "E3", "v1", "v2", "v3", "G1", "G2", "G3"});
 
 
     for (Real t = min_thickness; t < max_thickness; t += thickness_incr) {

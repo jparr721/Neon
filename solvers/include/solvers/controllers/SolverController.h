@@ -19,7 +19,7 @@
 #include <solvers/materials/OrthotropicMaterial.h>
 #include <utilities/math/Tensors.h>
 
-namespace visualizer::controllers {
+namespace solvers::controllers {
     class SolverController {
     public:
         static constexpr bool kUseDynamicSolver = true;
@@ -35,12 +35,15 @@ namespace visualizer::controllers {
         MatrixXr perforated_displacements;
         MatrixXr perforated_stresses;
 
+        explicit SolverController(int dim);
+
         SolverController(int dim, Real amplitude, Real thickness);
 
         void ReloadMeshes(int dim, Real amplitude, Real thickness);
         void HomogenizeVoidMesh();
 
         void ResetMeshPositions();
+        void ResetUniformMeshPositions();
         void ReloadUniformSolver(solvers::fem::LinearElastic::Type type);
         void ReloadPerforatedSolver(solvers::fem::LinearElastic::Type type);
 
@@ -48,6 +51,7 @@ namespace visualizer::controllers {
         void SolvePerforated(bool dynamic);
 
         // Getters ========================================
+        auto AverageDisplacement() const -> Real;
         auto UniformMesh() const -> const std::shared_ptr<meshing::Mesh> &;
         auto PerforatedMesh() const -> const std::shared_ptr<meshing::Mesh> &;
 

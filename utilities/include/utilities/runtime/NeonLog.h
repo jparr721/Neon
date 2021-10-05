@@ -20,7 +20,7 @@ enum class NeonLogLevel {
     kError,
 };
 
-namespace utilities::runtime {
+namespace solvers::runtime {
     template<typename... Context>
     auto NeonLog(const NeonLogLevel level, const std::string &function, const std::string &file, const int line,
                  Context... context) -> void {
@@ -56,14 +56,12 @@ namespace utilities::runtime {
     inline auto NeonLogSeparator() -> void { std::cout << "========================" << std::endl; }
 }// namespace utilities::runtime
 
-#define NEON_LOG_INFO(...)                                                                                             \
-    utilities::runtime::NeonLog(NeonLogLevel::kInfo, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+#define NEON_LOG_INFO(...) solvers::runtime::NeonLog(NeonLogLevel::kInfo, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
 
-#define NEON_LOG_WARN(...)                                                                                             \
-    utilities::runtime::NeonLog(NeonLogLevel::kWarn, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+#define NEON_LOG_WARN(...) solvers::runtime::NeonLog(NeonLogLevel::kWarn, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
 
 #define NEON_LOG_ERROR(...)                                                                                            \
-    utilities::runtime::NeonLog(NeonLogLevel::kError, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
+    solvers::runtime::NeonLog(NeonLogLevel::kError, __FUNCTION__, __FILE__, __LINE__, __VA_ARGS__)
 
 #define NEON_LOG_SEPARATOR() utilities::runtime::NeonLogSeparator();
 

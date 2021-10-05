@@ -1,6 +1,6 @@
 #include <utilities/math/LinearAlgebra.h>
 
-auto utilities::math::LinSpace(Real start, Real stop, unsigned int num) -> VectorXr {
+auto solvers::math::LinSpace(Real start, Real stop, unsigned int num) -> VectorXr {
     VectorXr interval;
     if (num == 1) {
         interval.resize(1);

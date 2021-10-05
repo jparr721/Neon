@@ -397,7 +397,7 @@ auto Homogenization::ComputeUniqueDegreesOfFreedom(
 
   const MatrixXi indices = (element_degrees_of_freedom.array() - 1).matrix();
 
-  return utilities::math::IndexVectorByMatrix(_dof, indices);
+  return solvers::math::IndexVectorByMatrix(_dof, indices);
 }
 
 auto Homogenization::AssembleStiffnessMatrix(
@@ -407,30 +407,19 @@ auto Homogenization::AssembleStiffnessMatrix(
   NEON_LOG_INFO("Assembling stiffness matrix");
   SparseMatrixXr K(n_degrees_of_freedom, n_degrees_of_freedom);
   {
-    const MatrixXi idx_i_kron =
-        Eigen::kroneckerProduct(unique_degrees_of_freedom,
-                                MatrixXi::Ones(24, 1))
-            .adjoint();
-    const VectorXi idx_i =
-        ((utilities::math::MatrixToVector(idx_i_kron)).array() - 1).matrix();
+      const MatrixXi idx_i_kron = Eigen::kroneckerProduct(unique_degrees_of_freedom, MatrixXi::Ones(24, 1)).adjoint();
+      const VectorXi idx_i = ((solvers::math::MatrixToVector(idx_i_kron)).array() - 1).matrix();
 
-    const MatrixXi idx_j_kron =
-        Eigen::kroneckerProduct(unique_degrees_of_freedom,
-                                MatrixXi::Ones(1, 24))
-            .adjoint();
-    const VectorXi idx_j =
-        ((utilities::math::MatrixToVector(idx_j_kron)).array() - 1).matrix();
+      const MatrixXi idx_j_kron = Eigen::kroneckerProduct(unique_degrees_of_freedom, MatrixXi::Ones(1, 24)).adjoint();
+      const VectorXi idx_j = ((solvers::math::MatrixToVector(idx_j_kron)).array() - 1).matrix();
 
-    const MatrixXr sK =
-        (utilities::math::MatrixToVector(ke_lambda) *
-         lambda_.Vector().transpose()) +
-        (utilities::math::MatrixToVector(ke_mu) * mu_.Vector().transpose());
+      const MatrixXr sK = (solvers::math::MatrixToVector(ke_lambda) * lambda_.Vector().transpose()) +
+                          (solvers::math::MatrixToVector(ke_mu) * mu_.Vector().transpose());
 
-    const VectorXr stiffness_entries = utilities::math::MatrixToVector(sK);
+      const VectorXr stiffness_entries = solvers::math::MatrixToVector(sK);
 
-    const auto K_entries =
-        utilities::math::ToTriplets(idx_i, idx_j, stiffness_entries);
-    K.setFromTriplets(K_entries.begin(), K_entries.end());
+      const auto K_entries = solvers::math::ToTriplets(idx_i, idx_j, stiffness_entries);
+      K.setFromTriplets(K_entries.begin(), K_entries.end());
   }
 
   SparseMatrixXr KT = K.adjoint();
@@ -447,30 +436,24 @@ auto Homogenization::AssembleLoadMatrix(
     const MatrixXi &unique_degrees_of_freedom, const MatrixXr &fe_lambda,
     const MatrixXr &fe_mu) -> SparseMatrixXr {
   NEON_LOG_INFO("Assembling load matrix");
-  const MatrixXi idx_i_exp =
-      unique_degrees_of_freedom.transpose().replicate(6, 1);
-  const VectorXi idx_i =
-      (utilities::math::MatrixToVector(idx_i_exp).array() - 1).matrix();
+  const MatrixXi idx_i_exp = unique_degrees_of_freedom.transpose().replicate(6, 1);
+  const VectorXi idx_i = (solvers::math::MatrixToVector(idx_i_exp).array() - 1).matrix();
 
-  const MatrixXi idx_j_exp = utilities::math::HStack(std::vector<MatrixXi>{
-      MatrixXi::Ones(24, n_elements),
-      2 * MatrixXi::Ones(24, n_elements),
-      3 * MatrixXi::Ones(24, n_elements),
-      4 * MatrixXi::Ones(24, n_elements),
-      5 * MatrixXi::Ones(24, n_elements),
-      6 * MatrixXi::Ones(24, n_elements),
+  const MatrixXi idx_j_exp = solvers::math::HStack(std::vector<MatrixXi>{
+          MatrixXi::Ones(24, n_elements),
+          2 * MatrixXi::Ones(24, n_elements),
+          3 * MatrixXi::Ones(24, n_elements),
+          4 * MatrixXi::Ones(24, n_elements),
+          5 * MatrixXi::Ones(24, n_elements),
+          6 * MatrixXi::Ones(24, n_elements),
   });
-  const VectorXi idx_j =
-      (utilities::math::MatrixToVector(idx_j_exp).array() - 1).matrix();
+  const VectorXi idx_j = (solvers::math::MatrixToVector(idx_j_exp).array() - 1).matrix();
 
-  const MatrixXr sF =
-      (utilities::math::MatrixToVector(fe_lambda) *
-       lambda_.Vector().transpose()) +
-      (utilities::math::MatrixToVector(fe_mu) * mu_.Vector().transpose());
-  const VectorXr load_entries = utilities::math::MatrixToVector(sF);
+  const MatrixXr sF = (solvers::math::MatrixToVector(fe_lambda) * lambda_.Vector().transpose()) +
+                      (solvers::math::MatrixToVector(fe_mu) * mu_.Vector().transpose());
+  const VectorXr load_entries = solvers::math::MatrixToVector(sF);
 
-  const auto F_entries =
-      utilities::math::ToTriplets(idx_i, idx_j, load_entries);
+  const auto F_entries = solvers::math::ToTriplets(idx_i, idx_j, load_entries);
 
   SparseMatrixXr F(n_degrees_of_freedom, 6);
   F.setFromTriplets(F_entries.begin(), F_entries.end());
@@ -500,15 +483,15 @@ auto Homogenization::ComputeDisplacement(
         _dof.row(i) = unique_degrees_of_freedom.row(indices(i));
       }
 
-      active_dofs = utilities::math::MatrixToVector(_dof);
+      active_dofs = solvers::math::MatrixToVector(_dof);
     } else {
       // If it's a composite, we only support densely connected meshses, so
       // all degrees of freedom remain active in this case.
-      active_dofs = utilities::math::MatrixToVector(unique_degrees_of_freedom);
+      active_dofs = solvers::math::MatrixToVector(unique_degrees_of_freedom);
     }
   }
 
-  utilities::math::Dedupe(active_dofs);
+  solvers::math::Dedupe(active_dofs);
   active_dofs -= VectorXi::Ones(active_dofs.rows());
 
   const unsigned int end = active_dofs.rows();
@@ -616,11 +599,10 @@ auto Homogenization::ComputeUnitStrainParameters(
 
     // Correct fe to proper DOF
     MatrixXr fe_sub;
-    utilities::math::Slice(fe, epsilon_dof_indices, epsilon_dof_cols, fe_sub);
+    solvers::math::Slice(fe, epsilon_dof_indices, epsilon_dof_cols, fe_sub);
 
     MatrixXr ke_sub;
-    utilities::math::Slice(ke, epsilon_dof_indices, epsilon_dof_indices,
-                           ke_sub);
+    solvers::math::Slice(ke, epsilon_dof_indices, epsilon_dof_indices, ke_sub);
 
     const MatrixXr epsilon_entries = ke_sub.fullPivLu().solve(fe_sub);
 
@@ -649,8 +631,8 @@ auto Homogenization::AssembleConstitutiveTensor(
     const MatrixXi &unique_degrees_of_freedom, const MatrixXr &ke_lambda,
     const MatrixXr &ke_mu, const MatrixXr &displacement,
     const Tensor3r &unit_strain_parameter) -> void {
-  utilities::runtime::profiler::Profiler p;
-  p();
+    solvers::runtime::profiler::Profiler p;
+    p();
   NEON_LOG_INFO("Assembling constitutive tensor");
   const Real volume = cell_len_x_ * cell_len_y_ * cell_len_z_;
 
@@ -664,8 +646,7 @@ auto Homogenization::AssembleConstitutiveTensor(
       {
         MatrixXr layeri = unit_strain_parameter.Layer(i);
         MatrixXr layerj = unit_strain_parameter.Layer(j);
-        MatrixXr index =
-            utilities::math::IndexMatrixByMatrix(displacement, indices, i);
+        MatrixXr index = solvers::math::IndexMatrixByMatrix(displacement, indices, i);
         ComputeConstitutiveProduct(layeri, layerj, index, ke_lambda, sum_L);
         ComputeConstitutiveProduct(layeri, layerj, index, ke_mu, sum_M);
       }

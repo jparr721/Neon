@@ -70,7 +70,7 @@ void solvers::integrators::CentralDifferenceMethod::SetEffectiveMassMatrix() {
     // If damping is zero, then we can quickly compute our emm
     if (damping_.nonZeros() == 0) {
         SparseMatrixXr temp = a0 * mass_matrix_;
-        utilities::math::FastDiagonalInverse(temp, effective_mass_matrix_);
+        solvers::math::FastDiagonalInverse(temp, effective_mass_matrix_);
         return;
     }
     effective_mass_matrix_ = a0 * mass_matrix_ + a1 * damping_;
@@ -90,7 +90,7 @@ void solvers::integrators::CentralDifferenceMethod::SetMovementVectors(const Vec
     velocity_.resize(positions.rows());
     velocity_.setZero();
     acceleration_.resize(positions.rows());
-    utilities::math::FastDiagonalInverse(mass_matrix_, mass_matrix_inverse_);
+    solvers::math::FastDiagonalInverse(mass_matrix_, mass_matrix_inverse_);
     acceleration_ = mass_matrix_inverse_ * forces;
 }
 

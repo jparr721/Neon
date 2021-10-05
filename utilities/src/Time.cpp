@@ -9,7 +9,7 @@
 #include <ctime>
 #include <utilities/math/Time.h>
 
-auto utilities::math::GetTimestamp() -> std::string {
+auto solvers::math::GetTimestamp() -> std::string {
     time_t rawtime;
     struct tm *timeinfo;
     char buffer[80];

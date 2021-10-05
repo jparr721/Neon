@@ -27,12 +27,9 @@ solvers::fem::LinearElastic::LinearElastic(
 
   // Since this is a linear solver, we can formulate all of our starting assets
   // right away.
-  NEON_LOG_INFO("Making constutitve matrix");
   AssembleConstitutiveMatrix();
-  NEON_LOG_INFO("Making stiffness matrix");
   AssembleElementStiffness();
   AssembleGlobalStiffness();
-  NEON_LOG_INFO("Making boundary forces");
   AssembleBoundaryForces();
   if (type == Type::kDynamic) {
     // Element nodes for the dynamic case so we only use active dofs.
@@ -51,12 +48,9 @@ solvers::fem::LinearElastic::LinearElastic(
       mesh_(std::move(mesh)), type(type), material_coefficients_(std::move(m)) {
   // Since this is a linear solver, we can formulate all of our starting assets
   // right away.
-  NEON_LOG_INFO("Making constutitve matrix");
   AssembleConstitutiveMatrix();
-  NEON_LOG_INFO("Making stiffness matrix");
   AssembleElementStiffness();
   AssembleGlobalStiffness();
-  NEON_LOG_INFO("Making boundary forces");
   AssembleBoundaryForces();
   if (type == Type::kDynamic) {
     // Element nodes for the dynamic case so we only use active dofs.
@@ -65,7 +59,6 @@ solvers::fem::LinearElastic::LinearElastic(
 
   // Global displacement is always for all nodes.
   U = VectorXr::Zero(mesh_->positions.rows() * 3);
-  NEON_LOG_INFO("Done initializing solver");
 }
 
 void solvers::fem::LinearElastic::Solve(MatrixXr &displacements,
@@ -81,8 +74,7 @@ void solvers::fem::LinearElastic::Solve(MatrixXr &displacements,
   }
   }
 
-  displacements =
-      (utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose()).eval();
+  displacements = (solvers::math::VectorToMatrix(U, 3, U.rows() / 3).transpose()).eval();
   stress = ComputeElementStress();
 }
 
@@ -369,8 +361,7 @@ auto solvers::fem::LinearElastic::ComputeElementStress() -> MatrixXr {
 
   // Convert the positions vector to a matrix for easier indexing.
   // Note: for large geometry this could cause performance issues.
-  const MatrixXr dsp =
-      utilities::math::VectorToMatrix(U, 3, U.rows() / 3).transpose();
+  const MatrixXr dsp = solvers::math::VectorToMatrix(U, 3, U.rows() / 3).transpose();
   for (int row = 0; row < mesh_->tetrahedra.rows(); ++row) {
     const Vector4i tetrahedral = mesh_->tetrahedra.row(row);
 

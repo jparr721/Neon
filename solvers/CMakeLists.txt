@@ -4,13 +4,18 @@ add_library(${PROJECT_NAME} SHARED
         include/solvers/FEM/LinearElastic.h
         include/solvers/materials/Homogenization.h
 
+        src/SolverController.cpp
+        include/solvers/controllers/SolverController.h
         src/LinearElastic.cpp
         src/Homogenization.cpp
         include/solvers/materials/Material.h src/Material.cpp
         include/solvers/utilities/BoundaryCondition.h
         src/BoundaryCondition.cpp
         src/CentralDifferenceMethod.cpp
-        include/solvers/integrators/CentralDifferenceMethod.h include/solvers/materials/OrthotropicMaterial.h src/OrthotropicMaterial.cpp include/solvers/materials/ScalarField.h)
+        include/solvers/integrators/CentralDifferenceMethod.h
+        include/solvers/materials/OrthotropicMaterial.h
+        src/OrthotropicMaterial.cpp
+        include/solvers/materials/ScalarField.h)
 
 target_include_directories(${PROJECT_NAME}
         PUBLIC

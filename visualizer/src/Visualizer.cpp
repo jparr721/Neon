@@ -14,7 +14,7 @@
 #include <utilities/math/Time.h>
 #include <visualizer/Visualizer.h>
 
-namespace visualizer {
+namespace solvers {
     bool isotropic = false;
     bool tetrahedralize = true;
     bool dataset_generating = false;
@@ -35,31 +35,29 @@ namespace visualizer {
     igl::opengl::glfw::Viewer viewer;
     igl::opengl::glfw::imgui::ImGuiMenu menu;
 
-    std::shared_ptr<visualizer::controllers::SolverController> solver_controller;
+    std::shared_ptr<solvers::controllers::SolverController> solver_controller;
     std::unique_ptr<pipelines::BehaviorMatching> behavior_matching_pipeline;
 
     const Vector3r force = Vector3r(0, -100, 0);
-}// namespace visualizer
+}// namespace solvers
 
-auto visualizer::Viewer() -> igl::opengl::glfw::Viewer & { return viewer; }
-auto visualizer::Menu() -> igl::opengl::glfw::imgui::ImGuiMenu & { return menu; }
-auto visualizer::Controller() -> std::shared_ptr<visualizer::controllers::SolverController> & {
-    return solver_controller;
-}
-auto visualizer::BehaviorMatchingPipeline() -> std::unique_ptr<pipelines::BehaviorMatching> & {
+auto solvers::Viewer() -> igl::opengl::glfw::Viewer & { return viewer; }
+auto solvers::Menu() -> igl::opengl::glfw::imgui::ImGuiMenu & { return menu; }
+auto solvers::Controller() -> std::shared_ptr<solvers::controllers::SolverController> & { return solver_controller; }
+auto solvers::BehaviorMatchingPipeline() -> std::unique_ptr<pipelines::BehaviorMatching> & {
     return behavior_matching_pipeline;
 }
-auto visualizer::RveDims() -> int & { return rve_dims; }
-auto visualizer::Amplitude() -> Real & { return amplitude; }
-auto visualizer::Thickness() -> Real & { return thickness; }
+auto solvers::RveDims() -> int & { return rve_dims; }
+auto solvers::Amplitude() -> Real & { return amplitude; }
+auto solvers::Thickness() -> Real & { return thickness; }
 
-auto visualizer::GenerateShape() -> void {
+auto solvers::GenerateShape() -> void {
     solver_controller->ReloadMeshes(rve_dims, amplitude, thickness);
     if (Viewer().data_list.empty() || Viewer().data_list.size() == 1) { viewer.append_mesh(true); }
     solver_controller->solvers_need_reload = true;
 }
 
-auto visualizer::GeometryMenu() -> void {
+auto solvers::GeometryMenu() -> void {
     // UniformMesh
     if (ImGui::CollapsingHeader("Mesh", ImGuiTreeNodeFlags_DefaultOpen)) {
         float w = ImGui::GetContentRegionAvailWidth();
@@ -125,13 +123,7 @@ auto visualizer::GeometryMenu() -> void {
             Refresh();
         }
 
-        if (ImGui::Button("Reset##Shape Generator", ImVec2(w, 0))) {
-            solver_controller->ResetMeshPositions();
-            Refresh();
-            solver_controller->solvers_need_reload = true;
-        }
-
-        if (ImGui::Button("Reset Static##Shape Generator", ImVec2(w, 0))) {
+        if (ImGui::Button("Reset Mesh Positions##Shape Generator", ImVec2(w, 0))) {
             solver_controller->ResetMeshPositions();
             Refresh();
             solver_controller->solvers_need_reload = true;
@@ -139,7 +131,7 @@ auto visualizer::GeometryMenu() -> void {
     }
 }
 
-auto visualizer::SimulationMenu() -> void {
+auto solvers::SimulationMenu() -> void {
     const float w = ImGui::GetContentRegionAvailWidth();
     if (ImGui::CollapsingHeader("Solvers", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::InputDouble("dt", &solver_controller->Dt());
@@ -168,11 +160,11 @@ auto visualizer::SimulationMenu() -> void {
 
             solver_controller->ReloadUniformSolver(solvers::fem::LinearElastic::Type::kDynamic);
 
-            if (!solver_controller->PerforatedMesh()->tetgen_succeeded) {
-                NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
-                return;
-            }
-            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kDynamic);
+            //            if (!solver_controller->PerforatedMesh()->tetgen_succeeded) {
+            //                NEON_LOG_WARN("Mesh was not tetrahedralized, cannot load solver!");
+            //                return;
+            //            }
+            //            solver_controller->ReloadPerforatedSolver(solvers::fem::LinearElastic::Type::kDynamic);
         }
 
         if (ImGui::Button("Reload Static Solver##Solvers", ImVec2(w, 0))) {
@@ -204,12 +196,12 @@ auto visualizer::SimulationMenu() -> void {
     if (ImGui::CollapsingHeader("Simulation", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (ImGui::Button("Compute Static##Simulation", ImVec2(w, 0))) {
             solver_controller->SolveUniform(controllers::SolverController::kUseStaticSolver);
-            solver_controller->SolvePerforated(controllers::SolverController::kUseStaticSolver);
+            //            solver_controller->SolvePerforated(controllers::SolverController::kUseStaticSolver);
             Refresh();
         }
     }
 }
-auto visualizer::SimulationMenuWindow() -> void {
+auto solvers::SimulationMenuWindow() -> void {
     const float x = 160.f * Menu().menu_scaling() + 20;
     ImGui::SetNextWindowPos(ImVec2(x, 0.0f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(x, 0.0f), ImGuiCond_FirstUseEver);
@@ -223,7 +215,7 @@ auto visualizer::SimulationMenuWindow() -> void {
     ImGui::End();
 }
 
-auto visualizer::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {
+auto solvers::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {
     if (solver_controller->solvers_need_reload) { viewer.core().is_animating = false; }
     if (viewer.core().is_animating) {
         solver_controller->SolveUniform(controllers::SolverController::kUseDynamicSolver);
@@ -233,7 +225,7 @@ auto visualizer::DrawCallback(igl::opengl::glfw::Viewer &) -> bool {
     return false;
 }
 
-auto visualizer::Refresh() -> void {
+auto solvers::Refresh() -> void {
     // If the existing data in the mesh is the same size, then we don't need to worry about the "set_mesh" function since,
     // it'll efficiently handle the diff. However, if the sizes are different, we _must_ clear this info.
     if (!(Viewer().data(controllers::SolverController::kUniformMeshID).V.size() ==

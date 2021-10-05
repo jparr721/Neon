@@ -10,10 +10,10 @@
 #ifndef NEON_GEOMETRY_H
 #define NEON_GEOMETRY_H
 
-namespace utilities::math {
+namespace solvers::math {
     inline void Scoot(const Vector3r &amount, MatrixXr &V) {
         for (int row = 0; row < V.rows(); ++row) { V.row(row) += amount; }
     }
-}// namespace utilities::math
+}// namespace solvers::math
 
 #endif//NEON_GEOMETRY_H

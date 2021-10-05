@@ -12,7 +12,7 @@
 
 #include <string>
 
-namespace utilities::math {
+namespace solvers::math {
     auto GetTimestamp() -> std::string;
 }
 

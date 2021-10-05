@@ -12,7 +12,7 @@
 
 #include <utilities/math/LinearAlgebra.h>
 
-namespace utilities::numbers {
+namespace solvers::numbers {
     auto IsApprox(Real lhs, Real rhs, Real epsilon) -> bool;
 }
 

@@ -21,7 +21,7 @@
 #include <utilities/runtime/NeonLog.h>
 #include <vector>
 
-namespace utilities::filesystem {
+namespace solvers::filesystem {
     template<typename T>
     class CsvFile {
     public:
